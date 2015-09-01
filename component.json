@@ -1,0 +1,17 @@
+{
+  "name": "jAsyncGrid",
+  "repo": "ingenious/jAsyncGrid",
+  "version": "1.0",
+  "description": "JS Asynchronous Data Grids",
+  "scripts" : [
+    "js/jApp.class.js",
+    "js/jForm.class.js",
+    "js/jGrid.class.js",
+    "js/jInput.class.js",
+    "js/jLinkTable.class.js",
+    "js/jstorage.js",
+  ],
+  "license": [
+    "MIT"
+  ]
+}

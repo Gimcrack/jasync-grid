@@ -1,0 +1,17 @@
+{
+    "name": "ingenious/jAsyncGrid",
+    "description": "Asynchronous JS Data Grids",
+    "type" : "component",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jeremy Bloomstrom",
+            "email": "jeremy@in.genio.us"
+        }
+    ],
+    "require": {
+        "components/jquery": "^2.1",
+        "components/underscore" : "*",
+        
+    },
+}
