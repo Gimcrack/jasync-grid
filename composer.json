@@ -1,12 +1,14 @@
 {
     "name": "ingenious/async-grid",
     "description": "Asynchronous JS Data Grids",
-    "type" : "component",
+    "type" : "library",
     "license": "MIT",
     "authors": [
         {
             "name": "Jeremy Bloomstrom",
-            "email": "jeremy@in.genio.us"
+            "email": "jeremy@in.genio.us",
+            "homepage" : "http://in.genio.us",
+            "role" : "developer"
         }
     ],
     "require": {
