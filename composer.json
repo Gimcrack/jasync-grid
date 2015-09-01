@@ -11,7 +11,6 @@
     ],
     "require": {
         "components/jquery": "^2.1",
-        "components/underscore" : "*",
-        
+        "components/underscore" : "*"
     },
 }
