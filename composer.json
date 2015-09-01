@@ -1,5 +1,5 @@
 {
-    "name": "ingenious/jAsyncGrid",
+    "name": "ingenious/async-grid",
     "description": "Asynchronous JS Data Grids",
     "type" : "component",
     "license": "MIT",
