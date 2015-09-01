@@ -2,6 +2,7 @@
     "name": "ingenious/async-grid",
     "description": "Asynchronous JS Data Grids",
     "type" : "library",
+    "version" : "1.0",
     "license": "MIT",
     "authors": [
         {
