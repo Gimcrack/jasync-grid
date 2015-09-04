@@ -199,8 +199,8 @@
 		/**  **  **  **  **  **  **  **  **  **
 		 *   HTML TEMPLATES
 		 *
-		 *  Place large html templates here
-		 *  as functions. These are rendered with
+		 *  Place large html templates here.
+		 *  These are rendered with
 		 *  the method self.fn.render.
 		 *
 		 *  Parameters of the form {@ParamName}
@@ -208,220 +208,32 @@
 		 **  **  **  **  **  **  **  **  **  **/
 		this.html = {
 
-			// main grid template
-			/*
-				params : {
-					icon : 'fa-dashboard',
-					headerTitle : 'Database Dashboard',
-					helpText : 'The database dashboard contains near real-time information about MSB production databases.',
-				}
-			*/
-			tmpMainGridBody : function() { /*
-			<div class="row">
-				<div class="col-lg-12">
-					<div class="panel panel-info panel-grid panel-grid1">
-						<div class="panel-heading">
-							<h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1>
-							<div class="alert alert-warning alert-dismissible helpText" role="alert">
-							  <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-							  {@helpText}
-							</div>
-
-						</div>
-						<div class="panel-body grid-panel-body">
-							<div class="table-responsive">
-
-								<div class="table table-bordered table-grid">
-									<div class="table-head">
-										<div class="table-row">
-											<div class="table-header" style="width:100%">
-												<div class="btn-group btn-group-sm table-btn-group">
-													<button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh">
-														<i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span>
-													</button>
-												</div>
-											</div>
-										</div>
-										<div class="table-row tfilters">
-											<div style="width:10px;" class="table-header">&nbsp;</div>
-											<div style="width:175px;" class="table-header" align="right">
-												<span class='label label-info filter-showing'></span> Filter :
-											</div>
-										</div>
-									</div>
-
-									<div class="table-body" id="tbl_grid_body">
-										<!--{$tbody}-->
-									</div>
-
-									<div class="table-foot">
-
-										<div class="row">
-											<div class="col-md-3">
-												<div style="display:none" class="ajax-activity-preloader pull-left"></div>
-												<div class="divRowsPerPage pull-right">
-													<select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control">
-														<option value="10">10</option>
-														<option value="15">15</option>
-														<option value="25">25</option>
-														<option value="50">50</option>
-														<option value="100">100</option>
-														<option value="10000">All</option>
-													</select>
-												</div>
-											</div>
-											<div class="col-md-9">
-												<div class="paging"></div>
-											</div>
-										</div>
-									</div> <!-- /. table-foot -->
-
-								</div>
-							</div>
-							<!-- /.table-responsive -->
-
-						</div>
-						<!-- /.panel-body -->
-					</div>
-					<!-- /.panel -->
-				</div>
-				<!-- /.col-lg-12 -->
-			</div>
-			<!-- /.row -->
-			*/},
-
+			// main grid body
+			tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group"> <button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh"> <i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span> </button> </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> Filter : </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
+			
 			// check all checkbox template
-			tmpCheckAll	: function() {/*
-				<div class="btn-group btn-group-sm">
-					<label for="chk_all" class="btn btn-default">
-						<input type="checkbox" class="chk_all" name="chk_all">
-					</label>
-				<button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-					&nbsp;<span class="caret"></span>
-				</button>
-				<ul class="with-selected-menu dropdown-menu" role="menu">
-					{@WithSelectedOptions}
-				</ul>
-
-				</div>
-			*/},
+			tmpCheckAll	: '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul></div>',
 
 			// header filter clear text button
-			tmpClearHeaderFilterBtn : function() {/*
-				<span class="fa-stack fa-lg">
-					<i class="fa fa-circle-thin fa-stack-2x"></i>
-					<i class="fa fa-remove fa-stack-1x"></i>
-				</span>
-			*/},
+			tmpClearHeaderFilterBtn : '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul> </div>',
 
 			// filter showing ie Showing X / Y Rows
-			tmpFilterShowing : function() {/*
-				<i class="fa fa-filter fa-fw"></i>{@totalVis} / {@totalRows}
-			*/},
+			tmpFilterShowing : '<i class="fa fa-filter fa-fw"></i>{@totalVis} / {@totalRows}',
 
 			// table header sort button
-			tmpSortBtn : function() {/*
-				<button rel='{@ColumnName}' title='{@BtnTitle}' class='btn btn-sm btn-default {@BtnClass} tbl-sort pull-right' type='button'>
-					<i class='fa fa-sort-{@faClass} fa-fw'></i>
-				</button>
-			*/},
+			tmpSortBtn : '<button rel="{@ColumnName}" title="{@BtnTitle}" class="btn btn-sm btn-default {@BtnClass} tbl-sort pull-right" type="button"> <i class="fa fa-sort-{@faClass} fa-fw"></i> </button> ',
 
 			// Colparams Form Template
-			tmpColParamForm	: function() {/*
-				<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper">
-					<div class="frm_wrapper">
-						<div class="panel panel-lblue">
-							<div class="panel-heading">
-								<button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button>
-								<i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span>
-							</div>
-							<div class="panel-overlay" style="display:none"></div>
-							<div class="panel-body" style="padding:0 0px !important;">
-								<div class="row side-by-side">
-									<div class="col-lg-3 tbl-list"></div>
-									<div class="col-lg-2 col-list"></div>
-									<div class="col-lg-7 param-list">
-									<div class="side-by-side colParamFormContainer">
-
-									</div>
-									</div>
-								</div>
-							</div>
-							<div class="panel-heading">
-								<input type="button" class="btn btn-success btn-save" id="btn_save" value="Save">
-								<input type="button" class="btn btn-warning btn-reset" id="btn_reset" value="Reset">
-								<input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form">
-								<input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel">
-							</div>
-						</div>
-					</div>
-				</div>
-			*/},
+			tmpColParamForm	: '<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-lblue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body" style="padding:0 0px !important;"> <div class="row side-by-side"> <div class="col-lg-3 tbl-list"></div> <div class="col-lg-2 col-list"></div> <div class="col-lg-7 param-list"> <div class="side-by-side colParamFormContainer"> </div> </div> </div> </div> <div class="panel-heading"> <input type="button" class="btn btn-success btn-save" id="btn_save" value="Save"> <input type="button" class="btn btn-warning btn-reset" id="btn_reset" value="Reset"> <input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form"> <input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel"> </div> </div> </div> </div>',
 
 			// Edit Form Template
-			tmpEditForm	: function() {/*
-				<div id="div_editFrm" class="div-btn-edit min div-form-panel-wrapper">
-					<div class="frm_wrapper">
-						<div class="panel panel-blue">
-							<div class="panel-heading">
-								<button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button>
-								<i class="fa fa-pencil fa-fw"></i> <span class="spn_editFriendlyName">{@Name}</span> [Editing]
-							</div>
-							<div class="panel-overlay" style="display:none"></div>
-							<div class="panel-body">
-								<div class="row side-by-side">
-									<div class="side-by-side editFormContainer">
-
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			*/},
+			tmpEditForm	: '<div id="div_editFrm" class="div-btn-edit min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-blue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-pencil fa-fw"></i> <span class="spn_editFriendlyName">{@Name}</span> [Editing] </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side editFormContainer"> </div> </div> </div> </div> </div> </div>',
 
 			// New Form Template
-			tmpNewForm	: function() {/*
-				<div id="div_newFrm" class="div-btn-new min div-form-panel-wrapper">
-					<div class="frm_wrapper">
-						<div class="panel panel-green">
-							<div class="panel-heading">
-								<button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button>
-								<i class="fa fa-plus fa-fw"></i> New: <span class="spn_editFriendlyName">{@tableFriendly}</span>
-							</div>
-							<div class="panel-overlay" style="display:none"></div>
-							<div class="panel-body">
-								<div class="row side-by-side">
-									<div class="side-by-side newFormContainer">
-
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			*/},
+			tmpNewForm	: '<div id="div_newFrm" class="div-btn-new min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-green"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-plus fa-fw"></i> New: <span class="spn_editFriendlyName">{@tableFriendly}</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side newFormContainer"> </div> </div> </div> </div> </div> </div> ',
 
 			// Delete Form Template
-			tmpDeleteForm	: function() {/*
-				<div id="div_deleteFrm" class="div-btn-delete min div-form-panel-wrapper">
-				<div class="frm_wrapper">
-					<div class="panel panel-red">
-						<div class="panel-heading">
-							<button type="button" class="close" aria-hidden="true">×</button>
-							<i class="fa fa-trash-o fa-fw"></i> <span class="spn_editFriendlyName"></span> : {@deleteText}
-						</div>
-						<div class="panel-overlay" style="display:none"></div>
-						<div class="panel-body">
-							<div class="row side-by-side">
-								<div class="delFormContainer"></div>
-							</div>
-						</div>
-					</div>
-					</form>
-				</div>
-			</div>
-			*/},
+			tmpDeleteForm	: '<div id="div_deleteFrm" class="div-btn-delete min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-red"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true">×</button> <i class="fa fa-trash-o fa-fw"></i> <span class="spn_editFriendlyName"></span> : {@deleteText} </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="delFormContainer"></div> </div> </div> </div> </form> </div> </div> ',
 
 		};// end html templates
 
@@ -2406,8 +2218,8 @@
 			/**  **  **  **  **  **  **  **  **  **
 			 *   render
 			 *
-			 *  @fn   (function) function containing
-			 *  		commented multiline text
+			 *  @str   (string) containing
+			 *  		multiline text
 			 *
 			 *  @params (obj) contains key/value pairs
 			 *  		  defining parameters that
@@ -2416,15 +2228,10 @@
 			 *
 			 *  returns the interpolated text
 			 **  **  **  **  **  **  **  **  **  **/
-			render : function(fn,params) {
+			render : function(str,params) {
 				var tmp, ptrn, key
 
-				if (typeof fn === 'function') {
-					tmp = fn.toString().split('\n');
-					tmp = tmp.slice( (!!tmp[1] && tmp[1].toLowerCase().indexOf('use strict') !== -1) ? 3 : 1 ,-1).join('\n') + '\n';
-				} else {
-					tmp = fn;
-				}
+				tmp = str;
 
 				if (!!params && !$.isEmptyObject(params)) {
 					for (key in params ) {
