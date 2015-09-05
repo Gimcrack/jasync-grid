@@ -21,7 +21,7 @@
  *  
  */
 // javascript closure
-;(function( window, jQuery, $, _, jInput, jForm, oValidator, jApp ) {
+;(function( window, jQuery, $, _, jInput, jForm, $.validator, jApp ) {
 
 	'use strict';
 	
@@ -236,4 +236,4 @@
 	
 	window.jLinkTable = jLinkTable; // add to global scope
 
-})( window, jQuery, $, _, jInput, jForm, oValidator, jApp );
+})( window, jQuery, $, _, jInput, jForm, $.validator, jApp );

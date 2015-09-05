@@ -10,11 +10,11 @@
  *  Released under the MIT license
  *
  *  Prereqs: 	jQuery, underscore.js,
- *  			jInput, jForm, oValidator
+ *  			jInput, jForm, $.validator
  *  			jApp
  */
 
-;(function(window, jQuery, $, _, jInput, jForm, oValidator, jApp) {
+;(function(window, jQuery, $, _, jInput, jForm, $.validator, jApp) {
 
 	'use strict';
 
@@ -2281,7 +2281,7 @@
 				self.lastUpdatedRow = -1;
 
 				if (!!self.fn.$currentForm()) {
-					var oValidate = new oValidator( self.fn.$currentForm() );
+					var oValidate = new $.validator( self.fn.$currentForm() );
 					if (oValidate.errorState) {
 						return false;
 					}
@@ -2950,4 +2950,4 @@
 	window.jGrid = jGrid;
 
 
-})(window, jQuery, $, _, jInput, jForm, oValidator, jApp);
+})(window, jQuery, $, _, jInput, jForm, $.validator, jApp);
