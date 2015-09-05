@@ -14,7 +14,7 @@
  *  			jApp
  */
 
-;(function(window, jQuery, $, _, jInput, jForm, $.validator, jApp) {
+;(function(window, jQuery, $, _, jInput, jForm, jApp) {
 
 	'use strict';
 
@@ -2950,4 +2950,4 @@
 	window.jGrid = jGrid;
 
 
-})(window, jQuery, $, _, jInput, jForm, $.validator, jApp);
+})(window, jQuery, $, _, jInput, jForm, jApp);
