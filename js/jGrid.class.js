@@ -10,11 +10,11 @@
  *  Released under the MIT license
  *
  *  Prereqs: 	jQuery, underscore.js,
- *  			jInput, jForm, oValidator
+ *  			jInput, jForm, $.validator
  *  			jApp
  */
 
-;(function(window, jQuery, $, _, jInput, jForm, oValidator, jApp) {
+;(function(window, jQuery, $, _, jInput, jForm, jApp) {
 
 	'use strict';
 
@@ -210,7 +210,7 @@
 
 			// main grid body
 			tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group"> <button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh"> <i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span> </button> </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> Filter : </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
-			
+
 			// check all checkbox template
 			tmpCheckAll	: '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul></div>',
 
@@ -294,7 +294,7 @@
 				}
 
 				// get checked out records
-				self.fn.getCheckedOutRecords();
+				//self.fn.getCheckedOutRecords();
 
 
 				$('.table-grid').perfectScrollbar()
@@ -345,14 +345,15 @@
 				}
 				self.interval = setInterval(self.fn.update,self.options.refreshInterval);
 
-				if (!!self.options.toggles.editable) {
-
-					// get checked out records interval
-					if (!!self.intervalCheckedOutRecords) {
-						clearInterval(self.intervalCheckedOutRecords);
-					}
-					self.intervalCheckedOutRecords = setInterval( self.fn.getCheckedOutRecords, 10000 );
-				}
+				// get checked out records
+				// if (!!self.options.toggles.editable) {
+				//
+				// 	// get checked out records interval
+				// 	if (!!self.intervalCheckedOutRecords) {
+				// 		clearInterval(self.intervalCheckedOutRecords);
+				// 	}
+				// 	self.intervalCheckedOutRecords = setInterval( self.fn.getCheckedOutRecords, 10000 );
+				// }
 			},
 
 			/**  **  **  **  **  **  **  **  **  **
@@ -633,13 +634,13 @@
 				// create the colParams form
 				self.forms.oColParamFrm = new jForm(
 					{
-						table : 'admin.colParam',
-						dataView : 'admin.ColParam',
-						pkey : 'ColParamID',
+						table : 'col_params',
 						tableFriendly : 'Column Parameters',
 						btns : [],
 						atts : {
 							name : 'frm_element_editor',
+							method : 'PATCH',
+							action : '/admin/colparams/', // + /{id}
 						},
 						fieldset : {
 							'legend' : '3. Edit Column Parameters',
@@ -714,7 +715,7 @@
 				if ( !!self.store.get( 'tableList', false ) ) {
 					self.callback.getTableList(  self.store.get('tableList') );
 				} else {
-					var url = 'index.php?controller=ajax&view=getTableList';
+					var url = '/admin/colparams/tablelist';
 					var data = {};
 
 					$.getJSON( url
@@ -743,8 +744,8 @@
 				if ( !!self.store.get( 'columnList' + tableName, false ) ) {
 					self.callback.getTableList(  self.store.get( 'columnList' + tableName ) );
 				} else {
-					var url = 'index.php?controller=ajax&view=getColumnList';
-					var data = { tableName : tableName };
+					var url = '/admin/colparams/json/' + tableName;
+					var data = { };
 
 					$.getJSON( url
 						, data
@@ -790,18 +791,18 @@
 				// setup the request
 				self.requestOptions = {
 					url : self.options.url,
-					data : {
-						dbView : self.options.schema + '.' + self.options.dbView,
-						columns : self.options.columns,
-						sortBy : self.options.sortBy,
-						filter : self.options.filter,
-						filterMine : 0
-					}
+					// data : {
+					// 	dbView : self.options.schema + '.' + self.options.dbView,
+					// 	columns : self.options.columns,
+					// 	sortBy : self.options.sortBy,
+					// 	filter : self.options.filter,
+					// 	filterMine : 0
+					// }
 				};
 
 				self.ajaxVars = {
 					url : self.options.url,
-					type : 'POST'
+					type : 'GET'
 				}
 			},
 
@@ -851,7 +852,7 @@
 					self.fn.activityPreloader('show');
 					// execute the request
 					self.ajaxRequests.gridData = $.getJSON(self.requestOptions.url,
-							  self.requestOptions.data,
+							  {},
 							  self.callback.update
 					).fail( function() {
 						console.warn( 'update grid data failed, it may have been aborted' );
@@ -881,7 +882,8 @@
 			updateDOM : function() {
 				// init vars
 				var appendTR = false,
-					appendTD = false;
+					appendTD = false,
+					value;
 
 				if (!!self.oDelta[0] && self.oDelta[0][self.options.pkey] === 'NoData') {
 					var tr = $('<div/>', { class : 'table-row tr-no-data'} ).append( $('<div/>', { class : 'table-cell'} ).html('No Data') );
@@ -897,6 +899,8 @@
 
 					// save the current row.
 					self.currentRow = self.oJSON[i];
+
+					console.log(oRow);
 
 					// find row in the table if it exists
 					var	tr = tbl.find('.table-row[data-identifier="' + oRow[self.options.pkey] + '"]');
@@ -952,19 +956,21 @@
 
 
 					// iterate through the columns
-					$.each( self.currentRow, function(key, value) {
+					_.each( self.options.columns, function(colname) {
+
+						console.log(colname + ' ' + oRow[colname]);
 
 						// determine if the column is hidden
-						if ($.inArray(key,self.options.hidCols) !== -1) {
+						if ($.inArray(colname,self.options.hidCols) !== -1) {
 							return false;
 						}
 
 						// find the cell if it exists
-						var td = tr.find('.table-cell[data-identifier="' + key + '"]');
+						var td = tr.find('.table-cell[data-identifier="' + colname + '"]');
 
 						// create the cell if needed
 						if (!td.length) {
-							td = $('<div/>', { 'class' : 'table-cell', 'data-identifier' : key} );
+							td = $('<div/>', { 'class' : 'table-cell', 'data-identifier' : colname} );
 							appendTD = true;
 						}
 
@@ -975,14 +981,14 @@
 							});
 						}
 
-						if(!!self.options.cellAtts[key]) {
-							$.each( self.options.cellAtts[key], function(at, fn) {
+						if(!!self.options.cellAtts[colname]) {
+							$.each( self.options.cellAtts[colname], function(at, fn) {
 								td.attr( at,fn() );
 							});
 						}
 
 						// prepare the value
-						value = self.fn.prepareValue(value,key);
+						value = self.fn.prepareValue(oRow[colname],colname);
 
 						if ( td.html().trim() !== value.trim() ) {
 							// set the cell value
@@ -1711,13 +1717,13 @@
 					.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
 
 					// Format special input types
-					.find('[validType="Phone Number"]').keyup( function() {  $(this).val( formatPhone( $(this).val() ) ); }).end()
-					.find('[validType="Zip Code"]').keyup( 	function() {  $(this).val( formatZip( $(this).val() ) ); }).end()
-					.find('[validType="SSN"]').keyup( 			function() {  var self = $(this); setTimeout( function() { self.val( formatSSN( self.val() ) ); }, 200); }).end()
-					.find('[validType="color"]').keyup( 		function() {  $(this).css('background-color',$(this).val()); }).end()
-					.find('[validType="Number"]').change( 		function() {  $(this).val( formatNumber( $(this).val() ) );	}).end()
-					.find('[validType="Integer"]').change( 	function() {  $(this).val( formatInteger( $(this).val() ) ); }).end()
-					.find('[validType="US State"]').change( 	function() {  $(this).val( formatUC( $(this).val() ) );	}).end()
+					.find('[data-validType="Phone Number"]').keyup( function() {  $(this).val( formatPhone( $(this).val() ) ); }).end()
+					.find('[data-validType="Zip Code"]').keyup( 	function() {  $(this).val( formatZip( $(this).val() ) ); }).end()
+					.find('[data-validType="SSN"]').keyup( 			function() {  var self = $(this); setTimeout( function() { self.val( formatSSN( self.val() ) ); }, 200); }).end()
+					.find('[data-validType="color"]').keyup( 		function() {  $(this).css('background-color',$(this).val()); }).end()
+					.find('[data-validType="Number"]').change( 		function() {  $(this).val( formatNumber( $(this).val() ) );	}).end()
+					.find('[data-validType="Integer"]').change( 	function() {  $(this).val( formatInteger( $(this).val() ) ); }).end()
+					.find('[data-validType="US State"]').change( 	function() {  $(this).val( formatUC( $(this).val() ) );	}).end()
 
 					// button bindings
 					.find('button.close,.btn-cancel').off('click.btn-cancel').on('click.btn-cancel', function() {
@@ -1732,11 +1738,15 @@
 
 					.find('.btn-go').off('click.btn-go').on('click.btn-go', function() {
 						self.closeOnSave = true;
-						var $target_btn = $(this);
-						$target_btn.addClass('disabled');
+						// var $target_btn = $(this);
+						// $target_btn.addClass('disabled');
 						$.noty.closeAll();
-						self.fn.ajaxSetupAction();
-						self.fn.ajaxSubmit();
+						// self.fn.ajaxSetupAction();
+						// self.fn.ajaxSubmit();
+
+						// submit the form
+						self.fn.oCurrentForm().submit();
+
 						setTimeout(function() {
 							$target_btn.removeClass('disabled');
 							tbl.find('.btn-showMenu.active').click();
@@ -1745,22 +1755,14 @@
 
 					.find('.btn-save').off('click.btn-go').on('click.btn-go', function() {
 						self.closeOnSave = false;
-						var $target_btn = $(this);
-						$target_btn.addClass('disabled');
+
 						$.noty.closeAll();
-						self.fn.ajaxSetupAction();
-						self.ajaxVars.success = self.fn.colParamSaveSuccess;
-						self.fn.ajaxSubmit();
 
-						$.jStorage.flush();
-						self.forms.oColParamFrm.fn.getColParams();
-						self.fn.updateColParamForm();
+						self.fn.oCurrentForm().callback.submit = self.fn.colParamSaveSuccess;
 
-						setTimeout(function() {
-							self.fn.getColumnList( self.temp.tableName );
-							self.fn.oCurrentForm().fn.getRowData( self.temp.colParamID, self.fn.updateColParamForm );
-							$target_btn.removeClass('disabled');
-						},2000 );
+						self.fn.oCurrentForm().submit();
+
+
 					}).end()
 
 					.find('.btn-reset').off('click.btn-reset').on('click.btn-reset', function() {
@@ -1903,7 +1905,7 @@
 					//determine if this is an existing record
 					if (!!id) {
 						//console.log('Getting the row data');
-						self.fn.oCurrentForm().fn.getRowData(id, self.callback.updateDOMFromRowData);
+						self.fn.oCurrentForm().fn.getRowData( url , self.callback.updateDOMFromRowData);
 
 					} else if (!!jsonkey) {
 						//console.log('No id, defaulting to json grid data');
@@ -2041,7 +2043,8 @@
 			 *  function if applicable.
 			 **  **  **  **  **  **  **  **  **  **/
 			prepareValue : function(value,column) {
-				if (!value || value.toLowerCase() === 'null') {
+
+				if (typeof value === 'string' && ( !value || value.toLowerCase() === 'null') ) {
 					return '';
 				}
 
@@ -2051,7 +2054,7 @@
 
 				}
 
-				if (value.indexOf('|') !== -1) {
+				if (value.toString().indexOf('|') !== -1) {
 					value = value.replace(/\|/gi,', ');
 				}
 
@@ -2137,7 +2140,7 @@
 				if (typeof hide === 'undefined') { hide = false; }
 
 				if (!hide) {
-					tbl.css('background','url("./images/tbody-preload.gif") no-repeat center 175px rgba(0,0,0,0.15)')
+					tbl.css('background','url("/images/tbody-preload.gif") no-repeat center 175px rgba(0,0,0,0.15)')
 					 .find('[name=RowsPerPage],[name=q]').prop('disabled',true).end()
 					 .find('.table-body').css('filter','blur(1px) grayscale(100%)').css('-webkit-filter','blur(2px) grayscale(100%)') .css('-moz-filter','blur(2px) grayscale(100%)')
 					 //.find('.table-cell, .table-header').css('border','1px solid transparent').css('background','none');
@@ -2266,7 +2269,7 @@
 			 **  **  **  **  **  **  **  **  **  **/
 			ajaxSetupAction : function() {
 				var $data = self.fn.$currentForm().serialize();
-				self.ajaxVars = { url: self.options.url, data: $data, type: 'POST', success: self.fn.ajaxSuccessAction };
+				self.ajaxVars = { url: self.options.url, data: $data, type: 'GET', success: self.fn.ajaxSuccessAction };
 			},
 
 			/**  **  **  **  **  **  **  **  **  **
@@ -2281,7 +2284,7 @@
 				self.lastUpdatedRow = -1;
 
 				if (!!self.fn.$currentForm()) {
-					var oValidate = new oValidator( self.fn.$currentForm() );
+					var oValidate = new $.validator( self.fn.$currentForm() );
 					if (oValidate.errorState) {
 						return false;
 					}
@@ -2345,8 +2348,24 @@
 			}, // end fn
 
 			colParamSaveSuccess : function(response) {
-				var type = (response.indexOf('Successful') !== -1) ? 'success' : 'warning';
-				nfx_thumbslide('./images/' + type + '.png',response,type);
+
+				if (response.error === false) {
+					$.jStorage.flush();
+					self.forms.oColParamFrm.fn.getColParams();
+					self.fn.updateColParamForm();
+
+					setTimeout(function() {
+						self.fn.getColumnList( self.temp.tableName );
+						self.fn.oCurrentForm().fn.getRowData( self.temp.colParamUrl, self.fn.updateColParamForm );
+					},2000 );
+				} else {
+
+					console.warn('There was a problem saving the colParams');
+
+				}
+
+
+				//nfx_thumbslide('./images/' + type + '.png',response,type);
 
 				self.fn.overlay(2,'on');
 			}, // end fn
@@ -2452,7 +2471,7 @@
 							self.action = 'withSelectedDelete';
 							bootbox.prompt("Are you sure you want to delete " + $cid.length + " items? Type your password to continue.", function(response) {
 								var $data = 'frm_name=frm_deleteSelected&table=' + self.options.table  + '&cid=' + $cid.join('|') + '&pwd=' + response;
-								self.ajaxVars = { url: self.url, data: $data, type: 'POST', success: self.fn.ajaxSuccessAction };
+								self.ajaxVars = { url: self.url, data: $data, type: 'GET', success: self.fn.ajaxSuccessAction };
 								self.fn.ajaxSubmit();
 							});
 						break;
@@ -2491,7 +2510,7 @@
 							bootbox.prompt("Are you sure you want mark " + $cid.length + " projects compelte? Type yes to continue.", function(response) {
 								if (response == 'yes') {
 									var $data = 'frm_name=frm_completeSelectedProjects&cid=' + $cid.join('|');
-									self.ajaxVars = { url: self.url, data: $data, type: 'POST', success: self.fn.ajaxSuccessAction };
+									self.ajaxVars = { url: self.url, data: $data, type: 'GET', success: self.fn.ajaxSuccessAction };
 									self.fn.ajaxSubmit();
 								}
 							});
@@ -2562,7 +2581,7 @@
 						id : id,
 						frm_name : 'frm_checkout'
 					},
-					type: 'POST',
+					type: 'GET',
 					success: self.callback.checkout
 				};
 
@@ -2580,7 +2599,7 @@
 						id : id,
 						frm_name : 'frm_checkin'
 					},
-					type: 'POST',
+					type: 'GET',
 					success: self.callback.checkin
 				};
 
@@ -2595,7 +2614,7 @@
 						table : self.options.table,
 						frm_name : 'frm_getCheckoutOutRecords'
 					},
-					type: 'POST',
+					type: 'GET',
 					dataType : 'JSON',
 					success: self.callback.getCheckedOutRecords
 				};
@@ -2780,9 +2799,9 @@
 											$('.tbl-list').find('.list-group-item').removeClass('chosen');
 											$(this).parent().addClass('chosen')
 											e.preventDefault();
-											self.temp.tableName = o.tableName;
-											self.fn.getColumnList(o.tableName)
-								}).html( o.tableName ) )
+											self.temp.tableName = o;
+											self.fn.getColumnList(o)
+								}).html( o ) )
 						.appendTo(ul);
 				} );
 
@@ -2802,7 +2821,7 @@
 				target.empty();
 
 				_.each(response, function( o, key ) {
-					if ( o.fieldset !== prevFS ) {
+					if ( o['data-fieldset'] !== prevFS ) {
 						if (prevFS !== false) {
 							ul.appendTo(target);
 						}
@@ -2817,13 +2836,18 @@
 										e.preventDefault();
 										$('.colParamFormContainer').show();
 										$('.btn-save').removeClass('disabled');
-										self.temp.colParamID = o.colParamID;
-										self.fn.oCurrentForm().fn.getRowData(o.colParamID, self.fn.updateColParamForm ) ;
+										self.temp.columnName = o.name;
 
-									} ).html( o.columnName ) )
+										self.temp.colParamUrl = '/admin/colparams/json/' + self.temp.tableName + '/' + self.temp.columnName;
+
+										self.fn.oCurrentForm().options.atts.action = '/admin/colparams/' + o.colparam_id;
+
+										self.fn.oCurrentForm().fn.getRowData(self.temp.colParamUrl, self.fn.updateColParamForm ) ;
+
+									} ).html( o.name ) )
 						.appendTo(ul);
 
-					prevFS = o.fieldset;
+					prevFS = o['data-fieldset'];
 				} );
 
 				ul.appendTo(target);
@@ -2950,4 +2974,4 @@
 	window.jGrid = jGrid;
 
 
-})(window, jQuery, $, _, jInput, jForm, oValidator, jApp);
+})(window, jQuery, $, _, jInput, jForm, jApp);

@@ -44,6 +44,7 @@
 
 		this.$frm = false;
 		this.store = $.jStorage;
+    this.submitted = false;
 
 
 		/**  **  **  **  **  **  **  **  **  **
@@ -57,8 +58,10 @@
 
 		this.options = {
 			// form setup
-			atts : {						// form html attributes
+      table : '',
+      atts : {						// form html attributes
 				'method' : 'POST',
+        'action' : '',
 				'role' : 'form',
 				'onSubmit' : 'return false',
 				'name' : false
@@ -72,19 +75,15 @@
 							disabled, form, formaction, formenctype, formmethod,
 							formnovalidate, formtarget, height, id, list, max,
 							maxlength, min, multiple, name, pattern, placeholder,
-							readonly, required, rows, size, src, step, type, validType,
+							readonly, required, rows, size, src, step, type, data-validType,
 							value, width, wrap, onClick, onChange, class, _labels,
 							_options, _firstlabel, _firstoption, _label, _enabled,
-							viewName, colOrder, fieldset, _optionsSource, _labelsSource,
+							viewName, data-ordering, fieldset, _optionsSource, _labelsSource,
 							_optionsFilter, _linkedElmID, _linkedElmOptions,
 							_linkedElmLabels, _linkedElmFilterCol
 			*/
 			colParams : {},
 			colParamsAdd : [], // storage container for additional colParams such as from linkTables
-			table : '',	// db table that contains the raw data
-			dataView : '', // db view for consuming the data
-			dataPkey : false, // primary key of the db view
- 			pkey : '', // primary key of table
 			loadExternal : true, // load external colParams e.g. from a db
 			ttl : 30, // TTL for external data (mins)
 			tableFriendly : '', // friendly name of table e.g. Application
@@ -92,7 +91,10 @@
 		};
 
 		// set the runtime values for the options
-		$.extend(true,this.options,options);
+		_.extend(this.options,options);
+
+    // set up the callback functions
+    _.extend(this.callback, options.callback);
 
 		// set default values
 		if (!this.options.fieldset) {
@@ -120,17 +122,8 @@
 		if (!this.options.hiddenElms) {
 			// setup the hidden elements
 			this.options.hiddenElms = [
-				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : 'frm_name', 'value' : self.options.atts.name } },
-				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : 'table', 'value' : self.options.table } },
-				{ atts : { 'type' : 'hidden', 'name' : 'pkey', 'value' : self.options.pkey } },
-				{ atts : { 'type' : 'hidden', 'name' : 'rftoken' } },
-				{ atts : { 'type' : 'hidden', 'name' : 'rfreadonly' } },
+				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : '_method', 'value' : self.options.atts.method } },
 			];
-		}
-
-		// set the dataPkey if it is not defined at runtime.
-		if (!this.options.dataPkey) {
-			this.options.dataPkey = this.options.pkey;
 		}
 
 		// alias for attributes container
@@ -244,12 +237,10 @@
 					return self.callback.getColParams( JSON.parse( self.store.get( self.options.table + '_colparams' ) ) );
 				}
 
-				var url = 'index.php?controller=ajax&view=getColParams';
-				var data = {
-					table : self.options.table,
-				};
+				var url = '/admin/colparams/json/' + self.options.table;
+
 				$.getJSON( url
-					, data
+					, {}
 					, self.callback.getColParams
 				).fail( function() {
 					console.error('There was a problem getting the column parameters');
@@ -260,22 +251,12 @@
 
 			}, //end fn
 
-			getRowData : function( id, callback ) {
-				$('.panel-overlay').show();
+			getRowData : function( url, callback ) {
 
-				var url = 'index.php?controller=ajax&view=getRowData';
-				var data = {
-					frm : self.options.atts.name,
-					dataView : self.options.dataView,
-					tbl : self.options.table,
-					id : id,
-					pkey : self.options.dataPkey,
-					readonlyFields : self.readonlyFields
-
-				};
+        $('.panel-overlay').show();
 
 				$.getJSON( url
-					, data
+					, {}
 					, self.callback.getRowData
 				).fail( function() {
 					console.error('There was a problem getting the row data');
@@ -303,11 +284,11 @@
 				}
 
 				// process static or dynamically loaded colParams
-				_.each( _.sortBy( self.options.colParams, function( o ) { return (!isNaN(o.colOrder)) ? +o.colOrder : 1000 } ) , function( o, key ) {
+				_.each( _.sortBy( self.options.colParams, function( o ) { return (!isNaN(o['data-ordering'])) ? +o['data-ordering'] : 1000 } ) , function( o, key ) {
 					var inpt, eq;
 					if (!!o && !!o.name && _.indexOf( self.options.disabledElements, o.name ) === -1 ) {
 
-						eq = ( !!o.fieldset ) ? Number( o.fieldset )-1 : 0;
+						eq = ( !!o['data-fieldset'] ) ? Number( o['data-fieldset'] )-1 : 0;
 						inpt = new jInput( { atts : o } );
 						self.oInpts[ o.name ] = inpt ;
 						self.DOM.$Inpts.find('.fs').eq( (self.options.layout === 'standard') ? eq : 0 ).append( inpt.fn.handle() );
@@ -319,11 +300,11 @@
 
 				//console.log('Now adding the colParamsAdd : ' + self.options.colParamsAdd.length);
 				// process additional colParams that may have come from linkTables
-				_.each( _.sortBy( self.options.colParamsAdd, function( o ) { return (!isNaN(o.colOrder)) ? +o.colOrder : 1000 } ) , function( o, key ) {
+				_.each( _.sortBy( self.options.colParamsAdd, function( o ) { return (!isNaN(o['data-ordering'])) ? +o['data-ordering'] : 1000 } ) , function( o, key ) {
 					var inpt, eq;
 					if (!!o && !!o.name && _.indexOf( self.options.disabledElements, o.name ) === -1 ) {
 
-						eq = ( !!o.fieldset ) ? Number( o.fieldset )-1 : 0;
+						eq = ( !!o['data-fieldset'] ) ? Number( o['data-fieldset'] )-1 : 0;
 						inpt = new jInput( { atts : o } );
 						self.oInpts[ o.name ] = inpt ;
 						self.DOM.$Inpts.find('.fs').eq( (self.options.layout === 'standard') ? eq : 0 ).append( inpt.fn.handle() );
@@ -395,28 +376,41 @@
 				});
 			}, //end fn
 
-			/* onfigureColParamsForm : function( ) {
-				if ( self.oInpts._enabled.$().val() === 'no' ) {
-					_.each( self.oInpts, function( o, key) {
-						if (key !== '_enabled') {
-							o.fn.disable().hide();
-						}
-					});
-				} else {
-					_.each( self.oInpts, function( o, key) {
-						if (key !== '_enabled') {
-							o.fn.enable().show();
-						}
-					});
-				}
-			}, //end fn */
+			submit : function() {
+
+        self.fn.toggleSubmitted();
+
+        $.ajax({
+          //dataType : 'json',
+          method : 'POST',
+          url : self.options.atts.action,
+          data : self.$().serialize(),
+          success : self.callback.submit,
+        }).done( self.fn.toggleSubmitted );
+
+      }, //end fn
+
+      toggleSubmitted : function() {
+        if (!self.submitted) {
+          self.submitted = true;
+          //self.oElms['btn_go'].fn.disable();
+        } else {
+          self.submitted = false;
+          //self.oElms['btn_go'].fn.enable();
+        }
+      }
 
 		}; // end fns
+
+    // alias the submit function
+    this.submit = this.fn.submit;
 
 		this.callback = {
 
 			getRowData : function(response) {
 				if (!!response[0]) {
+
+          //console.log(response[0]);
 
 					self.DOM.$frm.clearForm();
 
@@ -451,12 +445,14 @@
 					if ( !( o && o._enabled && typeof o._enabled !== 'undefined' && o._enabled.toLowerCase() === 'yes' && _.indexOf( self.options.disabledElements, o.name ) === -1 ) ) { return false }
 					tmp = {};
 					for(prop in o) {
-						if (o && o[prop] && o[prop].toLowerCase() !== 'null' && o[prop].toLowerCase() !== '__off__' ) {
+						if (o && o[prop] && o[prop].toString().toLowerCase() !== 'null' && o[prop].toString().toLowerCase() !== '__off__' ) {
 							tmp[prop] = o[prop];
 						}
 					}
 					return tmp;
 				});
+
+        //console.log(self.options.colParams);
 
 				//process the colParams;
 				self.fn.processColParams();
@@ -465,7 +461,12 @@
 				self.fn.processBtns();
 
 
-			}
+			}, // end fn
+
+      // do something with the response
+      submit : function(response) {
+        console.log(response);
+      }
 		}; // end fns
 
 
