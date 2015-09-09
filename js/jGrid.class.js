@@ -18,167 +18,30 @@
 
 	'use strict';
 
+	/**
+	 * jGrid instance constructor
+	 * @method function
+	 * @param  {object} options
+	 * @return /jGrid         	jGrid instance
+	 */
 	var jGrid = function(options) {
 
-		/**  **  **  **  **  **  **  **  **  **
-		 *  OPTIONS
-		 *
-		 *  set default values for options
-		 **  **  **  **  **  **  **  **  **  **/
-		this.options = {
-			// toggles
-			toggles : { // choose which buttons to display and which options to enable
-				new : true,											// standard table button
-				edit : true,										// standard row button
-				del : true,											// standard row button
-				sort : true, 										// header sort buttons
-				autoUpdate : true,									// whether to update the data automatically
-				paginate : true,									// whether to paginate the data
-				headerFilters : true,								// whether to show the header filters
-				collapseMenu : true,								// whether to collapse the row menu
-				editable : true,									// whether the data is editable
-				caching : false,									// cache the data for faster load times
-				ellipses : true,									// whether to show the readmore buttons
-				checkout : true,									// checkout records before editing them
-			},
+		// alias for this
+		var self = this;
 
-			// general grid options
-			refreshInterval : 602000, 							// refresh every minute by default
-			target : '.table-responsive',						// htmlTable target
+		// set the default options
+		this.options = this.defaults;
 
-			// data request options
-			url	: 'index.php?controller=json&view=grid-async', 	// url of JSON resource
-			table : '',											// db table (for updates / inserts)
-			schema : 'dbo',										// db schema
-			dbView : '',										// db view (for displaying data)
-			pkey : '', 											// Primary Key Of Table
-			filter : '',										// where clause for query
-			columns : [ ],										// columns to query
-			headers : [ ],										// headers for table
-			sortBy : '1',										// the column to sort by
-
-			// data presentation options
-			tableFriendly : '',									// friendly name of table
-			columnFriendly : '',								// column containing friendly name of each row
-			deleteText : 'Deleting',
-			hidCols : [ ],										// columns to hide
-			cellAtts : [ ],										// column attributes
-			templates : [ ],									// html templates
-			rowsPerPage : 10,									// rows per page to display on grid
-			pageNum	: 1,										// current page number to display
-			maxCellLength : 38,									// max cell length
-			maxColWidth: 450,
-			bsmsDefaults : {									// bootstrap multiselect default options
-				buttonContainer : '<div class="btn-group" />',
-				enableFiltering: true,
-				includeSelectAllOption: true,
-				maxHeight: 185
-			},
-			gridHeader : {
-				icon : 'fa-dashboard',
-				headerTitle : 'Manage',
-				helpText : false,
-			},
-			disabledFrmElements : [],
-			editFrmName : 'frm_editGrid',
-
-			// table buttons appear in the grid header above the data
-			tableBtns : {
-
-				new : {
-					type : 'button',
-					class : 'btn btn-success btn-new',
-					id : 'btn_edit',
-					icon : 'fa-plus-circle',
-					label : 'New',
-				},
-
-				// you can define custom buttons per instance in the options
-				custom : {
-					visColumns : [
-						{ icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
-					],
-				}
-			},
-
-			rowBtns : {
-				edit : {
-					type : 'button',
-					class : 'btn btn-primary btn-edit',
-					id : 'btn_edit',
-					icon : 'fa-pencil',
-					label : '',
-					title : 'Edit Record ...',
-				},
-				del : {
-					type : 'button',
-					class : 'btn btn-danger btn-delete',
-					id : 'btn_delete',
-					icon : 'fa-trash-o',
-					label : '',
-					title : 'Delete Record ...'
-				},
-				// you can define custom buttons per instance in the options
-				custom : {
-					//custom : { type : 'button' } // etc.
-				}
-			},
-
-			withSelectedBtns : {
-				/* edit : {
-					type : 'button',
-					id : 'btn_edit',
-					icon : 'fa-pencil',
-					label : 'Edit Selected',
-					fn : function() { self.fn.withSelected('edit'); },
-				}, */
-				del : {
-					type : 'button',
-					class : 'li-red',
-					id : 'btn_delete',
-					icon : 'fa-trash-o',
-					label : 'Delete Selected ...',
-					fn : function() { self.fn.withSelected('delete'); },
-				},
-				// you can define custom buttons per instance in the options
-				custom : {
-					//custom : { type : 'button' } // etc.
-				}
-			},
-
-			linkTables : [ ],
-
-		}; // end options
-
-		// set the runtime values for the options
-		$.extend(true,this.options,options);
+		// set the runtime options
+		this.utility.setOptions(options);
 
 		//init values
-		this.totalPages = -1;					// placeholder for computed total pages
-		this.url = window.location.href.replace("#/","");
-		this.ajaxRequests = [];
-		this.$rowMenu = $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' });
-		this.$tblMenu = false;
-		this.closeOnSave = true;
+
+
+
+
 
 		//placeholder values
-		this.action = 'new';					// action is set by the row button that is clicked
-		this.$currentRow = false;				// $currentRow is set when a grid tr is activated
-		this.$grid = false;						// $grid is the jQuery handle of the grid
-		this.removeAllRows = false;				// remove all rows when updating data
-		this.currentRow = {};					// object container for current row in the JSON data
-		this.oJSON = {};						// object container for the JSON result
-		this.oDelta = {};						// object container for the computed difference
-												// between the new result and the stored result
-		this.forms = {};						// forms container
-		this.intervals = {};					// intervals
-		this.linkTables = [];					// linktables
-		this.$withSelectedMenu = $('<div/>');	// with selected menu
-
-		//storage
-		this.store = $.jStorage;
-		this.temp = {};
-		this.store.setTTL('data_' + this.options.schema + '_' + this.options.dbView,this.options.refreshInterval);
 
 		// copy 'this' to a global variable so it can be accessed in member methods
 		var self = this;
@@ -210,7 +73,7 @@
 
 			// main grid body
 			tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group"> <button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh"> <i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span> </button> </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> Filter : </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
-			
+
 			// check all checkbox template
 			tmpCheckAll	: '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul></div>',
 
@@ -277,7 +140,7 @@
 				self.fn.update();
 
 				// set the update intervals
-				self.fn.sI();
+				self.fn.setupIntervals();
 
 				// create the menus
 				self.fn.buildMenus();
@@ -332,13 +195,13 @@
 			},
 
 			/**  **  **  **  **  **  **  **  **  **
-			 *   sI - setInterval
+			 *   setupIntervals - setInterval
 			 *
 			 *  Sets the refresh interval
 			 *
 			 **  **  **  **  **  **  **  **  **  **/
-			sI : function() {
-				if (!self.options.toggles.autoUpdate) { return false; }
+			setupIntervals : function() {
+				if (!self.utility.isAutoUpdate()) { return false; }
 
 				if (!!self.interval) {
 					clearInterval(self.interval);
@@ -767,19 +630,14 @@
 			 *
 			 **  **  **  **  **  **  **  **  **  **/
 			countdown : function( ) {
-				if (!self.options.toggles.autoUpdate) { return false; }
-				if (!!self.countdownInterval) {
-					clearInterval(self.countdownInterval);
+				if ( !self.utility.isAutoUpdate() ) {
+					return false;
 				}
 
-				// data refresh interval
-				self.countdownTimer = self.options.refreshInterval-2000;
-				self.countdownInterval = setInterval( function() {
-					tbl.find('button[name=btn_refresh_grid]').find('span').text( (self.countdownTimer > 0) ? Math.floor( self.countdownTimer / 1000) : 0 );
-					self.countdownTimer -= 1000;
-				},1000 );
-
-			},
+				self.utility.clearCountdownInterval();
+				self.utility.initCountdown();
+				self.utility.setCountdownInterval();
+			}, // end fn
 
 			/**  **  **  **  **  **  **  **  **  **
 			 *   setup
@@ -787,17 +645,6 @@
 			 *  sets up the AJAX request options
 			 **  **  **  **  **  **  **  **  **  **/
 			setup : function() {
-				// setup the request
-				self.requestOptions = {
-					url : self.options.url,
-					data : {
-						dbView : self.options.schema + '.' + self.options.dbView,
-						columns : self.options.columns,
-						sortBy : self.options.sortBy,
-						filter : self.options.filter,
-						filterMine : 0
-					}
-				};
 
 				self.ajaxVars = {
 					url : self.options.url,
@@ -823,49 +670,20 @@
 				// show the preload if needed
 				if (!!preload) {
 					self.fn.preload();
-					self.fn.sI();
+					self.fn.setupIntervals();
 				}
+
+				// start the countdown timer
 				self.fn.countdown();
 
-				// set up the request options
-				if (typeof self.requestOptions === 'undefined' ) {
-					self.fn.setup();
-				}
-
 				// kill the pending request if it's still going
-				if (typeof self.ajaxRequests.gridData !== 'undefined') {
-					self.ajaxRequests.gridData.abort();
-				}
+				self.utilty.killPendingRequest('gridData');
 
 				// use cached copy, if available
-				if ( self.options.toggles.caching && !!self.store.get('data_' + self.options.schema + '_' + self.options.dbView,false) ) {
-					setTimeout( function() {
-						self.callback.update( self.store.get('data_' + self.options.schema + '_' + self.options.dbView) );
-					}, 100) ;
-					self.fn.preload(true);
-					//console.log('Rebuilding Menus');
-					self.fn.buildMenus();
-					//console.log('Request Complete.');
+				if ( self.utility.isDataCacheAvailable() ) {
+					setTimeout( self.utility.updateGridFromCache(), 100);
 				} else {
-					// show the preloader
-					self.fn.activityPreloader('show');
-					// execute the request
-					self.ajaxRequests.gridData = $.getJSON(self.requestOptions.url,
-							  self.requestOptions.data,
-							  self.callback.update
-					).fail( function() {
-						console.warn( 'update grid data failed, it may have been aborted' );
-					}).always( function(response) {
-						//console.log(response);
-						self.store.set('data_' + self.options.schema + '_' + self.options.dbView,response);
-						//console.log( self.store.get('data_' + self.options.dbView) );
-						self.fn.preload(true);
-						//console.log('Rebuilding Menus');
-						self.fn.buildMenus();
-						//console.log('Request Complete.');
-					}).complete(function() {
-						self.fn.activityPreloader('hide');
-					});
+					self.utility.executeGridDataRequest();
 				}
 			},
 
@@ -1050,31 +868,9 @@
 
 				self.fn.bind();
 
-				//pagination
-				if ( !!self.options.toggles.paginate ) {
-					// update pagination
-					self.totalPages = Math.ceil( self.oJSON.length / self.options.rowsPerPage );
 
-					tbl.find('.paging').empty().show().bootpag({
-						total : self.totalPages,
-						page : 1,
-						maxVisible : 20
-					}).on("page", function(event,num) {
-						self.fn.page(num);
-					});
-
-					// rows per page
-					tbl.find('[name=RowsPerPage]').off('change.rpp').on('change.rpp', function() {
-						tbl.find('[name=RowsPerPage]').val( $(this).val() );
-						self.fn.rowsPerPage( $(this).val() );
-					}).parent().show();
-
-				} else {
-					tbl.find('.paging').hide();
-					tbl.find('[name=RowsPerPage]').parent().hide();
-				}
-
-				//self.fn.colWidths();
+				// process pagination
+				self.utility.updatePagination();
 
 
 			},
@@ -1423,12 +1219,12 @@
 				});
 
 				//pagination
-				if ( !!self.options.toggles.paginate ) {
+				if ( self.utility.isPagination() ) {
 					// update pagination
-					self.totalPages = Math.ceil( self.oJSON.length / self.options.rowsPerPage );
+					self.dataGrid.pagination.totalPages = Math.ceil( self.oJSON.length / self.options.rowsPerPage );
 
 					tbl.find('.paging').empty().show().bootpag({
-						total : self.totalPages,
+						total : self.dataGrid.pagination.totalPages,
 						page : self.options.pageNum,
 						maxVisible : 20
 					}).on("page", function(event,num) {
@@ -1731,7 +1527,7 @@
 					}).end()
 
 					.find('.btn-go').off('click.btn-go').on('click.btn-go', function() {
-						self.closeOnSave = true;
+						self.options.closeOnSave = true;
 						var $target_btn = $(this);
 						$target_btn.addClass('disabled');
 						$.noty.closeAll();
@@ -1744,7 +1540,7 @@
 					}).end()
 
 					.find('.btn-save').off('click.btn-go').on('click.btn-go', function() {
-						self.closeOnSave = false;
+						self.options.closeOnSave = false;
 						var $target_btn = $(this);
 						$target_btn.addClass('disabled');
 						$.noty.closeAll();
@@ -1982,7 +1778,7 @@
 					// update column widths
 					self.fn.colWidths();
 				}
-				else if (!!self.options.toggles.paginate) { // filters are empty, reset everything
+				else if (self.utility.isPagination()) { // filters are empty, reset everything
 					// show the rows per page and paging controls
 					tbl.find('.divRowsPerPage, .paging').show();
 
@@ -2289,15 +2085,15 @@
 
 				// determine if the same request is being currently processed, should cut down on multiple accidental submissions
 				var requestIndex = $.md5( escape(self.ajaxVars.data) ); // );
-				if (typeof self.ajaxRequests[ requestIndex ] !== 'undefined' ) {
-					self.ajaxRequests[ requestIndex ].abort();
+				if (typeof self.dataGrid.requests[ requestIndex ] !== 'undefined' ) {
+					self.dataGrid.requests[ requestIndex ].abort();
 				}
 				if (self.ajaxVars.overlay && self.ajaxVars.overlay.toLowerCase() == 'off') {
 					self.fn.overlay(2,'on');
 				} else {
 					self.fn.overlay(1,'on');
 				}
-				self.ajaxRequests[ requestIndex ] = $.ajax(self.ajaxVars).always( self.fn.bind );
+				self.dataGrid.requests[ requestIndex ] = $.ajax(self.ajaxVars).always( self.fn.bind );
 			},
 
 			/**  **  **  **  **  **  **  **  **  **
@@ -2315,11 +2111,11 @@
 				nfx_thumbslide('./images/' + type + '.png',response,type);
 				if (type === 'success') {
 					if ( !!self.options.toggles.checkout && self.action !== 'colParam' ) self.fn.checkin('all');
-					if ( !!self.fn.oCurrentForm() && !!self.closeOnSave && !!self.fn.$currentFormWrapper ) {
+					if ( !!self.fn.oCurrentForm() && !!self.options.closeOnSave && !!self.fn.$currentFormWrapper ) {
 						self.fn.$currentFormWrapper().removeClass('max');
 						$( window ).unbind("beforeunload");
 					}
-					if (!!self.closeOnSave) {
+					if (!!self.options.closeOnSave) {
 						self.fn.overlay(2,'off');
 					}
 					self.fn.overlay(1,'off');
@@ -2363,9 +2159,9 @@
 				var tmp = self.$tblMenu.find('#toggleMine span').html();
 				//console.log(tmp);
 
-				if (!!self.requestOptions.data.filterMine) { // turn filter off
-					self.removeAllRows = false;
-					self.requestOptions.data.filterMine = 0;
+				if (!!self.dataGrid.requestOptions.data.filterMine) { // turn filter off
+					self.options.removeAllRows = false;
+					self.dataGrid.requestOptions.data.filterMine = 0;
 					self.$tblMenu
 						.find('#toggleMine')
 							.find('span')
@@ -2374,8 +2170,8 @@
 						.toggleClass('btn-success btn-warning');
 					self.fn.updateAll();
 				} else {
-					self.removeAllRows = true;
-					self.requestOptions.data.filterMine = 1;
+					self.options.removeAllRows = true;
+					self.dataGrid.requestOptions.data.filterMine = 1;
 					self.$tblMenu
 						.find('#toggleMine')
 							.find('span')
@@ -2675,7 +2471,7 @@
 				}
 
 				// remove all rows, if needed
-				if (self.removeAllRows) {
+				if (self.options.removeAllRows) {
 					self.fn.removeRows(true);
 				}
 
@@ -2744,7 +2540,7 @@
 				self.fn.buildMenus();
 				self.fn.bind();
 				self.fn.preload(true);
-				self.removeAllRows = false;
+				self.options.removeAllRows = false;
 
 				if (!self.loaded) {
 					// custom init fn
@@ -2941,6 +2737,650 @@
 			}, //end fn
 
 		} // end callback defs
+
+		this.utility = {
+
+			/**
+			 * Kill pending ajax request
+			 * @method function
+			 * @param  {[type]} requestName [description]
+			 * @return {[type]}             [description]
+			 */
+			killPendingRequest : function(requestName) {
+				var r = self.dataGrid.requests;
+
+				try{
+					r[requestName].abort();
+				} catch(e) {
+					// nothing to abort
+				}
+
+			}, //end fn
+
+			/**
+			 * Set instance options
+			 * @method function
+			 * @param  {[type]} options [description]
+			 * @return {[type]}         [description]
+			 */
+			setOptions : function(options) {
+				_.extend(self.options,options);
+				return self;
+			}, //end fn
+
+			setInitVals : function() {
+
+				/**
+				 * Placeholders
+				 */
+				self.store = $.jStorage;
+
+				/**
+				 * [dataGrid description]
+				 * @type {Object}
+				 */
+				self.dataGrid = {
+
+						// pagination parameters
+						pagination : {
+							totalPages = -1;
+						},
+
+						// ajax requests
+						requests : [],
+
+						// request options
+						requestOptions : {
+							url : self.options.url,
+							data : {
+								filter : self.options.filter,
+								filterMine : 0
+							}
+						},
+
+						intervals : {
+
+						}
+				}
+
+
+
+				self.$rowMenu = $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' });
+				self.$tblMenu = false;
+				self.$currentRow = false;
+				self.$grid = false;
+				self.$withSelectedMenu = $('<div/>');
+				self.action = 'new';
+				self.currentRow = {};
+				self.oJSON = {};
+				self.oDelta = {};
+				self.forms = {};
+				self.intervals = {};
+				self.linkTables = [];
+				self.temp = {};
+				self.store.setTTL('data_' + self.options.schema + '_' + self.options.dbView,self.options.refreshInterval);
+
+				/**
+				 * Deprecated
+				 */
+				//self.url = window.location.href.replace("#/","");
+			}, // end fn
+
+			isAutoUpdate : function() {
+				return !!self.options.toggle.autoUpdate;
+			}, //end fn
+
+			/**
+			 * Is pagination enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isPagination : function() {
+				return !!self.options.toggles.paginate;
+			}, // end fn
+
+			/**
+			 * Is data caching enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isCaching : function() {
+				return !!self.options.toggles.caching;
+			}, // end fn
+
+			/**
+			 * Is data cache available
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isDataCacheAvailable : function() {
+				return (self.utility.isCaching() && !!self.store.get('data_' + self.options.table,false) );
+			}, // end fn
+
+			/**
+			 * Update the total pages of the grid
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			updateTotalPages : function() {
+				self.dataGrid.pagination.totalPages = Math.ceil( self.oJSON.length / self.options.rowsPerPage );
+			}, // end fn
+
+			/**
+			 * Update pagination of the grid
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			updatePagination : function() {
+				//pagination
+				if ( self.utility.isPagination() ) {
+					self.utility.updateTotalPages();
+					self.utility.setupBootpag();
+					self.utility.setupRowsPerPage();
+				} else {
+					self.utility.hideBootpag();
+				}
+			}, // end fn
+
+			/**
+			 * Setup bootpag pagination controls
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setupBootpag : function() {
+				tbl.find('.paging').empty().show().bootpag({
+					total : self.dataGrid.pagination.totalPages,
+					page : 1,
+					maxVisible : 20
+				}).on("page", function(event,num) {
+					self.fn.page(num);
+				});
+			}, // end fn
+
+			/**
+			 * setup/update rows per page controls
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setupRowsPerPage : function() {
+				tbl.find('[name=RowsPerPage]').off('change.rpp').on('change.rpp', function() {
+					tbl.find('[name=RowsPerPage]').val( $(this).val() );
+					self.fn.rowsPerPage( $(this).val() );
+				}).parent().show();
+			}, // end fn
+
+			/**
+			 * Hide bootpag pagination controls
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			hideBootpag : function() {
+				tbl.find('.paging').hide();
+				tbl.find('[name=RowsPerPage]').parent().hide();
+			}, // end fn
+
+			/**
+			 * Update Grid from cached data
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			updateGridFromCache : function() {
+				self.callback.update( self.utility.getCachedGridData() );
+				self.fn.preload(true);
+				self.fn.buildMenus();
+			}, // end fn
+
+			/**
+			 * Retrieve cached data
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			getCachedGridData : function() {
+				return self.store.get('data_' + self.options.table);
+			}, // end fn
+
+			/**
+			 * Execute the grid data request
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			executeGridDataRequest : function() {
+				var r = self.dataGrid.requests,
+						o = self.dataGrid.requestOptions;
+
+				// show the preloader
+				self.fn.activityPreloader('show');
+				// execute the request
+				r.gridData = $.getJSON(o.url, o.data, self.callback.update)
+					.fail( self.utility.gridDataRequestCallback.failed )
+					.always( self.utility.gridDataRequestCallback.always )
+					.complete( self.utilty.gridDataRequestCallback.complete );
+			}, //end fn
+
+			/**
+			 * Grid data request callback methods
+			 * @type {Object}
+			 */
+			gridDataRequestCallback : {
+				/**
+				 * Grid data request failed
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				failed : function() {
+					console.warn( 'update grid data failed, it may have been aborted' );
+				}, //end fn
+
+				/**
+				 * Always execute after grid data request
+				 * @method function
+				 * @param  {[type]} response [description]
+				 * @return {[type]}          [description]
+				 */
+				always : function(response) {
+					if (self.utility.isCaching()) {
+							self.store.set('data_' + self.options.table,response);
+					}
+					self.fn.preload(true);
+					self.fn.buildMenus();
+				}, // end fn
+
+				/**
+				 * Grid data request completed
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				complete : function() {
+					self.fn.activityPreloader('hide');
+				}, // end fn
+			}, // end callbacks
+
+			/**
+			 * Clear countdown interval
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			clearCountdownInterval : function() {
+				try {
+					clearInterval( self.dataGrid.intervals.countdownInterval );
+				}
+			}, // end fn
+
+			/**
+			 * Set the countdown interval
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setCountdownInterval : function() {
+				self.dataGrid.intervals.countdownInterval = setInterval( self.utility.updateCountdown,1000 );
+			}, // end fn
+
+			/**
+			 * Update countdown
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			updateCountdown : function() {
+				tbl.find('button[name=btn_refresh_grid]').find('span').text( (self.dataGrid.intervals.countdownTimer > 0) ? Math.floor( self.dataGrid.intervals.countdownTimer / 1000) : 0 );
+				self.dataGrid.intervals.countdownTimer -= 1000;
+			}, // end fn
+
+			/**
+			 * Initialize countdown timer value
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			initCountdown : function() {
+				self.dataGrid.intervals.countdownTimer = self.options.refreshInterval-2000;
+			}
+
+		}; // end utility fns
+
+		/**
+		 * Default Options
+		 * @type {Object}
+		 */
+		this.defaults = {
+
+			/**
+			 * Toggles - true/false switches
+			 * @type {Object}
+			 */
+			toggles : {
+
+				/**
+				 * Data is editable
+				 * @type {Boolean} default true
+				 */
+				editable : true,
+
+				/**
+				 * Show the 'new' button
+				 * @type {Boolean} default true
+				 */
+				new : true,
+
+				/**
+				 * Show the 'edit' button
+				 * @type {Boolean} default true
+				 */
+				edit : true,
+
+				/**
+				 * Show the 'delete' buton
+				 * @type {Boolean} default true
+				 */
+				del : true,
+
+				/**
+				 * Show the sort buttons above each header
+				 * @type {Boolean} default true
+				 */
+				sort : true,
+
+				/**
+				 * Autoupdate the grid data automatically
+				 * @type {Boolean} default true
+				 */
+				autoUpdate : true,
+
+				/**
+				 * Auto-paginate the grid data
+				 * @type {Boolean} default true
+				 */
+				paginate : true,
+
+				/**
+				 * Show the filter text boxes above each header
+				 * @type {Boolean} default true
+				 */
+				headerFilters : true,
+
+				/**
+				 * Collapse the row menu
+				 * @type {Boolean} default true
+				 */
+				collapseMenu : true,
+
+				/**
+				 * Cache the grid data for faster load times
+				 * @type {Boolean} default false
+				 */
+				caching : false,
+
+				/**
+				 * Show the ellipsis ... and readmore buttons
+				 * @type {Boolean} default true
+				 */
+				ellipses : true,
+
+				/**
+				 * Checkout records before editing
+				 * @type {Boolean} default true
+				 */
+				checkout : true,
+
+				/**
+				 * Close form window after saving
+				 * @type {Boolean} default true
+				 */
+				closeOnSave : true
+
+				/**
+				 * remove all rows when updating data
+				 * @type {Boolean}
+				 */
+				removeAllRows : false,
+			},
+
+			/**
+			 * General Grid Options
+			 */
+
+			/**
+			 * If options.toggles.autoUpdate, interval to autorefresh data in ms
+			 * @type {Number} default 602000
+			 */
+			refreshInterval : 602000,
+
+			/**
+			 * jQuery DOM target
+			 * @type {String} default '.table-responsive'
+			 */
+			target : '.table-responsive',						// htmlTable target
+
+			/**
+			 * Data request options
+			 */
+
+			/**
+			 * URL of JSON resource (grid data)
+			 * @type {String}
+			 */
+			url	: '', 	// url of JSON resource
+
+			/**
+			 * Database table name of grid data
+			 * @type {String}
+			 */
+			table : '',											// db table (for updates / inserts)
+
+			/**
+			 * Where clause of data query
+			 * @type {String}
+			 */
+			filter : '',										// where clause for query
+
+			/**
+			 * db columns to show
+			 * @type {Array}
+			 */
+			columns : [ ],										// columns to query
+
+			/**
+			 * Friendly headers for db columns
+			 * @type {Array}
+			 */
+			headers : [ ],										// headers for table
+
+			/**
+			 * Data Presentation options
+			 */
+
+
+			/**
+			 * Pagination - Rows per page
+			 * @type {Number} default 10
+			 */
+			rowsPerPage : 10,
+
+			/**
+			 * Pagination - Starting page number
+			 * @type {Number} default 1
+			 */
+ 			pageNum	: 1,
+
+			/**
+			 * The friendly name of the table e.g. Users
+			 * @type {String}
+			 */
+			tableFriendly : '',									// friendly name of table
+
+			/**
+			 * The column containing the friendly name of each row e.g. username
+			 * @type {String}
+			 */
+			columnFriendly : '',								// column containing friendly name of each row
+
+			/**
+			 * The text shown when deleting a record
+			 * @type {String}
+			 */
+			deleteText : 'Deleting',
+
+			/**
+			 * html attributes to apply to individual columns
+			 * @type {Array}
+			 */
+			cellAtts : [ ],										// column attributes
+
+			/**
+			 * html templates
+			 * @type {Array}
+			 */
+			templates : [ ],									// html templates
+
+			/**
+			 * Max cell length in characters, if toggles.ellipses
+			 * @type {Number} default 38
+			 */
+			maxCellLength : 38,
+
+			/**
+			 * Max column length in pixels
+			 * @type {Number} default 450
+			 */
+			maxColWidth: 450,
+
+			/**
+			 * Bootstrap Multiselect Default Options
+			 * @type {Object}
+			 */
+			bsmsDefaults : {
+				buttonContainer : '<div class="btn-group" />',
+				enableFiltering: true,
+				includeSelectAllOption: true,
+				maxHeight: 185
+			},
+
+			/**
+			 * Header Options
+			 * @type {Object}
+			 */
+			gridHeader : {
+				icon : 'fa-dashboard',
+				headerTitle : 'Manage',
+				helpText : false,
+			},
+
+			/**
+			 * Disabled Form Elements - e.g. password
+			 * @type {Array}
+			 */
+			disabledFrmElements : [],
+
+			/**
+			 * The name of the edit form
+			 * @type {String}
+			 */
+			editFrmName : 'frm_editGrid',
+
+			/**
+			 * Table buttons appear in the table menu below the header
+			 * @type {Object}
+			 */
+			tableBtns : {
+
+				/**
+				 * New Button
+				 * @type {Object}
+				 */
+				new : {
+					type : 'button',
+					class : 'btn btn-success btn-new',
+					id : 'btn_edit',
+					icon : 'fa-plus-circle',
+					label : 'New',
+				},
+
+				/**
+				 * Define custom buttons here. Custom buttons may also be defined at runtime.
+				 * @type {Object}
+				 */
+				custom : {
+					visColumns : [
+						{ icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
+					],
+				}
+			},
+
+
+			/**
+			 * Row buttons appear in each row of the grid
+			 * @type {Object}
+			 */
+			rowBtns : {
+
+				/**
+				 * Edit Button
+				 * @type {Object}
+				 */
+				edit : {
+					type : 'button',
+					class : 'btn btn-primary btn-edit',
+					id : 'btn_edit',
+					icon : 'fa-pencil',
+					label : '',
+					title : 'Edit Record ...',
+				},
+
+				/**
+				 * Delete Button
+				 * @type {Object}
+				 */
+				del : {
+					type : 'button',
+					class : 'btn btn-danger btn-delete',
+					id : 'btn_delete',
+					icon : 'fa-trash-o',
+					label : '',
+					title : 'Delete Record ...'
+				},
+
+				/**
+				 * Define custom buttons here. Custom buttons may also be defined at runtime.
+				 * @type {Object}
+				 */
+				custom : {
+					//custom : { type : 'button' } // etc.
+				}
+			},
+
+			/**
+			 * With Selected Buttons appear in the dropdown menu of the header
+			 * @type {Object}
+			 */
+			withSelectedBtns : {
+
+				/**
+				 * Delete Selected ...
+				 * @type {Object}
+				 */
+				del : {
+					type : 'button',
+					class : 'li-red',
+					id : 'btn_delete',
+					icon : 'fa-trash-o',
+					label : 'Delete Selected ...',
+					fn : function() { self.fn.withSelected('delete'); },
+				},
+
+				/**
+				 * Define custom buttons here. Custom buttons may also be defined at runtime.
+				 * @type {Object}
+				 */
+				custom : {
+					//custom : { type : 'button' } // etc.
+				}
+			},
+
+			/**
+			 * linktables define the relationships between tables
+			 * @type {Array}
+			 */
+			linkTables : [ ],
+
+		}; // end options
 
 		// initialize
 		this.fn._init();
