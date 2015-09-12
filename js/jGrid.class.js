@@ -26,528 +26,95 @@
 	 */
 	var jGrid = function(options) {
 
-		// alias for this
-		var self = this;
+		var self = this,
+				tbl;
 
-		// set the default options
-		this.options = this.defaults;
-
-		// set the runtime options
-		this.utility.setOptions(options);
-
-		//init values
-
-
-
-
-
-		//placeholder values
-
-		// copy 'this' to a global variable so it can be accessed in member methods
-		var self = this;
-		var tbl;
-
-		// visible columns
-		_.each( this.options.columns, function( o, i ) {
-			if (i < self.options.headers.length) {
-				self.options.tableBtns.custom.visColumns.push(
-					{ icon : 'fa-check-square-o', label : self.options.headers[i], fn : function() { self.fn.visibleColumns( $(this) ) }, 'data-column' : o }
-				);
-			}
-		})
-
-		// user preferences
-		self.options.rowsPerPage = ( !!self.store.get('pref_rowsPerPage',false) ) ? self.store.get('pref_rowsPerPage') : 15;
-
-		/**  **  **  **  **  **  **  **  **  **
-		 *   HTML TEMPLATES
-		 *
-		 *  Place large html templates here.
-		 *  These are rendered with
-		 *  the method self.fn.render.
-		 *
-		 *  Parameters of the form {@ParamName}
-		 *  are expanded by the render function
-		 **  **  **  **  **  **  **  **  **  **/
-		this.html = {
-
-			// main grid body
-			tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group"> <button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh"> <i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span> </button> </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> Filter : </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
-
-			// check all checkbox template
-			tmpCheckAll	: '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul></div>',
-
-			// header filter clear text button
-			tmpClearHeaderFilterBtn : '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul> </div>',
-
-			// filter showing ie Showing X / Y Rows
-			tmpFilterShowing : '<i class="fa fa-filter fa-fw"></i>{@totalVis} / {@totalRows}',
-
-			// table header sort button
-			tmpSortBtn : '<button rel="{@ColumnName}" title="{@BtnTitle}" class="btn btn-sm btn-default {@BtnClass} tbl-sort pull-right" type="button"> <i class="fa fa-sort-{@faClass} fa-fw"></i> </button> ',
-
-			// Colparams Form Template
-			tmpColParamForm	: '<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-lblue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body" style="padding:0 0px !important;"> <div class="row side-by-side"> <div class="col-lg-3 tbl-list"></div> <div class="col-lg-2 col-list"></div> <div class="col-lg-7 param-list"> <div class="side-by-side colParamFormContainer"> </div> </div> </div> </div> <div class="panel-heading"> <input type="button" class="btn btn-success btn-save" id="btn_save" value="Save"> <input type="button" class="btn btn-warning btn-reset" id="btn_reset" value="Reset"> <input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form"> <input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel"> </div> </div> </div> </div>',
-
-			// Edit Form Template
-			tmpEditForm	: '<div id="div_editFrm" class="div-btn-edit min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-blue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-pencil fa-fw"></i> <span class="spn_editFriendlyName">{@Name}</span> [Editing] </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side editFormContainer"> </div> </div> </div> </div> </div> </div>',
-
-			// New Form Template
-			tmpNewForm	: '<div id="div_newFrm" class="div-btn-new min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-green"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-plus fa-fw"></i> New: <span class="spn_editFriendlyName">{@tableFriendly}</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side newFormContainer"> </div> </div> </div> </div> </div> </div> ',
-
-			// Delete Form Template
-			tmpDeleteForm	: '<div id="div_deleteFrm" class="div-btn-delete min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-red"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true">×</button> <i class="fa fa-trash-o fa-fw"></i> <span class="spn_editFriendlyName"></span> : {@deleteText} </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="delFormContainer"></div> </div> </div> </div> </form> </div> </div> ',
-
-		};// end html templates
-
-		// add any templates to this.html
-		$.extend(true,this.html,options.html);
-
-		// alias to the grid.
+		/**
+		 * Alias handle to the grid
+		 * @method function
+		 * @return {[type]} [description]
+		 */
 		this.$ = function() {
-			return this.$grid;
+			return self.DOM.$grid;
 		}
 
-		/**  **  **  **  **  **  **  **  **  **
-		 *   FN - MEMBER METHODS
-		 *
-		 *  Defines methods/functions used
-		 *  by this class.
-		 **  **  **  **  **  **  **  **  **  **/
+		/**
+		 * Class Methods
+		 * @type {Object}
+		 */
 		this.fn = {
 
-			/**  **  **  **  **  **  **  **  **  **
-			 *   init
-			 *
-			 *  Initializes the instance of the class
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
+			/**
+			 * init the instance
+			 * @method function
+			 * @return {[type]} [description]
+			 */
 			_init : function() {
-				self.prevScroll = 0;
-				$('#page-wrapper').empty();
-
-				$(window).resize( function() {
-					if ( typeof self.resizeTimeout !== 'undefined' ) {
-						clearInterval( self.resizeTimeout );
-					}
-					self.resizeTimeout = setTimeout( self.fn.colWidths, 500 );
-				});
-
-				// initialize the grid template
+				self.utility.setOptions( _.extend(this.defaults, options) );
+				self.utility.setInitParams();
 				self.fn.initializeTemplate();
-
-				// download the initial JSON data for the grid
-				self.fn.update();
-
-				// set the update intervals
+				self.fn.getGridData();
 				self.fn.setupIntervals();
-
-				// create the menus
 				self.fn.buildMenus();
-
-				// create the forms
-				self.fn.forms();
-
-				// get the details of any link tables before building the forms
-				self.fn.linkTables();
+				self.fn.buildForms();
+				//self.fn.linkTables();
 
 				// toggle the mine button if needed
-				if ( window.location.href.indexOf('/my') !== -1 ) {
+				if ( self.utility.isToggleMine() ) {
 					self.fn.toggleMine();
 				}
 
-				// get checked out records
 				self.fn.getCheckedOutRecords();
+				self.utility.initScrollbar();
+			}, // end fn
 
-
-				$('.table-grid').perfectScrollbar()
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   initializeTemplate
-			 *
-			 *  Initializes the template for the grid
-			 *  rendering the html with the runtime
-			 *  values.
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
+			/**
+			 * Initialize the grid template
+			 * @method function
+			 * @return {[type]} [description]
+			 */
 			initializeTemplate : function() {
-				var id = self.options.table + '_' + Date.now();
-
-				//console.log('Appending template to wrapper.');
-				//console.log( $('#page-wrapper').prop('outerHTML') );
-				self.$grid = $('<div/>' , { id : id }).html(
-					self.fn.render(
-						self.html.tmpMainGridBody , self.options.gridHeader
-					)
-				).mouseover( function() { jApp.activeGrid = self } ).appendTo('#page-wrapper');
-				//console.log( $('#page-wrapper').prop('outerHTML') );
-
-				// set rows per page control
-				self.$grid.find('select#RowsPerPage').val( self.options.rowsPerPage );
-
-				self.$tblMenu = self.$().find('.table-btn-group');
-				tbl = $('#page-wrapper').find( '#'+id );
-
-				if ( !self.options.gridHeader.helpText ) {
-					tbl.find('.helpText').hide();
-				}
+				self.utility.DOM.emptyPageWrapper();
+				self.utility.bind.windowResize();
+				self.utility.DOM.initGrid();
 			},
 
-			/**  **  **  **  **  **  **  **  **  **
-			 *   setupIntervals - setInterval
-			 *
-			 *  Sets the refresh interval
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
+			/**
+			 * Setup grid intervals
+			 * @method function
+			 * @return {[type]} [description]
+			 */
 			setupIntervals : function() {
 				if (!self.utility.isAutoUpdate()) { return false; }
-
-				if (!!self.interval) {
-					clearInterval(self.interval);
-				}
-				self.interval = setInterval(self.fn.update,self.options.refreshInterval);
-
-				if (!!self.options.toggles.editable) {
-
-					// get checked out records interval
-					if (!!self.intervalCheckedOutRecords) {
-						clearInterval(self.intervalCheckedOutRecords);
-					}
-					self.intervalCheckedOutRecords = setInterval( self.fn.getCheckedOutRecords, 10000 );
-				}
+				self.utility.setCountdownInterval();
+				self.utility.setGetCheckedOutRecordsInterval();
 			},
 
-			/**  **  **  **  **  **  **  **  **  **
-			 *   buildMenus
-			 *
-			 *  Iterates through the buttons and
-			 *  adds them to the menus.
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
+			/**
+			 * Build all grid menus
+			 * @method function
+			 * @return {[type]} [description]
+			 */
 			buildMenus : function() {
-				var $ul, $btn_choice;
+				self.utility.DOM.clearMenus();
 
-				//self.$tblMenu.empty();
-				self.$rowMenu.empty();
-				self.$withSelectedMenu.empty();
-
-				if (!self.tableMenuBuilt) {
-					//build table menu
-					_.each( self.options.tableBtns, function(o,key) {
-						if (key === 'custom') {
-							_.each( o, function( oo, kk ) {
-								self.$tblMenu.append( self.fn.createMenuButton( oo ) );
-							});
-						} else if (typeof self.options.toggles[key] === 'undefined' || !!self.options.toggles[key]) {
-							self.$tblMenu.append( self.fn.createMenuButton( o ) );
-						}
-					});
-					self.tableMenuBuilt = true;
-				}
-
-				//build row menu
-				_.each( self.options.rowBtns, function(o, key) {
-					if (key === 'custom') {
-						_.each( o, function( oo, kk ) {
-							var btn = self.fn.createMenuButton( oo );
-							if (!!self.$rowMenu.find('.btn-delete').length) {
-								btn.insertBefore( self.$rowMenu.find('.btn-delete') );
-							} else {
-								btn.appendTo( self.$rowMenu );
-							}
-
-						});
-					} else if ( typeof( self.options.toggles[key] ) === 'undefined' || !!self.options.toggles[key] ) {
-						self.$rowMenu.append( self.fn.createMenuButton( o ) );
-					}
-				});
-
-				// build with selected menu
-				_.each( self.options.withSelectedBtns, function(o, key) {
-					//console.log(key)
-					if ( typeof( self.options.toggles[key] ) === 'undefined' || !!self.options.toggles[key] ) {
-
-						if (key === 'custom') {
-							_.each( o, function( oo, kk ) {
-								self.fn.createMenuLink( oo ).appendTo( self.$withSelectedMenu );
-							});
-						} else {
-							self.fn.createMenuLink( o ).appendTo( self.$withSelectedMenu );
-						}
-
-
-
-					}
-				});
+				self.utility.setupVisibleColumnsMenu();
+				self.utility.DOM.buildBtnMenu( self.options.tableBtns, self.DOM.$tblMenu );
+				self.utility.DOM.buildBtnMenu( self.options.rowBtns, self.DOM.$rowMenu);
+				self.utility.DOM.buildLnkMenu( self.options.withSelectedBtns, self.DOM.$withSelectedMenu );
 			}, // end fn
 
-			createMenuLink : function( o ) {
-				var $btn, $btn_a, $btn_choice, $ul;
 
-				$btn_choice = $('<a/>', { href : 'javascript:void(0)' });
+			/**
+			 * Build all grid forms
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			buildForms : function() {
+				self.utility.loadFormDefinitions();
 
-				//add the icon
-				if (!!o.icon) {
-					$btn_choice.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + o.icon } ) );
-				}
-				// add the label
-				if (!!o.label) {
-					$btn_choice.append( $('<span/>').html(o.label) );
-				}
-				// add the click handler
-				if (!!o.fn) {
-					//console.log('binding function');
-					if (typeof o.fn === 'string') {
-						$btn_choice.off('click.custom').on('click.custom', function() {
-						self.withSelectedButton = $(this);
-						self.fn.withSelected( 'custom', self.fn[o.fn] ) } );
-					} else if (typeof o.fn === 'function') {
-						$btn_choice.off('click.custom').on('click.custom', function() {
-						self.withSelectedButton = $(this);
-						self.fn.withSelected( 'custom', o.fn ) } );
-					}
-				}
-
-				// add the html5 data
-				if (!!o.data) {
-					console.log( 'appending data' );
-					_.each( o.data, function(v,k) {
-						$btn_choice.attr('data-'+k,v);
-					});
-				}
-
-				return $('<li/>', {class : o.class, title : o.title}).append( $btn_choice );
-
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   createMenuButton
-			 *
-			 *  @params (obj)	html parameters of
-			 *  				the button
-			 *
-			 *  @return (jQuery obj)
-			 *
-			 *  Builds the button object with
-			 *  the specified parameters
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
-			createMenuButton : function( params ) {
-				var $btn, $btn_a, $btn_choice, $ul;
-
-				if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
-					$btn = $('<div/>', { class : 'btn-group btn-group-sm'})
-					// params[0] will contain the dropdown toggle button
-					$btn_a = $('<a/>', {
-										type : 'button',
-										class : 'btn btn-success dropdown-toggle',
-										href : '#',
-										'data-toggle' : 'dropdown'
-							   });
-					// add the icon if applicable
-					if (!!params[0].icon) {
-						$btn_a.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params[0].icon } ) );
-					}
-					// add the label if applicable
-					if (!!params[0].label) {
-						$btn_a.append( $('<span/>').html(params[0].label) );
-					}
-					// add the click handler, if applicable
-					if (!!params[0].fn) {
-						if (typeof params[0].fn === 'string') {
-							$btn_a.off('click.custom').on('click.custom', self.fn[params[0].fn ] );
-						} else if (typeof params[0].fn === 'function') {
-							$btn_a.off('click.custom').on('click.custom', params[0].fn );
-						}
-					}
-					// add the dropdown if there are multiple options
-					if (params.length > 1) {
-						$btn_a.append( $('<span/>', {class : 'fa fa-caret-down'}));
-						$btn.append($btn_a);
-						$ul = $('<ul/>', { class : 'dropdown-menu'});
-
-						_.each( params, function(o,key) {
-							if (key == 0) return false;
-							$btn_choice = $('<a/>', _.extend( o || {}, { href : 'javascript:void(0)' }) );
-
-							//add the icon
-							if (!!o.icon) {
-								$btn_choice.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + o.icon } ) );
-							}
-							// add the label
-							if (!!o.label) {
-								$btn_choice.append( $('<span/>').html(o.label) );
-							}
-							// add the click handler
-							if (!!o.fn) {
-								if (typeof o.fn === 'string') {
-									$btn_choice.off('click.custom').on('click.custom', self.fn[o.fn] );
-								} else if (typeof o.fn === 'function') {
-									$btn_choice.off('click.custom').on('click.custom', o.fn );
-								}
-							}
-
-							$btn_choice.wrap('<li></li>').parent().appendTo($ul);
-						});
-
-						$btn.append($ul);
-					} else {
-						$btn.append($btn_a);
-					}
-
-				} else {
-
-					$btn = $('<button/>', params);
-					if (!!params.icon) {
-						$btn.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params.icon } ) );
-					}
-					if (!!params.label) {
-						$btn.append( $('<span/>').html(params.label) );
-					}
-					if (!!params.fn) {
-						if (typeof params.fn === 'string') {
-							$btn.off('click.custom').on('click.custom', self.fn[params.fn] );
-						} else if (typeof params.fn === 'function') {
-							$btn.off('click.custom').on('click.custom', params.fn );
-						}
-					}
-				}
-
-				return $btn;
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   linkTables
-			 *
-			 *  iterates through the linktable
-			 *  definitions in the options and
-			 *  adds the appropriate elements to the
-			 *  forms
-			 **  **  **  **  **  **  **  **  **  **/
-			linkTables : function() {
-				var oLT;
-				_.each( self.options.linkTables, function(o,key) {
-					o.dataView = self.options.dataView;
-					o.callback = self.callback.linkTables;
-					oLT = new jLinkTable( o );
-				});
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   forms
-			 *
-			 *  creates the required forms
-			 *  for the grid
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
-			forms : function() {
-				// create the edit form
-				self.forms.oEditFrm = new jForm(
-					{
-						table : self.options.schema + '.' + self.options.table,
-						dataView : self.options.schema + '.' + self.options.dbView,
-						pkey : self.options.pkey,
-						tableFriendly : self.options.tableFriendly,
-						atts : { name : self.options.editFrmName },
-						colParamsAdd : self.linkTables,
-						disabledElements : self.options.disabledFrmElements
-					}
-				);
-
-				// create the new form
-				self.forms.oNewFrm = new jForm(
-					{
-						table : self.options.schema + '.' + self.options.table,
-						dataView : self.options.schema + '.' + self.options.dbView,
-						pkey : self.options.pkey,
-						tableFriendly : self.options.tableFriendly,
-						atts : { name : self.options.editFrmName },
-						colParamsAdd : self.linkTables,
-						disabledElements : self.options.disabledFrmElements
-					}
-				);
-
-				// create the delete form
-				self.forms.oDeleteFrm = new jForm(
-					{
-						table : self.options.schema + '.' + self.options.table,
-						dataView : self.options.schema + '.' + self.options.dbView,
-						pkey : self.options.pkey,
-						tableFriendly : self.options.tableFriendly,
-						loadExternal : false,
-						atts : {
-							name : self.options.delFormName || 'frm_deleteGrid', // + self.options.tableFriendly,
-						},
-						btns : [
-							{ 'type' : 'button', 'class' : 'btn btn-success btn-go disabled', 	'id' : 'btn_go', 'value' : 'Go' },
-							{ 'type' : 'button', 'class' : 'btn btn-danger btn-cancel', 'id' : 'btn_cancel', 'value' : 'Cancel' },
-						],
-						colParams : [
-							{ 'type' : 'text', '_label' : 'Type yes to continue', 'name' : 'confirmation', 'id' : 'confirmation'  },
-							{ 'type' : 'hidden', 'name' : self.options.pkey }
-						],
-						fieldset : {
-							'legend' : 'Delete Record',
-						}
-					}
-				);
-
-				// create the colParams form
-				self.forms.oColParamFrm = new jForm(
-					{
-						table : 'admin.colParam',
-						dataView : 'admin.ColParam',
-						pkey : 'ColParamID',
-						tableFriendly : 'Column Parameters',
-						btns : [],
-						atts : {
-							name : 'frm_element_editor',
-						},
-						fieldset : {
-							'legend' : '3. Edit Column Parameters',
-						}
-					}
-				);
-
-				// create DOM handles for the form containers
-				self.forms.$editFrm = $('<div/>').html( self.fn.render( self.html.tmpEditForm ) );
-				self.forms.$newFrm = $('<div/>').html( self.fn.render( self.html.tmpNewForm, { tableFriendly : self.options.tableFriendly } ) );
-				self.forms.$deleteFrm = $('<div/>').html( self.fn.render( self.html.tmpDeleteForm, { deleteText : self.options.deleteText } ) );
-				self.forms.$colParamFrm = $('<div/>').html( self.fn.render( self.html.tmpColParamForm ) );
-
-				// append the forms to the form containers
-				self.forms.$editFrm.find('.editFormContainer').append( self.forms.oEditFrm.fn.handle() );
-				self.forms.$newFrm.find('.newFormContainer').append( self.forms.oNewFrm.fn.handle() );
-				self.forms.$deleteFrm.find('.delFormContainer').append( self.forms.oDeleteFrm.fn.handle() );
-				self.forms.$colParamFrm.find('.colParamFormContainer').append( self.forms.oColParamFrm.fn.handle() );
-
-				// add the form containers to the DOM
-				tbl
-				  .append( self.forms.$editFrm )
-				  .append( self.forms.$newFrm  )
-				  .append( self.forms.$deleteFrm )
-				  .append( self.forms.$colParamFrm );
-
-				// add custom forms specified at runTime
 				_.each( self.options.formDefs, function( o, key ) {
-					//console.log ('adding form ' + key);
-					var $frmHandle = '$' + key,
-						oFrmHandle = 'o' + key;
-
-					if ( typeof self.html[key] === 'undefined' ) return false;
-
-					// create form container
-					self.forms[$frmHandle] = $('<div/>').html( self.fn.render( self.html[key] ) );
-
-					// create form object
-					self.forms[oFrmHandle] = new jForm( o );
-
-					// append the form to the form container
-					self.forms[$frmHandle].find( '.formContainer' ).append( self.forms[oFrmHandle].fn.handle() );
-
-					// add the form to the DOM
-					tbl.append( self.forms[$frmHandle]  );
+					self.utility.buildForm( o, key );
 				});
 			},
 
@@ -563,7 +130,7 @@
 				$('.tbl-list,.col-list,.param-list').perfectScrollbar();
 				$('.colParamFormContainer').hide();
 				$('.btn-save').addClass('disabled');
-				$.jStorage.flush();
+				self.store.flush();
 				self.forms.oColParamFrm.fn.getColParams();
 				self.action = 'colParam';
 
@@ -571,7 +138,7 @@
 				self.fn.overlay(2,'on');
 
 				var $target = tbl.find('#div_colParamFrm')
-				self.fn.setupTargetDiv($target);
+				self.fn.setupFormContainer($target);
 
 				// get table list
 				if ( !!self.store.get( 'tableList', false ) ) {
@@ -592,13 +159,7 @@
 
 			}, // end fn
 
-			activityPreloader : function( action ) {
-				if (action !== 'hide') {
-					$('.ajax-activity-preloader').show();
-				} else {
-					$('.ajax-activity-preloader').hide();
-				}
-			}, //end fn
+
 
 			getColumnList : function( tableName ) {
 
@@ -639,34 +200,22 @@
 				self.utility.setCountdownInterval();
 			}, // end fn
 
-			/**  **  **  **  **  **  **  **  **  **
-			 *   setup
-			 *
-			 *  sets up the AJAX request options
-			 **  **  **  **  **  **  **  **  **  **/
-			setup : function() {
-
-				self.ajaxVars = {
-					url : self.options.url,
-					type : 'POST'
-				}
-			},
-
 			updateAll : function() {
 				//console.log('updating all grids');
 
 				_.each( jApp.oG, function(o, key) {
 					//console.log('updating ' + key);
-					o.fn.update();
+					o.fn.getGridData();
 				})
 			}, //end fn
 
-			/**  **  **  **  **  **  **  **  **  **
-			 *   update
-			 *
-			 *  executes the AJAX request
-			 **  **  **  **  **  **  **  **  **  **/
-			update : function( preload ) {
+			/**
+			 * get the grid data
+			 * @method function
+			 * @param  {[type]} preload [description]
+			 * @return {[type]}         [description]
+			 */
+			getGridData : function( preload ) {
 				// show the preload if needed
 				if (!!preload) {
 					self.fn.preload();
@@ -677,7 +226,7 @@
 				self.fn.countdown();
 
 				// kill the pending request if it's still going
-				self.utilty.killPendingRequest('gridData');
+				self.utility.killPendingRequest('gridData');
 
 				// use cached copy, if available
 				if ( self.utility.isDataCacheAvailable() ) {
@@ -685,442 +234,7 @@
 				} else {
 					self.utility.executeGridDataRequest();
 				}
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   updateDOM
-			 *
-			 *  interates through the changed data
-			 *  and updates the appropriate DOM
-			 *  elements. Updated DOM elements are
-			 *  animated to highlight changes
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
-			updateDOM : function() {
-				// init vars
-				var appendTR = false,
-					appendTD = false;
-
-				if (!!self.oDelta[0] && self.oDelta[0][self.options.pkey] === 'NoData') {
-					var tr = $('<div/>', { class : 'table-row tr-no-data'} ).append( $('<div/>', { class : 'table-cell'} ).html('No Data') );
-
-					tbl.find('.table-body').empty().append( tr );
-					return false;
-				}
-
-				// iterate through the changed data
-				$.each( self.oDelta, function(i,oRow) {
-
-					tbl.find('.table-body .tr-no-data').remove();
-
-					// save the current row.
-					self.currentRow = self.oJSON[i];
-
-					// find row in the table if it exists
-					var	tr = tbl.find('.table-row[data-identifier="' + oRow[self.options.pkey] + '"]');
-
-					// try the json key if you can't find the row by the pkey
-					if (!tr.length) tr = tbl.find('.table-row[data-jsonkey=' + i + ']');
-
-					// create the row if it does not exist
-					if (!tr.length) {
-						tr = $('<div/>', { 'class' : 'table-row', 'data-identifier' : oRow[self.options.pkey], 'data-jsonkey' : i } );
-						appendTR = true;
-
-						if (!!self.options.toggles.editable) {
-
-
-							var td_chk = $('<div/>', { 'class' : 'table-cell', "nowrap" : "nowrap",  "style" : "position:relative;"} );
-							//var td_chk = $('<div/>', { 'class' : 'table-cell', "nowrap" : "nowrap" } );
-							if (!!self.options.cellAtts['*']) {
-								$.each( self.options.cellAtts['*'], function(at, fn) {
-									td_chk.attr( at,fn() );
-								});
-							}
-
-							var collapseMenu = (!!self.options.toggles.collapseMenu) ?
-								'<button style="padding:0" class="btn btn-success btn-showMenu"> <i class="fa fa-angle-right fa-fw fa-lg"></i> </button>' :
-								'';
-
-							var	tdCheck = (!!oRow[self.options.pkey]) ? '<input type="checkbox" class="chk_cid" name="cid[]" />' : '';
-
-							var lblCheck = '<label class="btn btn-default pull-right lbl-td-check" style="margin-left:20px;"> ' + tdCheck + '</label>';
-
-							td_chk.html( 	'<div class="permanent-handle"> ' +
-												collapseMenu +
-												lblCheck +
-											'<div class="rowMenu-container"></div> \
-											</div>'
-							);
-							tr.append(td_chk);
-						}
-
-					} else { // update the row data- attributes
-						tr.attr('data-identifier',oRow[self.options.pkey]).attr('data-jsonkey',i);
-
-						var td_chk = tr.find('.table-cell').eq(0);
-						// update the attributes on the first cell
-						if (!!self.options.cellAtts['*']) {
-							$.each( self.options.cellAtts['*'], function(at, fn) {
-								td_chk.attr( at,fn() );
-							});
-						}
-					}
-
-
-
-					// iterate through the columns
-					$.each( self.currentRow, function(key, value) {
-
-						// determine if the column is hidden
-						if ($.inArray(key,self.options.hidCols) !== -1) {
-							return false;
-						}
-
-						// find the cell if it exists
-						var td = tr.find('.table-cell[data-identifier="' + key + '"]');
-
-						// create the cell if needed
-						if (!td.length) {
-							td = $('<div/>', { 'class' : 'table-cell', 'data-identifier' : key} );
-							appendTD = true;
-						}
-
-						// set td attributes
-						if (!!self.options.cellAtts['*']) {
-							$.each( self.options.cellAtts['*'], function(at, fn) {
-								td.attr( at,fn() );
-							});
-						}
-
-						if(!!self.options.cellAtts[key]) {
-							$.each( self.options.cellAtts[key], function(at, fn) {
-								td.attr( at,fn() );
-							});
-						}
-
-						// prepare the value
-						value = self.fn.prepareValue(value,key);
-
-						if ( td.html().trim() !== value.trim() ) {
-							// set the cell value
-							td
-							 .html(value)
-							 .addClass('changed')
-						}
-
-
-						// add the cell to the row if needed
-						if (appendTD) {
-							tr.append(td);
-						}
-
-					});// end each
-
-					// add the row if needed
-					if (appendTR) {
-						tbl.find('.table-body').append(tr);
-					}
-				}); // end each
-
-				// reset column widths
-				self.fn.colWidths();
-
-				// animate changed cells
-
-					// .stop()
-					// .css("background-color", "#FFFF9C")
-					// .animate({ backgroundColor: 'transparent'}, 1500, function() { $(this).removeAttr('style');  } );
-
-
-				setTimeout( function() { tbl.find('.table-cell.changed').removeClass('changed') }, 2000 );
-
-
-				self.fn.countdown();
-				self.fn.page( self.options.pageNum );
-
-				// deal with the row checkboxes
-				tbl.find('.table-row')
-					.filter(':not([data-identifier])')
-						.find('.lbl-td-check').remove() // remove the checkbox if there is no primary key for the row
-						.end()
-					.end()
-					.filter('[data-identifier]') // add the checkbox if there is a primary key for the row
-					.each(function(i,elm) {
-						if ( !!self.options.toggles.editable && $(elm).find('.lbl-td-check').length === 0 ) {
-							$('<label/>', { class : 'btn btn-default pull-right lbl-td-check', style : 'margin-left:20px' })
-								.append( $('<input/>', { type: 'checkbox', class : 'chk_cid', name : 'cid[]' } ))
-								.appendTo ( $(elm).find('.permanent-handle'));
-						}
-					});
-
-				tbl.find('.table-body .table-row, .table-head .table-row:last-child').each( function(i,elm) {
-					if ( $(elm).find('.table-cell,.table-header').length < 4 ) {
-						$('<div/>', {'class' : 'table-cell'}).appendTo( $(elm) );
-					}
-				});
-
-				tbl.find('.table-head .table-row:nth-child(2)').each( function(i,elm) {
-					if ( $(elm).find('.table-cell,.table-header').length < 3 ) {
-						$('<div/>', {'class' : 'table-cell'}).appendTo( $(elm) );
-					}
-				});
-
-				self.fn.bind();
-
-
-				// process pagination
-				self.utility.updatePagination();
-
-
-			},
-
-			colWidths : function() {
-				// set column widths
-				$('.grid-panel-body .table-row').find('.table-cell, .table-header').css('width','');
-
-				// table height
-				if( !$('#page-wrapper').hasClass('scrolled') ) {
-					$('.grid-panel-body .table').css('height',+$(window).height()-425);
-				} else {
-					$('.grid-panel-body .table').css('height',+$(window).height()-290);
-				}
-
-				// perfect scrollbar
-				$('.table-grid').perfectScrollbar('update');
-
-				//add scroll listener
-				$('.table-grid').off('scroll.custom').on('scroll.custom', function() {
-					if ( typeof self.scrollTimeout !== 'undefined' ) {
-						clearInterval(self.scrollTimeout);
-					}
-					self.scrollTimeout = setTimeout( function() {
-						if (  $('.table-body').offset().top < 10 ) {
-							if( !$('#page-wrapper').hasClass('scrolled') ) {
-								// table height
-								$('#page-wrapper').addClass('scrolled');
-								$('.grid-panel-body .table').animate(
-									{ 'height' : +$(window).height()-290 },
-									500,
-									'linear',
-									function() {
-										// perfect scrollbar
-										$('.table-grid').perfectScrollbar('update');
-									}
-								);
-
-
-
-							}
-						} else if ($('.table-body').offset().top > 50  ) {
-							if( $('#page-wrapper').hasClass('scrolled') ) {
-
-								$('#page-wrapper').removeClass('scrolled');
-								// table height
-								$('.grid-panel-body .table').animate(
-									{'height' : +$(window).height()-425},
-									300,
-									'linear',
-									function() {
-										// perfect scrollbar
-										$('.table-grid').perfectScrollbar('update');
-									}
-								);
-
-
-
-							}
-						}
-					}, 300)
-				});
-
-				self.options.maxColWidth =  +350/1920 * +$(window).innerWidth();
-
-				//visible columns
-				var visCols = +$('.table-head .table-row').eq(1).find('.table-header:visible').length-1;
-
-				for(var ii=1; ii <= visCols; ii++ ) {
-
-					var colWidth = Math.max.apply( Math, $('.grid-panel-body .table-row').map(function(i) {
-						return $(this).find('.table-cell:visible,.table-header-text:visible').eq(ii).innerWidth() } ).get()
-					);
-
-					if ( +colWidth > self.options.maxColWidth && ii < visCols ) {
-						colWidth = self.options.maxColWidth;
-					}
-
-					if ( ii == visCols ) {
-						colWidth = +$(window).innerWidth()-$('.table-head .table-row').eq(1).find('.table-header:visible').slice(0,-1).map( function(i) { return $(this).innerWidth() } ).get().reduce( function(p,c) { return p+c } )-40;
-					}
-
-					var nindex = +ii+1;
-
-					// set widths of each cell
-					$(  '.grid-panel-body .table-row:not(.tr-no-data) .table-cell:visible:nth-child(' + nindex + '),' +
-						'.grid-panel-body .table-row:not(.tr-no-data) .table-header:visible:nth-child(' + nindex + ')').css('width',+colWidth+14);
-
-					if (ii==1) {
-						//$('.tfilters .table-header').eq(1).css('width', +colWidth+90);
-					}
-				}
-
-				//hide preload mask
-				self.fn.preload(true);
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   updateRowMenu
-			 *
-			 *  @tr - target table row element
-			 *
-			 *  Moves the row menu to the target
-			 *  row and updates the menu forms
-			 *  with the corresponding data.
-			 **  **  **  **  **  **  **  **  **  **/
-			updateRowMenu : function($tr) {
-				//console.log('updating the row menu');
-
-				// set the current row
-				self.$currentRow = $tr;
-
-				if (self.lastUpdatedRow == $tr.index()) { return false;}
-				//row Menu
-				self.$rowMenu.detach();
-
-				//table row
-				$tr.find('.table-cell .rowMenu-container').eq(0).append(self.$rowMenu);
-
-				// update bindings
-				self.fn.bind();
-
-				// update lastUpdatedRow;
-				self.lastUpdatedRow = $tr.index();
-
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   ellipsis
-			 *
-			 *  Truncates cells that are too long
-			 *  according to the maxCellLength grid
-			 *  option. Adds a read-more button to
-			 *  any cells that are truncated.
-			 **  **  **  **  **  **  **  **  **  **/
-			ellipsis : function( txt ) {
-				var $rdMr, $dtch, $btn, $truncated, $e;
-
-
-				// iterate through each table cell
-
-				$btn = $('<button/>', {
-					'class' : 'btn btn-success btn-xs btn-readmore pull-right',
-					'type' : 'button'}
-				).html(' . . . ');
-
-				$e = $('<div/>').html(txt);
-
-				if ( $e.text().length > self.options.maxCellLength ) {
-					// look for child html elements
-					if ( $e.find(':not(i)').length > 0) {
-						$rdMr = $('<span/>', {'class':'readmore'});
-
-						while ( $e.text().length > self.options.maxCellLength ) {
-							// keep detaching html elements until the cell length is
-							// within allowable limits
-
-							// store detached element
-							$dtch = ( !!$e.find(':not(i)').last().parent('h4').length ) ?
-								$e.find(':not(i)').last().parent().detach() :
-								$e.find(':not(i)').last().detach();
-
-							// append the detached element to the readmore span
-							$rdMr.html( $rdMr.html( ) + ' ' ).append($dtch);
-
-							// clean up the element html of extra whitespace
-							$e.html( $e.html().replace(/(\s*)?\,*(\s*)?$/ig,'') );
-						}
-
-						$e.append($rdMr).prepend($btn);
-					}// end if
-
-					// all text, no child html elements in the cell
-					else {
-						// place the extra text in the readmore span
-						$rdMr = $('<span/>', {'class':'readmore'})
-							.html( $e.html().substr(self.options.maxCellLength) );
-
-						// truncate the visible text in the cell
-						$truncated = $e.html().substr(0,self.options.maxCellLength);
-
-						$e.empty().append($truncated).append($rdMr).prepend($btn);
-					} // end else
-				}// end if
-
-				return $e.html();
-
 			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   colSort
-			 *
-			 *  @colNum (int) the 1-indexed html
-			 *  			column to sort by
-			 *
-			 *  @desc 	(bool) sort descending
-			 *
-			 *  sorts the table rows in the DOM
-			 *  according the the input column
-			 *  and direction (asc default)
-			 **  **  **  **  **  **  **  **  **  **/
-			colSort : function( colNum, desc ) {
-				var $col;
-
-				//col
-				$col = tbl.find('.table-body .table-row .table-cell:nth-child(' + colNum + ')')
-				  .map( function(i,elm) {
-						return [[
-									$(elm).text().toLowerCase(),
-									$(elm).parent()
-								]];
-					})
-					.sort(function(a,b) {
-
-						if (jQuery.isNumeric(a[0]) && jQuery.isNumeric(b[0])) {
-							return a[0]-b[0];
-						}
-
-						if (a[0] > b[0]) {
-							return 1;
-						}
-
-						if (a[0] < b[0]) {
-							return -1;
-						}
-
-						// a must be equal to b
-						return 0;
-					}
-				);
-
-				// iterate through col
-				$.each($col, function(i,elm){
-					var $e = $(elm[1]);
-
-					// detach the row from the DOM
-					$e.detach();
-
-					// attach the row in the correct order
-					(!desc) ?
-						tbl.find('.table-body').append( $e ) :
-						tbl.find('.table-body').prepend( $e );
-				});
-
-				// go to the appropriate page to refresh the view
-				self.fn.page( self.options.pageNum );
-
-				// apply header filters
-				self.fn.applyHeaderFilter()
-			},
 
 			/**  **  **  **  **  **  **  **  **  **
 			 *   oCurrentForm
@@ -1133,30 +247,13 @@
 			 *
 			 **  **  **  **  **  **  **  **  **  **/
 			oCurrentForm : function() {
-				switch (self.action) {
-					case 'edit' :
-						return self.forms.oEditFrm;
-					break;
 
-					case 'delete' :
-						return self.forms.oDeleteFrm;
-					break;
-
-					case 'new' :
-						return self.forms.oNewFrm;
-					break;
-
-					case 'colParam' :
-						return self.forms.oColParamFrm;
-					break;
-
-					default :
-						if (typeof self.forms[ 'o' + self.action ]  !== 'undefined' ) {
-							return self.forms[ 'o' + self.action ];
+				_.each( self.forms, function(o, key) {
+						if ( key.toLowerCase().indexOf( self.action.toLowerCase() ) !== -1 ) {
+							return o;
 						}
-					break;
+				});
 
-				}
 				console.warn( 'There is no valid form associated with the current action' );
 				return false;
 			},
@@ -1172,10 +269,10 @@
 			 *
 			 **  **  **  **  **  **  **  **  **  **/
 			$currentForm : function() {
-				if ( !!self.fn.oCurrentForm() ) {
-					return self.fn.oCurrentForm().$();
-				} else {
-					return false;
+				try {
+					return self.fn.oCurrentForm().$()
+				} catch(e) {
+					return false
 				}
 			},
 
@@ -1191,9 +288,9 @@
 			 *
 			 **  **  **  **  **  **  **  **  **  **/
 			$currentFormWrapper : function() {
-				if (!!self.fn.oCurrentForm() ) {
+				try {
 					return self.fn.$currentForm().closest('.div-form-panel-wrapper');
-				} else {
+				} catch(e) {
 					return false;
 				}
 			},
@@ -1205,521 +302,28 @@
 			 *  DOM elements.
 			 **  **  **  **  **  **  **  **  **  **/
 			bind : function() {
-				var $hf_to, $emptyFilters, $matches, $temp, $tcol, $totalRows, $totalVis;
-
-				//console.log('setting bindings.');
-
-				// tooltips
-				tbl.find('[title]').tooltip({delay:300});
-
-				// read more links
-				tbl.find('.btn-readmore').off('click.rm').on('click.rm', function()  {
-					$(this).toggleClass('btn-success btn-warning');
-					$(this).siblings('.readmore').toggleClass('active');
-				});
-
-				//pagination
-				if ( self.utility.isPagination() ) {
-					// update pagination
-					self.dataGrid.pagination.totalPages = Math.ceil( self.oJSON.length / self.options.rowsPerPage );
-
-					tbl.find('.paging').empty().show().bootpag({
-						total : self.dataGrid.pagination.totalPages,
-						page : self.options.pageNum,
-						maxVisible : 20
-					}).on("page", function(event,num) {
-						self.fn.page(num);
-					});
-
-					// rows per page
-					tbl.find('[name=RowsPerPage]').off('change.rpp').on('change.rpp', function() {
-						tbl.find('[name=RowsPerPage]').val( $(this).val() );
-						self.fn.rowsPerPage( $(this).val() );
-					}).parent().show();
-
-				} else {
-					tbl.find('.paging').hide();
-					tbl.find('[name=RowsPerPage]').parent().hide();
-				}
-
-				// remove delete icons
-				tbl.find('.deleteicon').remove();
-
-				// header filter inputs
-				if ( !!self.options.toggles.headerFilters ) {
-					tbl.find('.table-head .tfilters').show();
-					tbl.find('.header-filter')
-						.after(
-							// add the clear button to be displayed when text is entered
-							$('<span/>', {'class':'deleteicon','style':'display:none'})
-							.html(
-								self.fn.render( self.html.tmpClearHeaderFilterBtn )
-							)
-							.off('click.deleteicon')
-							.on('click.deleteicon', function() {
-								//console.log('clicked')
-								$(this).prev('input').val('').focus().trigger('keyup');
-								self.fn.applyHeaderFilter();
-							})
-						).off('keyup.hf')
-						.on( 'keyup.hf',function()  {
-							// process the header filters
-
-							( $(this).val() != '' ) ?
-								$(this).next('.deleteicon').show() :
-								$(this).next('.deleteicon').hide();
-
-
-							if (typeof $hf_to !== 'undefined') { clearTimeout($hf_to); }
-							$hf_to = setTimeout( self.fn.applyHeaderFilter, 300 );
-						}) // end on keyup
-
-					self.fn.applyHeaderFilter(); // trigger keyup to refresh the visible rows
-				} else {
-					tbl.find('.table-head .tfilters').hide();
-				}
-
-				// table sort buttons
-				if (!!self.options.toggles.sort) {
-					tbl.find('.tbl-sort').off('click.ts').on('click.ts', function() {
-						var $btn, $btnIndex, $desc
-
-						//button
-						$btn = $(this);
-						//index
-						$btnIndex = $btn.closest('.table-header').index()+1;
-
-						//tooltip
-						$btn.attr('title', $btn.attr('title').indexOf('Descending') !== -1 ?
-							'Sort Ascending' :
-							'Sort Descending'
-						).attr('data-original-title', $btn.attr('title') )
-						.tooltip({delay:300});
-
-						//ascending or descending
-						$desc = $btn.find('i').hasClass('fa-sort-amount-desc');
-
-						//other icons
-						tbl.find('.tbl-sort i.fa-sort-amount-desc')
-							.removeClass('fa-sort-amount-desc')
-							.addClass('fa-sort-amount-asc')
-							.end()
-							.find('.tbl-sort.btn-primary')
-							.removeClass('btn-primary');
-
-						//btn style
-						$btn.addClass('btn-primary');
-
-						//icon
-						$btn.find('i')
-							.removeClass( ($desc) ? 'fa-sort-amount-desc' : 'fa-sort-amount-asc')
-							.addClass( ($desc) ? 'fa-sort-amount-asc' : 'fa-sort-amount-desc');
-
-						tbl.find('.table-body .table-row').show();
-
-						// perform the sort on the table rows
-						self.fn.colSort( $btnIndex, $desc );
-					});
-				} else {
-					tbl.find('.tbl-sort').hide();
-				}
-
-				// checkall checkbox
-				$('.chk_all', tbl).off('change.chkall').on('change.chkall', function() {
-					//console.log(tbl.find(':checkbox:visible').length);
-					$(':checkbox:visible', tbl ).prop('checked',$(this).prop('checked'));
-				});
-
-				//individual checkboxes
-				tbl.find('.chk_cid').off('change.chkcid').on('change.chkcid', function() {
-					var $chk_all,	// $checkall checkbox
-						$checks,	// $checkboxes
-						total_num,	// total checkboxes
-						num_checked,// number of checkboxes checked
-
-
-					$chk_all = tbl.find('.chk_all');
-					$checks = tbl.find('.chk_cid');
-					total_num = $checks.length;
-					num_checked = tbl.find('.chk_cid:checked').length
-
-					// set the state of the checkAll checkbox
-					$chk_all
-					.prop('checked', (total_num === num_checked) ? true : false )
-					.prop('indeterminate', (num_checked > 0 && num_checked < total_num) ? true : false );
-				});
-
-				// button bindings
-				tbl.find('.btn-new').off('click.btn-new').on('click.btn-new', function() {
-					self.action = 'new';
-					// modal overlay
-					self.fn.overlay(2,'on');
-
-					//setup target div
-					var $target = tbl.find('#div_newFrm');
-					self.fn.setupTargetDiv($target);
-				});
-
-				tbl.find('.btn-edit').off('click.btn-edit').on('click.btn-edit', function() {
-					//console.log('Editing Record');
-					self.action = 'edit';
-
-					//determine the id of the row so we can attempt to check it out.
-					var $tr = self.$rowMenu.closest('.table-row'),
-						id = $tr.attr('data-identifier');
-
-					// check out the record
-					if (!!self.options.toggles.checkout) {
-						self.fn.checkout(id);
-					} else {
-						self.fn.overlay(2,'on');
-
-						// setup target div
-						var $target = tbl.find('#div_editFrm');
-						self.fn.setupTargetDiv($target);
-					}
-
-					//setup target div
-					//var $target = tbl.find('#div_editFrm');
-					//self.fn.setupTargetDiv($target);
-				});
-
-				tbl.find('.btn-delete').off('click.btn-del').on('click.btn-del', function() {
-					self.action = 'delete';
-
-					//determine the id of the row so we can attempt to check it out.
-					var $tr = self.$rowMenu.closest('.table-row'),
-						id = $tr.attr('data-identifier');
-
-					// check out the record
-					if (!!self.options.toggles.checkout) {
-						self.fn.checkout(id);
-					} else {
-						self.fn.overlay(2,'on');
-
-						// setup target div
-						var $target = tbl.find('#div_deleteFrm');
-						self.fn.setupTargetDiv($target);
-					}
-
-					// setup target div
-					//var $target = tbl.find('#div_deleteFrm');
-					//self.fn.setupTargetDiv($target);
-				});
-
-				// hide the delete button if there is no pid
-				(!self.$currentRow || !!self.$currentRow.attr('data-identifier')) ? tbl.find('.btn-delete').show() : tbl.find('.btn-delete').hide();
-
-				// refresh button
-				tbl.find('.btn-refresh').off('click.btn-refresh').on('click.btn-refresh', function() {
-					var This = $(this);
-					This.addClass('disabled');
-					setTimeout( function() { This.removeClass('disabled') }, 2000 );
-					self.fn.updateAll();
-				});
-
-
-				// row menu updates
-				tbl.find('.table-body .table-row').off('mouseover.tr').on('mouseover.tr',function() {
-					var $tr = $(this);
-
-					clearTimeout(self.intervals.cancelRowMenuUpdate);
-					self.intervals.updateRowMenu = setTimeout( function() {
-						//console.log('do the thing');
-						tbl.find('.btn-showMenu').removeClass('hover');
-						if (tbl.find('.rowMenu').hasClass('expand') === false) {
-							tbl.find('.btn-showMenu').removeClass('active');
-						}
-						$tr.find('.btn-showMenu').addClass('hover');
-
-					}, 250 );
-				}).off('mouseout.tr').on('mouseout.tr',function() {
-
-					var $tr = $(this);
-					clearTimeout(self.intervals.updateRowMenu);
-					self.intervals.cancelRowMenuUpdate = setTimeout( function() {
-						tbl.find('.btn-showMenu').removeClass('hover');
-						if (!tbl.find('.rowMenu').hasClass('expand')) {
-							$tr.find('.btn-showMenu').removeClass('active');
-						}
-						tbl.find('.rowMenu').removeClass('active');
-					}, 100 );
-				});
-
-				// show menu button
-				tbl.find('.btn-showMenu').off('click.btn-showMenu').on('click.btn-showMenu',function() {
-					tbl.find('.rowMenu').removeClass('expand');
-					var $tr = $(this).closest('.table-row');
-					self.fn.updateRowMenu($tr);
-
-					$(this).toggleClass('active rotate');
-					if ( $(this).hasClass('rotate') ) {
-						$(this).closest('.table-cell').find('.rowMenu').addClass('expand');
-					}
-					else {
-						$(this).closest('.table-cell').find('.rowMenu').removeClass('expand');
-					}
-					tbl.find('.btn-showMenu').not(this).removeClass('rotate active');
-				});
-
-				self.fn.overlay(1,'off');
-				self.fn.overlay(2,'off');
-				return true; //console.log('bound');
+				self.utility.setupBootpag();
+				self.utility.setupHeaderFilters();
+				self.utility.setupSortButtons();
+				self.utility.turnOffOverlays();
+				self.utility.processGridBindings();
 			}, // end bind fn
 
 			/**  **  **  **  **  **  **  **  **  **
-			 *   setupTargetDiv
+			 *   setupFormContainer
 			 *
 			 *  When a rowMenu button is clicked,
 			 *  this function sets up the
 			 *  corresponding div
 			 **  **  **  **  **  **  **  **  **  **/
-			setupTargetDiv : function($target) {
-				// declare vars
-				var $TI = $target.find('#TimeIn'),
-					$TO = $target.find('#TimeOut'),
-					$MTT = $target.find('#ManualTotalTime');
-
+			setupFormContainer : function() {
+				self.fn.overlay(2,'on');
 				self.hideOverlayOnError = false;
-
-				// prevent accidentally navigating away while editing records
-				$( window ).bind("beforeunload", function() {
-					return 'You have unsaved changes.';
-				});
-
-				// reset form
-				if ( $target.find('form').length > 0 ) { $target.find('form').clearForm(); }
-
-				// set up the bindings
-				$target.addClass('max') // maximize the panel
-
-					//set focus
-					.find(":input:not([type='hidden']):not([type='button'])").eq(0).focus().end().end()
-
-					//reset validation stuff
-					.find('.has-error').removeClass('has-error').end()
-					.find('.has-success').removeClass('has-success').end()
-					.find('.help-block').hide().end()
-					.find('.form-control-feedback').hide().end()
-
-					//multiselects
-					.find('select').addClass('bsms').end()
-					.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
-
-					// Format special input types
-					.find('[validType="Phone Number"]').keyup( function() {  $(this).val( formatPhone( $(this).val() ) ); }).end()
-					.find('[validType="Zip Code"]').keyup( 	function() {  $(this).val( formatZip( $(this).val() ) ); }).end()
-					.find('[validType="SSN"]').keyup( 			function() {  var self = $(this); setTimeout( function() { self.val( formatSSN( self.val() ) ); }, 200); }).end()
-					.find('[validType="color"]').keyup( 		function() {  $(this).css('background-color',$(this).val()); }).end()
-					.find('[validType="Number"]').change( 		function() {  $(this).val( formatNumber( $(this).val() ) );	}).end()
-					.find('[validType="Integer"]').change( 	function() {  $(this).val( formatInteger( $(this).val() ) ); }).end()
-					.find('[validType="US State"]').change( 	function() {  $(this).val( formatUC( $(this).val() ) );	}).end()
-
-					// button bindings
-					.find('button.close,.btn-cancel').off('click.btn-cancel').on('click.btn-cancel', function() {
-						if (!!self.options.toggles.checkout && self.action !== 'colParam')  {
-							self.fn.checkin('all');
-
-						} else {
-							self.callback.checkin('Successful');
-						}
-
-					}).end()
-
-					.find('.btn-go').off('click.btn-go').on('click.btn-go', function() {
-						self.options.closeOnSave = true;
-						var $target_btn = $(this);
-						$target_btn.addClass('disabled');
-						$.noty.closeAll();
-						self.fn.ajaxSetupAction();
-						self.fn.ajaxSubmit();
-						setTimeout(function() {
-							$target_btn.removeClass('disabled');
-							tbl.find('.btn-showMenu.active').click();
-						},2000 );
-					}).end()
-
-					.find('.btn-save').off('click.btn-go').on('click.btn-go', function() {
-						self.options.closeOnSave = false;
-						var $target_btn = $(this);
-						$target_btn.addClass('disabled');
-						$.noty.closeAll();
-						self.fn.ajaxSetupAction();
-						self.ajaxVars.success = self.fn.colParamSaveSuccess;
-						self.fn.ajaxSubmit();
-
-						$.jStorage.flush();
-						self.forms.oColParamFrm.fn.getColParams();
-						self.fn.updateColParamForm();
-
-						setTimeout(function() {
-							self.fn.getColumnList( self.temp.tableName );
-							self.fn.oCurrentForm().fn.getRowData( self.temp.colParamID, self.fn.updateColParamForm );
-							$target_btn.removeClass('disabled');
-						},2000 );
-					}).end()
-
-					.find('.btn-reset').off('click.btn-reset').on('click.btn-reset', function() {
-						self.fn.$currentForm().clearForm();
-					}).end()
-
-					.find('.btn-refreshForm').off('click.btn-refresh').on('click.btn-refresh', function() {
-						$.jStorage.flush();
-						self.forms.oColParamFrm.fn.getColParams();
-						self.fn.updateColParamForm();
-					}).end()
-
-					// bind enter
-					.find("input").off('keyup.bindEnter').on('keyup.bindEnter', function(e) {
-						e.preventDefault();
-						if(e.which === 13) {
-							if ($target.find('#confirmation').length > 0 && $target.find('#confirmation').val() != 'yes') {
-								nfx_thumbslide('./images/warning.png','Type yes to continue.','warning');
-								return false;
-							}
-							tbl.find('.btn-go').trigger('click');
-						}
-						if(e.which === 27 || (e.keyCode !== "undefined" && e.keyCode === 27 )) {
-							$target.find('.btn-cancel').trigger('click');
-						}
-					}).end()
-
-					// Password2
-					.find('#Password2').off('keyup.Password').on('keyup.Password', function() {
-						if( $(this).val() == $target.find('#Password1').val() ) {
-							$target.find('.btn-go').removeClass('disabled').attr('disabled',false);
-						} else {
-							$target.find('.btn-go').addClass('disabled').attr('disabled',true);
-						}
-					}).end()
-
-					// confirmation
-					.find('#confirmation').off('keyup.confirmation').on('keyup.confirmation', function() {
-						if( $(this).val().toLowerCase() == 'yes' ) {
-							$target.find('.btn-go').removeClass('disabled').attr('disabled',false);
-						} else {
-							$target.find('.btn-go').addClass('disabled').attr('disabled',true);
-						}
-					}).end()
-
-					// link table form update
-					.find('.lktbl').off('lktbl.change').on('lktbl.change', function() {
-						_log($(this).val());
-					}).end();
-
-				// Date Time Fields
-				if ($TO.val() != '') { $MTT.attr('disabled',true); } else { $MTT.attr('disabled',false); }
-				if ($MTT.val() != '') { $TO.attr('disabled',true); } else { $TO.attr('disabled',false); }
-
-				// Outage date
-				$target.find("#OutageDate").datetimepicker({
-					format: "YYYY-MM-DD HH:mm",
-					pickTime:false
-				});
-
-				// TimeIn
-				$TI.datetimepicker({
-					useSeconds : false,
-					sideBySide: true,
-					format: "YYYY-MM-DD HH:mm"
-				}).on("dp.change",function (e) {
-					$TI.trigger('change');
-				});
-
-				// Time Out
-				$TO.datetimepicker({
-					useSeconds : false,
-					sideBySide: true,
-					format: "YYYY-MM-DD HH:mm"
-				}).on("dp.change",function (e) {
-				   $TO.trigger('change');
-				}).off('change.to').on('change.to', function() {
-					if ($TO.val() != '') { $MTT.attr('disabled',true); } else { $MTT.attr('disabled',false); }
-				});
-
-				//Manual Total Time
-				$MTT.off('change.mtt').on('change.mtt',function() {
-					if ($MTT.val() != '') { $TO.attr('disabled',true); } else { $TO.attr('disabled',false); }
-				});
-
-				//linked elements
-				$target.find('[_linkedElmID]').off('change.linkedelm').on('change.linkedelm', function() {
-					//console.log( 'Setting up linked Element' )
-					var This = $(this),
-						$col = This.attr('_linkedElmFilterCol'),
-						$id	 = This.val(),
-						$labels = This.attr('_linkedElmLabels'),
-						$options = This.attr('_linkedElmOptions'),
-						oFrm = self.fn.oCurrentForm(),
-						oElm = oFrm.fn.getElmById( This.attr('_linkedElmID') );
-
-					//console.log(oElm);
-
-					// set data to always expire;
-					oElm.fn.setTTL(-1);
-					oElm.options.hideIfNoOptions = true;
-					oElm.options.cache = false;
-
-					oElm.fn.attr( {
-						'_optionsFilter' : $col + '=' + $id,
-						'_firstoption' : 0,
-						'_firstlabel' : '-Other-',
-						'_labelsSource' : $labels,
-						'_optionsSource' : $options
-						} );
-
-					oElm.fn.initSelectOptions(true);
-
-				}).change();
-
-				//reset form elements in standard forms and blank existing values.
-				_.each([ '$editFrm', '$newFrm', '$deleteFrm' ], function( v ) {
-						self.forms[v].find(':input:not("[type=button]"):not("[type=submit]"):not("[type=reset]"):not("[type=radio]"):not("[type=checkbox]")').each( function (i,elm) {
-						try {
-							$(elm).data("DateTimePicker").remove();
-							$(elm).val('');
-							if ( $(elm).hasClass('bsms') ) {
-								$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
-							}
-						}
-						catch(ignore) {
-
-						}
-					});
-				});
-
-				// if editing
-				if (self.action !== 'new') {
-					var $tr = self.$rowMenu.closest('.table-row');
-
-					//load the data for the row into the form
-					var id = $tr.attr('data-identifier');
-					var jsonkey = $tr.attr('data-jsonkey');
-
-					//determine if this is an existing record
-					if (!!id) {
-						//console.log('Getting the row data');
-						self.fn.oCurrentForm().fn.getRowData(id, self.callback.updateDOMFromRowData);
-
-					} else if (!!jsonkey) {
-						//console.log('No id, defaulting to json grid data');
-						self.fn.oCurrentForm().callback.getRowData( [self.oJSON[ jsonkey ]] );
-						self.fn.updatePanelHeader( self.oJSON[ jsonkey ][ self.options.columnFriendly ] );
-					}
-				}
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   updatePanelHeader
-			 *
-			 *  @text	(string) text to display
-			 *
-			 *  updates the text display in the
-			 *  header of the form wrapper
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
-			updatePanelHeader : function(text) {
-				self.fn.$currentFormWrapper().find('.spn_editFriendlyName').html( text );
+				self.utility.resetCurrentForm();
+				self.utility.maximizeCurrentForm();
+				self.utility.setCurrentFormFocus();
+				self.utility.processFormBindings();
+				self.utility.getCurrentFormRowData();
 			}, // end fn
 
 
@@ -1744,7 +348,7 @@
 				tbl.find('.header-filter').each( function(i) {
 					if ( $(this).val() != '' ) {
 						$emptyFilters = false;
-						$tcol = (self.options.toggles.editable) ? i+3 : i+2;
+						$tcol = (self.utility.isEditable()) ? i+3 : i+2;
 
 						$temp = tbl.find(".table-row .table-cell:nth-child(" + $tcol + "):contains('" + $(this).val() + "')").parent();
 
@@ -1771,22 +375,12 @@
 					$totalRows = tbl.find('.table-body .table-row').length;
 					$totalVis = $matches.length;
 					tbl.find('.filter-showing').html(
-						self.fn.render( self.html.tmpFilterShowing, { 'totalVis' : $totalVis, 'totalRows' : $totalRows } )
+						self.utility.render( self.html.tmpFilterShowing, { 'totalVis' : $totalVis, 'totalRows' : $totalRows } )
 					);
 
 
 					// update column widths
-					self.fn.colWidths();
-				}
-				else if (self.utility.isPagination()) { // filters are empty, reset everything
-					// show the rows per page and paging controls
-					tbl.find('.divRowsPerPage, .paging').show();
-
-					// update information about visible rows
-					tbl.find('.filter-showing').html('');
-
-					// refresh the page with the current page number
-					self.fn.page( self.options.pageNum );
+					self.utility.DOM.updateColWidths();
 				}
 			}, // end fn
 
@@ -1811,7 +405,7 @@
 							}
 						}
 						if (!found) {
-							self.$rowMenu.detach();
+							self.DOM.$rowMenu.detach();
 							$(elm).remove();
 						}
 					});
@@ -1837,62 +431,26 @@
 			 *  function if applicable.
 			 **  **  **  **  **  **  **  **  **  **/
 			prepareValue : function(value,column) {
-				if (!value || value.toLowerCase() === 'null') {
+				var template;
+
+				if (!value || value.toString().toLowerCase() === 'null') {
 					return '';
 				}
 
-				if (!!self.options.templates[column]) {
-					var template = self.options.templates[column];
+				if (typeof self.options.templates[column] === 'function') {
+					template = self.options.templates[column];
 					value = template(value);
-
 				}
 
-				if (value.indexOf('|') !== -1) {
+				if (value.toString().indexOf('|') !== -1) {
 					value = value.replace(/\|/gi,', ');
 				}
 
-				if (self.options.toggles.ellipses) {
-					value = self.fn.ellipsis( value );
+				if ( self.utility.isEllipses() ) {
+					value = self.utility.ellipsis( value );
 				}
 
 				return value;
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   interpolate
-			 *
-			 *  @value (str) string to be interpolated
-			 *
-			 *  @return (str) the interpolated string
-			 *
-			 *  recursively processes the input value and
-			 *  replaces parameters of the form
-			 *  {@ParamName} with the corresponding
-			 *  value from the JSON data. Uses the
-			 *  replace callbak self.fn.replacer.
-			 *
-			 *  e.g. {@ParamName} -> self.oJSON[row][ParamName]
-			 **  **  **  **  **  **  **  **  **  **/
-			interpolate : function(value) {
-				return value.replace(/\{@(\w+)\}/gi, self.fn.replacer)
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   replacer - RegExp replace callback
-			 *
-			 *  @match 	(str) the match as defined
-			 *  			by the RegExp pattern
-			 *  @p1	  	{str} the partial match as
-			 *  			defined by the first
-			 *  			capture group
-			 *  @offset	(int) the offset where the
-			 *  			match was found in @string
-			 *  @string	(str) the original string
-			 *
-			 *  @return	(str) the replacement string
-			 **  **  **  **  **  **  **  **  **  **/
-			replacer : function(match, p1, offset, string) {
-				return self.currentRow[p1];
 			}, // end fn
 
 			/**  **  **  **  **  **  **  **  **  **
@@ -1912,12 +470,12 @@
 				pageNum = Math.floor(pageNum);
 
 				self.options.pageNum = pageNum;
-				first = +( (pageNum-1) * self.options.rowsPerPage );
-				last  = +(first+self.options.rowsPerPage);
+				first = +( (pageNum-1) * self.dataGrid.pagination.rowsPerPage );
+				last  = +(first+self.dataGrid.pagination.rowsPerPage);
 				tbl.find('.table-body .table-row').hide().slice(first,last).show();
 
 				// set col widths
-				setTimeout(	self.fn.colWidths, 100 );
+				setTimeout(	self.utility.DOM.updateColWidths, 100 );
 
 
 			}, // end fn
@@ -1957,10 +515,10 @@
 
 				self.store.set('pref_rowsPerPage',rowsPerPage);
 				self.options.pageNum = 1;
-				self.options.rowsPerPage = Math.floor(rowsPerPage);
+				self.dataGrid.pagination.rowsPerPage = Math.floor(rowsPerPage);
 				self.fn.bind();
 				self.fn.page(1);
-				self.fn.colWidths();
+				self.utility.DOM.updateColWidths();
 			}, // end fn
 
 			visibleColumns : function( elm ) {
@@ -1975,7 +533,7 @@
 					tbl.find('.table-head .table-row:not(:first-child) .table-header:nth-child(' + i +'), .table-body .table-cell:nth-child(' + i +')').show();
 				}
 
-				self.fn.colWidths();
+				self.utility.DOM.updateColWidths();
 
 			}, //end fn
 
@@ -2010,33 +568,6 @@
 				return changes;
 
 			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   render
-			 *
-			 *  @str   (string) containing
-			 *  		multiline text
-			 *
-			 *  @params (obj) contains key/value pairs
-			 *  		  defining parameters that
-			 *  		  will be interpolated in
-			 *  		  the returned text
-			 *
-			 *  returns the interpolated text
-			 **  **  **  **  **  **  **  **  **  **/
-			render : function(str,params) {
-				var tmp, ptrn, key
-
-				tmp = str;
-
-				if (!!params && !$.isEmptyObject(params)) {
-					for (key in params ) {
-						ptrn = new RegExp( '\{@' + key + '\}', 'gi' );
-						tmp = tmp.replace(ptrn, params[key] );
-					}
-				}
-				return tmp.replace(/\{@.+\}/gi,'');
-			}, //end fn
 
 			/**  **  **  **  **  **  **  **  **  **
 			 *   overlay
@@ -2074,7 +605,7 @@
 			 **  **  **  **  **  **  **  **  **  **/
 			ajaxSubmit : function() {
 
-				self.lastUpdatedRow = -1;
+				self.temp.lastUpdatedRow = -1;
 
 				if (!!self.fn.$currentForm()) {
 					var oValidate = new $.validator( self.fn.$currentForm() );
@@ -2110,7 +641,7 @@
 				var type = (response.indexOf('Successful') !== -1) ? 'success' : 'warning';
 				nfx_thumbslide('./images/' + type + '.png',response,type);
 				if (type === 'success') {
-					if ( !!self.options.toggles.checkout && self.action !== 'colParam' ) self.fn.checkin('all');
+					if (  self.utility.isCheckout()  && self.action !== 'colParam' ) self.fn.checkin('all');
 					if ( !!self.fn.oCurrentForm() && !!self.options.closeOnSave && !!self.fn.$currentFormWrapper ) {
 						self.fn.$currentFormWrapper().removeClass('max');
 						$( window ).unbind("beforeunload");
@@ -2129,7 +660,7 @@
 
 						tbl.find('.btn-showMenu.active').click();
 
-						self.fn.updateRowMenu($tr);
+						self.utility.moveRowMenu($tr);
 
 
 					},500 );
@@ -2155,14 +686,14 @@
 			 *  etc.)
 			 **  **  **  **  **  **  **  **  **  **/
 			toggleMine : function() {
-				if (self.$tblMenu.find('#toggleMine span').length === 0) return false;
-				var tmp = self.$tblMenu.find('#toggleMine span').html();
+				if (self.DOM.$tblMenu.find('#toggleMine span').length === 0) return false;
+				var tmp = self.DOM.$tblMenu.find('#toggleMine span').html();
 				//console.log(tmp);
 
 				if (!!self.dataGrid.requestOptions.data.filterMine) { // turn filter off
 					self.options.removeAllRows = false;
 					self.dataGrid.requestOptions.data.filterMine = 0;
-					self.$tblMenu
+					self.DOM.$tblMenu
 						.find('#toggleMine')
 							.find('span')
 							.html( tmp.replace('All','My') )
@@ -2172,7 +703,7 @@
 				} else {
 					self.options.removeAllRows = true;
 					self.dataGrid.requestOptions.data.filterMine = 1;
-					self.$tblMenu
+					self.DOM.$tblMenu
 						.find('#toggleMine')
 							.find('span')
 							.html( tmp.replace('My','All') )
@@ -2488,8 +1019,8 @@
 					appendTH = true;
 
 					// Append the check all checkbox
-					if (!!self.options.toggles.editable) {
-						theaders.append( $('<div/>', {'class' : 'table-header table-header-text'}).html( self.fn.render( self.html.tmpCheckAll ) ));
+					if (self.utility.isEditable()) {
+						theaders.append( $('<div/>', {'class' : 'table-header table-header-text'}).html( self.utility.render( self.html.tmpCheckAll ) ));
 						//tbl.find('.tfilters .table-cell').eq(0).attr('colspan',2);
 						//tbl.find('thead tr:last-child').attr('colspan',3);
 					} else {
@@ -2503,7 +1034,7 @@
 						isActive = (self.options.columns[i] === self.options.sortBy) ? true : false;
 
 						// render the button
-						btn = self.fn.render( self.html.tmpSortBtn, {
+						btn = self.utility.render( self.html.tmpSortBtn, {
 							'ColumnName' : self.options.columns[i],
 							'BtnClass' : (isActive) ? 'btn-primary' : '',
 							'faClass' : (isActive) ? 'amount-desc' : 'amount-asc',
@@ -2529,11 +1060,11 @@
 
 					tbl.find('.table-head').append(theaders);
 					tbl.find('.paging').parent().attr('colspan',self.options.headers.length-2);
-					tbl.find('.with-selected-menu').append( self.$withSelectedMenu.find('li') );
+					tbl.find('.with-selected-menu').append( self.DOM.$withSelectedMenu.find('li') );
 				}
 
 				// update the DOM
-				self.fn.updateDOM();
+				self.utility.DOM.updateGrid();
 
 				// remove the rows that may have been removed from the data
 				self.fn.removeRows();
@@ -2551,7 +1082,7 @@
 				}
 
 				// adjust column widths
-				self.fn.colWidths();
+				self.utility.DOM.updateColWidths();
 
 			}, // end fn
 
@@ -2559,7 +1090,7 @@
 				if (!!response[0]) {
 					var data = response[0];
 					self.rowData = response[0];
-					self.fn.updatePanelHeader( data[ self.options.columnFriendly ] );
+					self.fn.getGridDataPanelHeader( data[ self.options.columnFriendly ] );
 				}
 			}, // end fn
 
@@ -2614,7 +1145,7 @@
 										$('.colParamFormContainer').show();
 										$('.btn-save').removeClass('disabled');
 										self.temp.colParamID = o.colParamID;
-										self.fn.oCurrentForm().fn.getRowData(o.colParamID, self.fn.updateColParamForm ) ;
+										self.fn.oCurrentForm().fn.getRowData(o.colParamID, self.fn.getGridDataColParamForm ) ;
 
 									} ).html( o.columnName ) )
 						.appendTo(ul);
@@ -2640,7 +1171,7 @@
 									tbl.find('#div_editFrm') :
 									tbl.find('#div_deleteFrm');
 
-					self.fn.setupTargetDiv($target);
+					self.fn.setupFormContainer($target);
 				} else {
 					//console.log('Problem checking out.');
 					nfx_thumbslide('./images/' + type + '.png',response,type);
@@ -2649,33 +1180,8 @@
 
 			}, //end fn
 
-			checkin : function(response) {
-				var type = (response.indexOf('Successful') !== -1) ? 'success' : 'warning';
-
-				if (type === 'success') {
-					//console.log('Checked in successfully.');
-					// modal overlay
-					var $target = (self.action === 'edit') ?
-									tbl.find('#div_editFrm') :
-									tbl.find('#div_deleteFrm');
-
-					$.noty.closeAll();
-					self.fn.overlay(2,'off');
-					self.fn.overlay(1,'off');
-					if (!!self.fn.$currentFormWrapper() && typeof self.fn.$currentFormWrapper().removeClass !== 'undefined' ) {
-						self.fn.$currentFormWrapper().removeClass('max');
-						self.fn.$currentForm().clearForm();
-					}
-					tbl.find('.has-error').removeClass('has-error');
-
-					$target.css('height','');
-					$( window ).unbind("beforeunload");
-				} else {
-					//console.log('Problem checking in.');
-					nfx_thumbslide('./images/' + type + '.png','There was a problem closing the record. Please try again.',type);
-				}
-
-
+			checkin : function() {
+				self.utility.closeCurrentForm();
 			}, //end fn
 
 			getCheckedOutRecords : function(response) {
@@ -2738,7 +1244,148 @@
 
 		} // end callback defs
 
+		/**
+		 * Utility Functions
+		 * @type {Object}
+		 */
 		this.utility = {
+
+			/**
+			 * [function description]
+			 * @method function
+			 * @param  {[type]} action [description]
+			 * @return {[type]}        [description]
+			 */
+			actionHelper : function(action) {
+				self.action = action;
+				if ( self.utility.needsCheckout() ) {
+					self.fn.checkout( self.utility.getCurrentRowId() );
+				} else {
+					self.fn.setupFormContainer( )
+				}
+			}, // end fn
+
+			/**
+			 * Clear the current form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			resetCurrentForm : function() {
+				try {
+					self.fn.$currentForm().clearForm();
+					self.fn.$currentForm().find(':input:not("[type=button]"):not("[type=submit]"):not("[type=reset]"):not("[type=radio]"):not("[type=checkbox]")').each( function (i,elm) {
+
+					$(elm).data("DateTimePicker").remove();
+					$(elm).val('');
+					if ( $(elm).hasClass('bsms') ) {
+						$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
+					}
+				} catch(e) {
+					console.warn(e);
+					return false;
+				}
+			}, // end fn
+
+			/**
+			 * Refresh and rebuild the current form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			refreshCurrentForm : function() {
+				self.store.flush();
+				self.fn.oCurrentForm().fn.getColParams();
+				self.fn.getGridDataColParamForm();
+			}, // end fn
+
+			/**
+			 * Maximize the current form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			maximizeCurrentForm : function() {
+				try {
+					self.fn.$currentFormWrapper().addClass('max');
+				} catch(e) {
+					console.warn(e);
+					return false;
+				}
+			}, // end fn
+
+			/**
+			 * Close the current form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			closeCurrentForm : function() {
+				try {
+					$.noty.closeAll();
+					self.fn.$currentFormWrapper.removeClass('max')
+						.find('.formContainer').css('height','');
+					self.fn.$currentForm().clearForm();
+					self.utility.turnOffOverlays();
+				}
+			}, // end fn
+
+			/**
+			 * Set focus on the current form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setCurrentFormFocus : function() {
+				self.fn.$currentFormWrapper().find(":input:not([type='hidden']):not([type='button'])").eq(0).focus();
+			}, // end fn
+
+			/**
+			 * Get the current form row data for the current row
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			getCurrentFormRowData : function() {
+				if (self.action === 'new') return false;
+				var id = self.utility.getCurrentRowId();
+				self.fn.oCurrentForm.fn.getRowData(id, self.callback.updateDOMFromRowData)
+			}, //end fn
+
+			/**
+			 * Submit the current form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			submitCurrentForm : function() {
+				var requestOptions = {
+					url : self.fn.$currentForm.attr('action'),
+					data : self.fn.$currentForm.serialize(),
+					success : self.callback.submitCurrentForm,
+					fail : console.warn
+				};
+
+				$.noty.closeAll();
+				self.utility.getJSON( requestOptions );
+
+			}, // end fn
+
+			/**
+			 * Save the current form and leave open
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			saveCurrentForm : function() {
+				self.options.closeOnSave = false;
+				self.utility.submitCurrentForm();
+				$(this).addClass('disabled').delay(2000).removeClass('disabled');
+			}, // end fn
+
+			/**
+			 * Save the current form and close
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			saveCurrentFormAndClose : function() {
+				self.options.closeOnSave = true;
+				self.utility.submitCurrentForm();
+				$(this).addClass('disabled').delay(2000).removeClass('disabled');
+				self.utility.toggleRowMenu;
+			}, // end fn
 
 			/**
 			 * Kill pending ajax request
@@ -2747,14 +1394,11 @@
 			 * @return {[type]}             [description]
 			 */
 			killPendingRequest : function(requestName) {
-				var r = self.dataGrid.requests;
-
 				try{
-					r[requestName].abort();
+					self.dataGrid.requests[requestName].abort();
 				} catch(e) {
 					// nothing to abort
 				}
-
 			}, //end fn
 
 			/**
@@ -2768,7 +1412,45 @@
 				return self;
 			}, //end fn
 
-			setInitVals : function() {
+			/**
+			 * Set up the visible columns menu for the table menu
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setupVisibleColumnsMenu : function() {
+				// visible columns
+				_.each( this.options.columns, function( o, i ) {
+					if (i < self.options.headers.length) {
+						self.options.tableBtns.custom.visColumns.push(
+							{
+								icon : 'fa-check-square-o',
+								label : self.options.headers[i],
+								fn : function() { self.fn.visibleColumns( $(this) ) }, 'data-column' : o
+							}
+						);
+					}
+				})
+			}, //end fn
+
+			/**
+			 * Does the form need confirmation
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			needsConfirmation : function() {
+				var conf = self.fn.$currentFormWrapper.find('#confirmation');
+				if ( !!conf && conf.val().toString().toLowerCase() !== 'yes') {
+					return self.alert.warn('Type yes to continue');
+				}
+				return false;
+			}, //end fn
+
+			/**
+			 * Set initial parameters
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setInitParams : function() {
 
 				/**
 				 * Placeholders
@@ -2783,7 +1465,8 @@
 
 						// pagination parameters
 						pagination : {
-							totalPages = -1;
+							totalPages = -1,
+							rowsPerPage = self.store.get('pref_rowsPerPage',self.options.rowsPerPage)
 						},
 
 						// ajax requests
@@ -2798,24 +1481,30 @@
 							}
 						},
 
+						// intervals
 						intervals : {
 
-						}
+						},
+
+						// timeouts
+						timeouts : {
+
+						},
 				}
 
+				self.DOM = {
+					$grid : false,
+					$tblMenu = false,
+					$rowMenu = $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' }),
+					$withSelectedMenu = $('<div/>'),
+				}
 
-
-				self.$rowMenu = $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' });
-				self.$tblMenu = false;
-				self.$currentRow = false;
-				self.$grid = false;
-				self.$withSelectedMenu = $('<div/>');
+				self.DOM.$currentRow = false;
 				self.action = 'new';
 				self.currentRow = {};
 				self.oJSON = {};
 				self.oDelta = {};
 				self.forms = {};
-				self.intervals = {};
 				self.linkTables = [];
 				self.temp = {};
 				self.store.setTTL('data_' + self.options.schema + '_' + self.options.dbView,self.options.refreshInterval);
@@ -2826,18 +1515,23 @@
 				//self.url = window.location.href.replace("#/","");
 			}, // end fn
 
-			isAutoUpdate : function() {
-				return !!self.options.toggle.autoUpdate;
-			}, //end fn
-
 			/**
-			 * Is pagination enabled
+			 * Initialize scrollbar
 			 * @method function
 			 * @return {[type]} [description]
 			 */
-			isPagination : function() {
-				return !!self.options.toggles.paginate;
-			}, // end fn
+			initScrollbar : function() {
+				$('.table-grid').perfectScrollbar();
+			}, //end fn
+
+			/**
+			 * Is autoupdate enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isAutoUpdate : function() {
+				return !!self.options.toggles.autoUpdate;
+			}, //end fn
 
 			/**
 			 * Is data caching enabled
@@ -2849,6 +1543,88 @@
 			}, // end fn
 
 			/**
+			 * Is record checkout enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isCheckout : function() {
+				return !!self.options.toggles.checkout;
+			}, // end fn
+
+			/**
+			 * Is the grid data editable
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isEditable : function() {
+				return !!self.options.toggles.editable;
+			}, //end fn
+
+			/**
+			 * Are ellipses enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isEllipses : function() {
+				return !!self.options.toggles.ellipses;
+			}, // end fn
+
+			/**
+			 * Is a form container maximized
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isFormOpen : function() {
+				return !!self.$().find('.div-form-pael-wrapper.max').count();
+			}, // end fn
+
+			/**
+			 * Is pagination enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isPagination : function() {
+				return !!self.options.toggles.paginate;
+			}, // end fn
+
+			/**
+			 * Is sorting by column enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isSort : function() {
+				return !!self.options.toggles.sort;
+			}, // end fn
+
+			/**
+			 * Is toggle mine enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isToggleMine : function() {
+				return window.location.href.indexOf('/my') !== -1;
+			}
+
+			/**
+			 * Is header filters enabled
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isHeaderFilters : function() {
+				return !!self.options.toggles.headerFilters;
+			}, // end fn
+
+			/**
+			 * Is the button with name 'key' enabled
+			 * @method function
+			 * @param  {[type]} key [description]
+			 * @return {[type]}     [description]
+			 */
+			isButtonEnabled : function(key) {
+				return typeof self.options.toggles[key] === 'undefined' || !!self.options.toggles[key]
+			}, //end fn
+
+			/**
 			 * Is data cache available
 			 * @method function
 			 * @return {[type]} [description]
@@ -2858,12 +1634,50 @@
 			}, // end fn
 
 			/**
+			 * The row needs to be checked out
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			needsCheckout : function() {
+				return ( self.utility.isCheckout() && ( self.action === 'edit' || self.action === 'delete' ) );
+			}, //end fn
+
+			/**
+			 * The row needs to be checked in
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			needsCheckin : function() {
+				return self.utility.needsCheckout();
+			}, //end fn
+
+			/**
+			 * Get current row id
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			getCurrentRowId : function() {
+				return +self.DOM.$rowMenu.closest('.table-row').attr('data-identifier') || -1;
+			}, //end fn
+
+			/**
+			 * Display unload warning if a form is open
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			unloadWarning : function() {
+				if (self.utility.isFormOpen()) {
+					return 'You have unsaved changes.';
+				}
+			}, // end fn
+
+			/**
 			 * Update the total pages of the grid
 			 * @method function
 			 * @return {[type]} [description]
 			 */
 			updateTotalPages : function() {
-				self.dataGrid.pagination.totalPages = Math.ceil( self.oJSON.length / self.options.rowsPerPage );
+				self.dataGrid.pagination.totalPages = Math.ceil( self.oJSON.length / self.dataGrid.pagination.rowsPerPage );
 			}, // end fn
 
 			/**
@@ -2890,7 +1704,7 @@
 			setupBootpag : function() {
 				tbl.find('.paging').empty().show().bootpag({
 					total : self.dataGrid.pagination.totalPages,
-					page : 1,
+					page : self.options.pageNum,
 					maxVisible : 20
 				}).on("page", function(event,num) {
 					self.fn.page(num);
@@ -2920,6 +1734,97 @@
 			}, // end fn
 
 			/**
+			 * Setup header filters
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setupHeaderFilters : function() {
+				if (self.utility.isHeaderFilters() ) {
+					self.utility.showHeaderFilters();
+					self.utility.DOM.headerFilterDeleteIcons();
+				} else {
+					self.utility.hideHeaderFilters();
+				}
+			}, // end fn
+
+			/**
+			 * Setup the table sort buttons
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setupSortButtons : function() {
+				if ( self.utility.isSort() ) {
+					self.$().find('.tbl-sort').show();
+				} else {
+					self.$().find('.tbl-sort').hide();
+				}
+			}, // end fn
+
+			/**
+			 * Toggle Delete Icon Visibility
+			 * @method function
+			 * @param  {[type]} $elm [description]
+			 * @return {[type]}      [description]
+			 */
+			toggleDeleteIcon : function( $elm ) {
+				if ( !!$elm.val().toString().trim() ) {
+					$elm.next('.deleteicon').show();
+				} else {
+					$elm.next('.deleteicon').hide();
+				}
+			}, //end fn
+
+			/**
+			 * setTimeout helper
+			 * @method function
+			 * @param  {[type]}   o.key   [description]
+			 * @param  {Function} o.fn    [description]
+			 * @param  {[type]}   o.delay [description]
+			 * @return {[type]}         [description]
+			 */
+			timeout : function(o) {
+				try(
+					clearTimeout( self.dataGrid.timeouts[o.key] )
+				) catch(ignore) {}
+
+				self.dataGrid.timeouts[o.key] = setTimeout(o.fn, o.delay );
+			}, //end fn
+
+			/**
+			 * setInterval helper
+			 * @method function
+			 * @param  {[type]}   o.key   [description]
+			 * @param  {Function} o.fn    [description]
+			 * @param  {[type]}   o.delay [description]
+			 * @return {[type]}         [description]
+			 */
+			interval : function(o) {
+				try(
+					clearInterval( self.dataGrid.intervals[o.key] )
+				) catch(ignore) {}
+
+				self.dataGrid.intervals[o.key] = setInterval(o.fn, o.delay );
+			}, //end fn
+
+			/**
+			 * Hide header filters
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			hideHeaderFilters : function() {
+				self.$().find('.table-head .tfilters').hide();
+			}, // end fn
+
+			/**
+			 * Show header filters
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			showHeaderFilters : function() {
+				self.$().find('.table-head .tfilters').show();
+			}, // end fn
+
+			/**
 			 * Update Grid from cached data
 			 * @method function
 			 * @return {[type]} [description]
@@ -2939,22 +1844,556 @@
 				return self.store.get('data_' + self.options.table);
 			}, // end fn
 
+
+			/**
+			 * get JSON
+			 * @method function
+			 * @param  {[type]} requestOptions [description]
+			 * @return {[type]}                [description]
+			 */
+			getJSON : function( requestOptions ) {
+					var defaults = {
+						url : null,
+						data : {},
+						success : function() { },
+						fail : function() { },
+						always : function() {},
+						complete : function() {}
+					}, o = _.extend( defaults , requestOptions );
+
+					return $.getJSON(o.url, o.data, o.success )
+						.fail( o.fail )
+						.always( o.always )
+						.complete( p.complete );
+			}, // end fn
+
 			/**
 			 * Execute the grid data request
 			 * @method function
 			 * @return {[type]} [description]
 			 */
 			executeGridDataRequest : function() {
-				var r = self.dataGrid.requests,
-						o = self.dataGrid.requestOptions;
+				var callbacks = {
+							success : self.callback.update,
+							fail 		: self.utility.gridDataRequestCallback.fail,
+							always 	: self.utility.gridDataRequestCallback.always,
+							complete: self.utility.gridDataRequestCallback.complete
+						},
+						o = _.extend( self.dataGrid.requestOptions, callbacks ),
+						r = self.dataGrid.requests;
 
 				// show the preloader
-				self.fn.activityPreloader('show');
+				self.utility.DOM.activityPreloader('show');
+
 				// execute the request
-				r.gridData = $.getJSON(o.url, o.data, self.callback.update)
-					.fail( self.utility.gridDataRequestCallback.failed )
-					.always( self.utility.gridDataRequestCallback.always )
-					.complete( self.utilty.gridDataRequestCallback.complete );
+				r.gridData = self.utility.getJSON( o );
+			}, //end fn
+
+			/**
+			 * Turn off modal overlays
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			turnOffOverlays : function() {
+				self.fn.overlay(1,'off');
+				self.fn.overlay(2,'off');
+			}, //end fn
+
+			/**
+			 * Attempt to locate jQuery target
+			 * @method function
+			 * @param  {[type]} target [description]
+			 * @return {[type]}        [description]
+			 */
+			locateTarget : function(target, scope) {
+				// first look in the grid scope,
+				// then the document scope,
+				// then look through the window object
+				// to see if the target is a member
+				// of the global scope e.g. $(window)
+				if (typeof scope === 'undefined') {
+					return self.$().find(target) || $(target) || $(window[target]);
+				} else {
+					return self.$().find(target, scope) || $(target, scope) || $(window[target], scope);
+				}
+			}, //end fn
+
+			/**
+			 * Process the event bindings for the grid
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			processGridBindings : function() {
+				var events, target, fn, event;
+
+				_.each( self.options.events.grid, function( events, target ) {
+					var $target = self.utility.locateTarget(target) || return false;
+
+					_.each( events, function(fn, event) {
+							self.utility.setCustomBinding( $target, fn, event )
+					});
+				})
+			}, //end fn
+
+			/**
+			 * Process the event bindings for the form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			processFormBindings : function() {
+				var events, target, fn, event;
+
+				_.each( self.options.events.form, function( events, target ) {
+					var $target = self.utility.locateTarget(target, self.fn.$currentFormWrapper() ) || return false;
+
+					_.each( events, function(fn, event) {
+							self.utility.setCustomBinding( $target, fn, event )
+					});
+				})
+			}, //end fn
+
+			/**
+			 * Set up a custom event binding
+			 * @method function
+			 * @param  {[type]}   event [description]
+			 * @param  {Function} fn    [description]
+			 * @return {[type]}         [description]
+			 */
+			setCustomBinding : function( $target, fn, event ) {
+				var eventKey = event + '.custom';
+
+				if ( event === 'boot' ) {
+					return (typeof fn === 'function') ? fn() : false;
+				}
+
+				return $target.off(eventKey).on(eventKey, fn);
+			}, // end fn
+
+			/**
+			 * Load event bindings for processing
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			loadBindings : function() {
+					self.options.events.form = _.extend({
+						// the bind function will assume the scope is relative to the current form
+						// unless the key is found in the global scope
+						// boot functions will be automatically called at runtime
+						"formBootup" : {
+							boot : function() {
+								self.fn.$currentFormWrapper()
+									//reset validation stuff
+									.find('.has-error').removeClass('has-error').end()
+									.find('.has-success').removeClass('has-success').end()
+									.find('.help-block').hide().end()
+									.find('.form-control-feedback').hide().end()
+							}
+						},
+
+						"select" : {
+							boot : function() {
+								self.fn.$currentFormWrapper()
+									//multiselects
+									.find('select').addClass('bsms').end()
+									.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
+							}
+						},
+
+						"[data-validType='Phone Number']" : {
+							keyup : function() {
+								$(this).val( formatPhone( $(this).val() ) );
+							}
+						},
+
+						"[data-validType='Zip Code']" : {
+							keyup : function() {
+								$(this).val( formatZip( $(this).val() ) );
+							}
+						},
+
+						"[data-validType='SSN']" : {
+							keyup : function() {
+								var self = $(this);
+								setTimeout( function() {
+									self.val( formatSSN( self.val() ) );
+								}, 200);
+							}
+						},
+
+						"[data-validType='color']" : {
+							keyup : function() {
+								$(this).css('background-color',$(this).val());
+							}
+						},
+
+						"[data-validType='Number']" : {
+							change : function() {
+								$(this).val( formatNumber( $(this).val() ) );
+							}
+						},
+
+						"[data-validType='Integer']" : {
+							change : function() {
+								$(this).val( formatInteger( $(this).val() ) );
+							}
+						},
+
+						"[data-validType='US State']" : {
+							change : function() {
+								$(this).val( formatUC( $(this).val() ) );
+							}
+						},
+
+						"button.close, .btn-cancel" : {
+							click : function() {
+								if ( self.utility.needsCheckin() )  {
+									self.fn.checkin('all');
+								} else {
+									self.utility.closeCurrentForm();
+								}
+							}
+						},
+
+						".btn-go" : {
+							click : self.utility.saveCurrentFormAndClose
+						},
+
+						".btn-save" : {
+							click : self.utility.saveCurrentForm
+						},
+
+						".btn-reset" : {
+							click : self.utility.resetCurrentForm
+						},
+
+						".btn-refreshForm" : {
+							click : self.utility.refreshCurrentForm
+						},
+
+						"input" : {
+							keyup : function(e) {
+								e.preventDefault();
+								if (e.which === 13) {
+									if( !self.utility.needsConfirmation() ) {
+										self.utility.saveCurrentFormAndClose();
+									}
+								} else if (e.which === 27) {
+									self.utility.closeCurrentForm();
+								}
+							}
+						},
+
+						"#confirmation" : {
+							keyup : function() {
+								if( $(this).val().toString().toLowerCase() === 'yes' ) {
+									$target.find('.btn-go').removeClass('disabled');
+								} else {
+									$target.find('.btn-go').addClass('disabled');
+								}
+							}
+						},
+
+						"[_linkedElmID]" : {
+							change : function() {
+								//console.log( 'Setting up linked Element' )
+								var This = $(this),
+									$col = This.attr('_linkedElmFilterCol'),
+									$id	 = This.val(),
+									$labels = This.attr('_linkedElmLabels'),
+									$options = This.attr('_linkedElmOptions'),
+									oFrm = self.fn.oCurrentForm(),
+									oElm = oFrm.fn.getElmById( This.attr('_linkedElmID') );
+
+								//console.log(oElm);
+
+								// set data to always expire;
+								oElm.fn.setTTL(-1);
+								oElm.options.hideIfNoOptions = true;
+								oElm.options.cache = false;
+
+								oElm.fn.attr( {
+									'_optionsFilter' : $col + '=' + $id,
+									'_firstoption' : 0,
+									'_firstlabel' : '-Other-',
+									'_labelsSource' : $labels,
+									'_optionsSource' : $options
+									} );
+
+								oElm.fn.initSelectOptions(true);
+
+							},
+
+							boot : function() {
+								self.fn.$currentFormWrapper().find('[_linkedElmID]').change();
+							}
+						}
+
+					}, self.options.events.form);
+
+					self.options.events.grid = _.extend({
+						// the bind function will assume the scope is relative to the grid
+						// unless the key is found in the global scope
+						// boot functions will be automatically called at runtime
+						window : {
+							resize : function() {
+								self.utility.timeout( {
+									key : 'resizeTimeout',
+									fn : self.utility.DOM.updateColWidths,
+									delay : 500
+								});
+							},
+
+							beforeunload : self.utility.unloadWarning,
+						},
+
+						".deleteicon" : {
+							click : function() {
+								$(this).prev('input').val('').focus().trigger('keyup');
+								self.fn.applyHeaderFilter();
+							}
+						},
+
+						".header-filter" : {
+							keyup : function() {
+								self.utility.toggleDeleteIcon( $(this) );
+
+								self.utility.timeout( {
+									key : 'applyHeaderFilters',
+									fn : self.fn.applyHeaderFilter,
+									delay : 300
+								});
+
+							},
+
+							boot : self.fn.applyHeaderFilter
+						},
+
+						".tbl-sort" : {
+							click : function() {
+								var $btn, $btnIndex, $desc
+
+								//button
+								$btn = $(this);
+								//index
+								$btnIndex = $btn.closest('.table-header').index()+1;
+
+								//tooltip
+								$btn.attr('title', $btn.attr('title').indexOf('Descending') !== -1 ?
+									'Sort Ascending' :
+									'Sort Descending'
+								).attr('data-original-title', $btn.attr('title') )
+								.tooltip({delay:300});
+
+								//ascending or descending
+								$desc = $btn.find('i').hasClass('fa-sort-amount-desc');
+
+								//other icons
+								tbl.find('.tbl-sort i.fa-sort-amount-desc')
+									.removeClass('fa-sort-amount-desc')
+									.addClass('fa-sort-amount-asc')
+									.end()
+									.find('.tbl-sort.btn-primary')
+									.removeClass('btn-primary');
+
+								//btn style
+								$btn.addClass('btn-primary');
+
+								//icon
+								$btn.find('i')
+									.removeClass( ($desc) ? 'fa-sort-amount-desc' : 'fa-sort-amount-asc')
+									.addClass( ($desc) ? 'fa-sort-amount-asc' : 'fa-sort-amount-desc');
+
+								tbl.find('.table-body .table-row').show();
+
+								// perform the sort on the table rows
+								self.utility.DOM.sortByCol( $btnIndex, $desc );
+							}
+						}
+
+						"[title]" : {
+							boot : function() {
+								$('[title]').tooltip({delay:300});
+							}
+						},
+
+						".btn-readmore" : {
+							click : function()  {
+								$(this).toggleClass('btn-success btn-warning');
+								$(this).siblings('.readmore').toggleClass('active');
+							}
+						},
+
+						"[name=RowsPerPage]" : {
+							change : function() {
+								tbl.find('[name=RowsPerPage]').val( $(this).val() );
+								self.fn.rowsPerPage( $(this).val() );
+							},
+							boot : function() {
+								if ( self.utility.isPagination() ) {
+									$('[name=RowsPerPage]').parent().show();
+								} else {
+									$('[name=RowsPerPage]').parent().hide();
+								}
+							}
+						},
+
+						".deleteicon" : {
+							boot : function() {
+								$(this).remove();
+							}
+						},
+
+						".chk_all" : {
+							change : function() {
+								self.$().find(':checkbox:visible').prop('checked',$(this).prop('checked'));
+							}
+						}.
+
+						".chk_cid" : {
+							change : function() {
+								var $chk_all,	// $checkall checkbox
+									$checks,	// $checkboxes
+									total_num,	// total checkboxes
+									num_checked,// number of checkboxes checked
+
+
+								$chk_all = tbl.find('.chk_all');
+								$checks = tbl.find('.chk_cid');
+								total_num = $checks.length;
+								num_checked = tbl.find('.chk_cid:checked').length
+
+								// set the state of the checkAll checkbox
+								$chk_all
+								.prop('checked', (total_num === num_checked) ? true : false )
+								.prop('indeterminate', (num_checked > 0 && num_checked < total_num) ? true : false );
+							}
+						},
+
+						".btn-new" : {
+							click : function() {
+								self.utility.actionHelper('new');
+							}
+						},
+
+						".btn-edit" : {
+							click : function() {
+								self.utility.actionHelper('edit');
+							}
+						},
+
+						".btn-delete" : {
+							click : function() {
+								self.utility.actionHelper('delete');
+								}
+							}
+						},
+
+						".btn-refresh" : {
+							click : function() {
+								var This = $(this);
+								This.addClass('disabled');
+								setTimeout( function() { This.removeClass('disabled') }, 2000 );
+								self.fn.updateAll();
+							}
+						},
+
+						".btn-showMenu" : {
+							click : self.utility.toggleRowMenu
+						},
+
+						".table-body .table-row" : {
+							mouseover : function() {
+								var $tr = $(this);
+
+								clearTimeout(self.intervals.cancelRowMenuUpdate);
+								self.intervals.moveRowMenu = setTimeout( function() {
+									//console.log('do the thing');
+									tbl.find('.btn-showMenu').removeClass('hover');
+									if (tbl.find('.rowMenu').hasClass('expand') === false) {
+										tbl.find('.btn-showMenu').removeClass('active');
+									}
+									$tr.find('.btn-showMenu').addClass('hover');
+
+								}, 250 );
+							},
+
+							mouseout : function() {
+
+								var $tr = $(this);
+								clearTimeout(self.intervals.moveRowMenu);
+								self.intervals.cancelRowMenuUpdate = setTimeout( function() {
+									tbl.find('.btn-showMenu').removeClass('hover');
+									if (!tbl.find('.rowMenu').hasClass('expand')) {
+										$tr.find('.btn-showMenu').removeClass('active');
+									}
+									tbl.find('.rowMenu').removeClass('active');
+								}, 100 );
+							}
+						},
+
+
+
+					}, self.options.events.grid);
+			}, //end fn
+
+			/**
+			 * Load Form Definitions
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			loadFormDefinitions : function() {
+				self.options.formDefs = _.extend({
+
+					editFrm : {
+						table : self.options.table,
+						pkey : self.options.pkey,
+						tableFriendly : self.options.tableFriendly,
+						atts : { name : 'frm_editGrid' },
+						disabledElements : self.options.disabledFrmElements
+					},
+
+					newFrm : {
+						table : self.options.table,
+						pkey : self.options.pkey,
+						tableFriendly : self.options.tableFriendly,
+						atts : { name : 'frm_editGrid' },
+						disabledElements : self.options.disabledFrmElements
+					},
+
+					delFrm : {
+						table : self.options.table,
+						pkey : self.options.pkey,
+						tableFriendly : self.options.tableFriendly,
+						loadExternal : false,
+						atts : {
+							name : 'frm_deleteGrid', // + self.options.tableFriendly,
+						},
+						btns : [
+							{ 'type' : 'button', 'class' : 'btn btn-success btn-go disabled', 	'id' : 'btn_go', 'value' : 'Go' },
+							{ 'type' : 'button', 'class' : 'btn btn-danger btn-cancel', 'id' : 'btn_cancel', 'value' : 'Cancel' },
+						],
+						colParams : [
+							{ 'type' : 'text', '_label' : 'Type yes to continue', 'name' : 'confirmation', 'id' : 'confirmation'  },
+							{ 'type' : 'hidden', 'name' : self.options.pkey }
+						],
+						fieldset : {
+							'legend' : 'Delete Record',
+						}
+					},
+
+					colParamFrm : {
+						table : 'col_params',
+						pkey : 'colparam_id',
+						tableFriendly : 'Column Parameters',
+						btns : [],
+						atts : {
+							name : 'frm_element_editor',
+						},
+						fieldset : {
+							'legend' : '3. Edit Column Parameters',
+						}
+					}
+				}, self.options.formDefs);
 			}, //end fn
 
 			/**
@@ -2967,7 +2406,7 @@
 				 * @method function
 				 * @return {[type]} [description]
 				 */
-				failed : function() {
+				fail : function() {
 					console.warn( 'update grid data failed, it may have been aborted' );
 				}, //end fn
 
@@ -2991,7 +2430,7 @@
 				 * @return {[type]} [description]
 				 */
 				complete : function() {
-					self.fn.activityPreloader('hide');
+					self.utility.DOM.activityPreloader('hide');
 				}, // end fn
 			}, // end callbacks
 
@@ -3003,6 +2442,8 @@
 			clearCountdownInterval : function() {
 				try {
 					clearInterval( self.dataGrid.intervals.countdownInterval );
+				} catch(e) {
+					// do nothing
 				}
 			}, // end fn
 
@@ -3012,7 +2453,33 @@
 			 * @return {[type]} [description]
 			 */
 			setCountdownInterval : function() {
+				self.utility.clearCountdownInterval();
 				self.dataGrid.intervals.countdownInterval = setInterval( self.utility.updateCountdown,1000 );
+			}, // end fn
+
+			/**
+			 * Clear the get checked out records interval
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			clearGetCheckedOutRecordsIntevrval : function() {
+				try {
+					clearInterval( self.dataGrid.intervals.getCheckedOutRecords );
+				} catch(e) {
+					// do nothing
+				}
+			}, // end fn
+
+			/**
+			 * Set the get checked out records interval
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setGetCheckedOutRecordsInterval : function() {
+				if ( self.utility.isEditable() ) {
+					self.utility.clearGetCheckedOutRecordsIntevrval();
+					self.dataGrid.intervals.getCheckedOutRecords = setInterval( self.fn.getCheckedOutRecords, 10000 );
+				}
 			}, // end fn
 
 			/**
@@ -3032,7 +2499,952 @@
 			 */
 			initCountdown : function() {
 				self.dataGrid.intervals.countdownTimer = self.options.refreshInterval-2000;
-			}
+			}, // end fn
+
+
+			/**  **  **  **  **  **  **  **  **  **
+			 *   ellipsis
+			 *
+			 *  Truncates cells that are too long
+			 *  according to the maxCellLength grid
+			 *  option. Adds a read-more button to
+			 *  any cells that are truncated.
+			 **  **  **  **  **  **  **  **  **  **/
+			ellipsis : function( txt ) {
+				var $rdMr, $dtch, $btn, $truncated, $e;
+
+				$btn = $('<button/>', {
+					'class' : 'btn btn-success btn-xs btn-readmore pull-right',
+					'type' : 'button'}
+				).html(' . . . ');
+
+				$e = $('<div/>').html(txt);
+
+				if ( $e.text().length > self.options.maxCellLength ) {
+					// look for child html elements
+					if ( $e.find(':not(i)').length > 0) {
+						$rdMr = $('<span/>', {'class':'readmore'});
+
+						while ( $e.text().length > self.options.maxCellLength ) {
+							// keep detaching html elements until the cell length is
+							// within allowable limits
+
+							// store detached element
+							$dtch = ( !!$e.find(':not(i)').last().parent('h4').length ) ?
+								$e.find(':not(i)').last().parent().detach() :
+								$e.find(':not(i)').last().detach();
+
+							// append the detached element to the readmore span
+							$rdMr.html( $rdMr.html( ) + ' ' ).append($dtch);
+
+							// clean up the element html of extra whitespace
+							$e.html( $e.html().replace(/(\s*)?\,*(\s*)?$/ig,'') );
+						}
+
+						$e.append($rdMr).prepend($btn);
+					}// end if
+
+					// all text, no child html elements in the cell
+					else {
+						// place the extra text in the readmore span
+						$rdMr = $('<span/>', {'class':'readmore'})
+							.html( $e.html().substr(self.options.maxCellLength) );
+
+						// truncate the visible text in the cell
+						$truncated = $e.html().substr(0,self.options.maxCellLength);
+
+						$e.empty().append($truncated).append($rdMr).prepend($btn);
+					} // end else
+				}// end if
+
+				return $e.html();
+
+			}, // end fn
+
+			/**
+			 * Set up HTML templates
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setupHtmlTemplates : function() {
+				/**
+				 *   HTML TEMPLATES
+				 *
+				 *  Place large html templates here.
+				 *  These are rendered with
+				 *  the method self.utility.render.
+				 *
+				 *  Parameters of the form {@ParamName}
+				 *  are expanded by the render function
+				 */
+				self.html = {
+
+					// main grid body
+					tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group"> <button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh"> <i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span> </button> </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> Filter : </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
+
+					// check all checkbox template
+					tmpCheckAll	: '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul></div>',
+
+					// header filter clear text button
+					tmpClearHeaderFilterBtn : '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul> </div>',
+
+					// filter showing ie Showing X / Y Rows
+					tmpFilterShowing : '<i class="fa fa-filter fa-fw"></i>{@totalVis} / {@totalRows}',
+
+					// table header sort button
+					tmpSortBtn : '<button rel="{@ColumnName}" title="{@BtnTitle}" class="btn btn-sm btn-default {@BtnClass} tbl-sort pull-right" type="button"> <i class="fa fa-sort-{@faClass} fa-fw"></i> </button> ',
+
+					// form templates
+					forms : {
+
+						// Edit Form Template
+						editFrm	: '<div id="div_editFrm" class="div-btn-edit min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-blue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-pencil fa-fw"></i> <span class="spn_editFriendlyName">{@Name}</span> [Editing] </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side editFormContainer formContainer"> </div> </div> </div> </div> </div> </div>',
+
+						// New Form Template
+						newFrm	: '<div id="div_newFrm" class="div-btn-new min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-green"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-plus fa-fw"></i> New: <span class="spn_editFriendlyName">{@tableFriendly}</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side newFormContainer formContainer"> </div> </div> </div> </div> </div> </div> ',
+
+						// Delete Form Template
+						deleteFrm	: '<div id="div_deleteFrm" class="div-btn-delete min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-red"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true">×</button> <i class="fa fa-trash-o fa-fw"></i> <span class="spn_editFriendlyName"></span> : {@deleteText} </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="delFormContainer formContainer"></div> </div> </div> </div> </form> </div> </div> ',
+
+						// Colparams Form Template
+						colParamFrm	: '<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-lblue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body" style="padding:0 0px !important;"> <div class="row side-by-side"> <div class="col-lg-3 tbl-list"></div> <div class="col-lg-2 col-list"></div> <div class="col-lg-7 param-list"> <div class="side-by-side colParamFormContainer formContainer"> </div> </div> </div> </div> <div class="panel-heading"> <input type="button" class="btn btn-success btn-save" id="btn_save" value="Save"> <input type="button" class="btn btn-warning btn-reset" id="btn_reset" value="Reset"> <input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form"> <input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel"> </div> </div> </div> </div>',
+					}
+				};// end html templates
+
+				// add any templates to this.html
+				_.extend(self.html,self.options.html);
+
+			}, // end fn
+
+			/**  **  **  **  **  **  **  **  **  **
+			 *   render
+			 *
+			 *  @str   (string) containing
+			 *  		multiline text
+			 *
+			 *  @params (obj) contains key/value pairs
+			 *  		  defining parameters that
+			 *  		  will be interpolated in
+			 *  		  the returned text
+			 *
+			 *  returns the interpolated text
+			 **  **  **  **  **  **  **  **  **  **/
+			render : function(str,params) {
+				var ptrn, key, val;
+
+				if (typeof params !== 'object') return '';
+
+				_.each( params, function(val, key) {
+					ptrn = new RegExp( '\{@' + key + '\}', 'gi' );
+					str = str.replace(ptrn, val );
+				})
+
+				return str.replace(/\{@.+\}/gi,'');
+			}, //end fn
+
+			/**  **  **  **  **  **  **  **  **  **
+			 *   interpolate
+			 *
+			 *  @value (str) string to be interpolated
+			 *
+			 *  @return (str) the interpolated string
+			 *
+			 *  recursively processes the input value and
+			 *  replaces parameters of the form
+			 *  {@ParamName} with the corresponding
+			 *  value from the JSON data. Uses the
+			 *  replace callbak self.utility.replacer.
+			 *
+			 *  e.g. {@ParamName} -> self.oJSON[row][ParamName]
+			 **  **  **  **  **  **  **  **  **  **/
+			interpolate : function(value) {
+				return value.replace(/\{@(\w+)\}/gi, self.utility.replacer)
+			}, // end fn
+
+			/**  **  **  **  **  **  **  **  **  **
+			 *   replacer - RegExp replace callback
+			 *
+			 *  @match 	(str) the match as defined
+			 *  			by the RegExp pattern
+			 *  @p1	  	{str} the partial match as
+			 *  			defined by the first
+			 *  			capture group
+			 *  @offset	(int) the offset where the
+			 *  			match was found in @string
+			 *  @string	(str) the original string
+			 *
+			 *  @return	(str) the replacement string
+			 **  **  **  **  **  **  **  **  **  **/
+			replacer : function(match, p1, offset, string) {
+				return self.currentRow[p1];
+			}, // end fn
+
+			/**
+			 * Get the rows that match the header filter text
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			getHeaderFilterMatchedRows : function() {
+
+			}, //end fn
+
+			/**
+			 * Are Header Filters Non-empty
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			areHeaderFiltersNonempty : function() {
+				return !!tbl.find('.header-filter').filter( function() [
+					return !!this.value;
+				]).length
+			}, //end fn
+
+			/**
+			 * DOM Manipulation Functions
+			 * @type {Object}
+			 */
+			DOM : {
+
+				/**  **  **  **  **  **  **  **  **  **
+				 *   updatePanelHeader
+				 *
+				 *  @text	(string) text to display
+				 *
+				 *  updates the text display in the
+				 *  header of the form wrapper
+				 *
+				 **  **  **  **  **  **  **  **  **  **/
+				updatePanelHeader : function(text) {
+					self.fn.$currentFormWrapper().find('.spn_editFriendlyName').html( text );
+				}, // end fn
+
+				/**
+				 * Apply the header filters
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				applyHeaderFilters : function() {
+					if ( self.utility.areHeaderFiltersNonempty() ) {
+
+					} else {
+						self.utility.DOM.removeHeaderFilters();
+					}
+
+					var matchedRows = self.utility.getHeaderFilterMatchedRows();
+				}, // end fn
+
+				/**
+				 * Remove the header filters
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				removeHeaderFilters : function() {
+					if ( self.utility.isPagination() ) {
+						self.utility.DOM.showPaginationControls();
+						self.utility.DOM.updateFilterText('');
+						self.fn.page(self.options.pageNum);
+					}
+				}, // end fn
+
+				/**
+				 * Update the Showing x/x filter text
+				 * @method function
+				 * @param  {[type]} text [description]
+				 * @return {[type]}      [description]
+				 */
+				updateFilterText : function(text) {
+					tbl.find('.filter-showing').html( text );
+				}, // end fn
+
+				/**
+				 * Show the pagination controls
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				showPaginationControls : function() {
+					tbl.find('.divRowsPerPage, .paging').show();
+				}, // end fn
+
+				/**
+				 * Header Filter Delete Icons
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				headerFilterDeleteIcons : function() {
+					$('.header-filter').after(
+						$('<span/>', {'class':'deleteicon','style':'display:none'})
+						.html(
+							self.utility.render( self.html.tmpClearHeaderFilterBtn )
+						)
+					)
+				}, // end fn
+
+				/**  **  **  **  **  **  **  **  **  **
+				 *   sortByCol
+				 *
+				 *  @colNum (int) the 1-indexed html
+				 *  			column to sort by
+				 *
+				 *  @desc 	(bool) sort descending
+				 *
+				 *  sorts the table rows in the DOM
+				 *  according the the input column
+				 *  and direction (asc default)
+				 **  **  **  **  **  **  **  **  **  **/
+				sortByCol : function( colNum, desc ) {
+					var $col;
+
+					//col
+					$col = tbl.find('.table-body .table-row .table-cell:nth-child(' + colNum + ')')
+					  .map( function(i,elm) {
+							return [[
+										$(elm).text().toLowerCase(),
+										$(elm).parent()
+									]];
+						})
+						.sort(function(a,b) {
+
+							if (jQuery.isNumeric(a[0]) && jQuery.isNumeric(b[0])) {
+								return a[0]-b[0];
+							}
+
+							if (a[0] > b[0]) {
+								return 1;
+							}
+
+							if (a[0] < b[0]) {
+								return -1;
+							}
+
+							// a must be equal to b
+							return 0;
+						}
+					);
+
+					// iterate through col
+					$.each($col, function(i,elm){
+						var $e = $(elm[1]);
+
+						// detach the row from the DOM
+						$e.detach();
+
+						// attach the row in the correct order
+						(!desc) ?
+							tbl.find('.table-body').append( $e ) :
+							tbl.find('.table-body').prepend( $e );
+					});
+
+					// go to the appropriate page to refresh the view
+					self.fn.page( self.options.pageNum );
+
+					// apply header filters
+					self.fn.applyHeaderFilter()
+				}, // end fn
+
+				/**
+				 * Hide or show the activity preloader
+				 * @method function
+				 * @param  {[type]} action [description]
+				 * @return {[type]}        [description]
+				 */
+				activityPreloader : function( action ) {
+					if (action !== 'hide') {
+						$('.ajax-activity-preloader').show();
+					} else {
+						$('.ajax-activity-preloader').hide();
+					}
+				}, //end fn
+
+				/**
+				 * Empty the page wrapper div
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				emptyPageWrapper : function() {
+					$('#page-wrapper').empty();
+				}, //end fn
+
+				/**
+				 * Update column widths
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				updateColWidths : function() {
+					// set column widths
+					$('.grid-panel-body .table-row').find('.table-cell, .table-header').css('width','');
+
+					// table height
+					if( !$('#page-wrapper').hasClass('scrolled') ) {
+						$('.grid-panel-body .table').css('height',+$(window).height()-425);
+					} else {
+						$('.grid-panel-body .table').css('height',+$(window).height()-290);
+					}
+
+					// perfect scrollbar
+					$('.table-grid').perfectScrollbar('update');
+
+					//add scroll listener
+					$('.table-grid').off('scroll.custom').on('scroll.custom', function() {
+						if ( typeof self.scrollTimeout !== 'undefined' ) {
+							clearInterval(self.scrollTimeout);
+						}
+						self.scrollTimeout = setTimeout( function() {
+							if (  $('.table-body').offset().top < 10 ) {
+								if( !$('#page-wrapper').hasClass('scrolled') ) {
+									// table height
+									$('#page-wrapper').addClass('scrolled');
+									$('.grid-panel-body .table').animate(
+										{ 'height' : +$(window).height()-290 },
+										500,
+										'linear',
+										function() {
+											// perfect scrollbar
+											$('.table-grid').perfectScrollbar('update');
+										}
+									);
+								}
+							} else if ($('.table-body').offset().top > 50  ) {
+								if( $('#page-wrapper').hasClass('scrolled') ) {
+
+									$('#page-wrapper').removeClass('scrolled');
+									// table height
+									$('.grid-panel-body .table').animate(
+										{'height' : +$(window).height()-425},
+										300,
+										'linear',
+										function() {
+											// perfect scrollbar
+											$('.table-grid').perfectScrollbar('update');
+										}
+									);
+								}
+							}
+						}, 300)
+					});
+
+					self.options.maxColWidth =  +350/1920 * +$(window).innerWidth();
+
+					//visible columns
+					var visCols = +$('.table-head .table-row').eq(1).find('.table-header:visible').length-1;
+
+					for(var ii=1; ii <= visCols; ii++ ) {
+
+						var colWidth = Math.max.apply( Math, $('.grid-panel-body .table-row').map(function(i) {
+							return $(this).find('.table-cell:visible,.table-header-text:visible').eq(ii).innerWidth() } ).get()
+						);
+
+						if ( +colWidth > self.options.maxColWidth && ii < visCols ) {
+							colWidth = self.options.maxColWidth;
+						}
+
+						if ( ii == visCols ) {
+							colWidth = +$(window).innerWidth()-$('.table-head .table-row').eq(1).find('.table-header:visible').slice(0,-1).map( function(i) { return $(this).innerWidth() } ).get().reduce( function(p,c) { return p+c } )-40;
+						}
+
+						var nindex = +ii+1;
+
+						// set widths of each cell
+						$(  '.grid-panel-body .table-row:not(.tr-no-data) .table-cell:visible:nth-child(' + nindex + '),' +
+							'.grid-panel-body .table-row:not(.tr-no-data) .table-header:visible:nth-child(' + nindex + ')').css('width',+colWidth+14);
+
+						if (ii==1) {
+							//$('.tfilters .table-header').eq(1).css('width', +colWidth+90);
+						}
+					}
+
+					//hide preload mask
+					self.fn.preload(true);
+				}, // end fn
+
+				/**  **  **  **  **  **  **  **  **  **
+				 *   moveRowMenu
+				 *
+				 *  @tr - target table row element
+				 *
+				 *  Moves the row menu to the target
+				 *  row and updates the menu forms
+				 *  with the corresponding data.
+				 **  **  **  **  **  **  **  **  **  **/
+				moveRowMenu : function($tr) {
+					//console.log('updating the row menu');
+
+					// set the current row
+					self.DOM.$currentRow = $tr;
+
+					if (self.temp.lastUpdatedRow == $tr.index()) { return false;}
+					//row Menu
+					self.DOM.$rowMenu.detach();
+
+					//table row
+					$tr.find('.table-cell .rowMenu-container').eq(0).append(self.DOM.$rowMenu);
+
+					// update bindings
+					self.fn.bind();
+
+					// update lastUpdatedRow;
+					self.temp.lastUpdatedRow = $tr.index();
+
+				}, // end fn
+
+				/**
+				 * Toggle Row Menu visibility
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				toggleRowMenu : function() {
+					var $btn = $(this),
+						 	$tr = $(this).closest('.table-row'),
+							$rowMenu = self.DOM.$rowMenu;
+
+					$rowMenu.removeClass('expand');
+
+					self.utility.moveRowMenu($tr);
+
+					$btn.toggleClass('active rotate');
+
+					if ( $btn.hasClass('rotate') ) {
+						$rowMenu.addClass('expand');
+					}
+					else {
+						$rowMenu.removeClass('expand');
+					}
+					tbl.find('.btn-showMenu').not(this).removeClass('rotate active');
+				}, // end fn
+
+				/**
+				 * Initialize grid
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				initGrid : function() {
+					var id = self.options.table + '_' + Date.now();
+
+					self.DOM.$grid = $('<div/>' , { id : id }).html(
+						self.utility.render(
+							self.html.tmpMainGridBody , self.options.gridHeader
+						)
+					).find('select#RowsPerPage')
+						.val( self.dataGrid.pagination.rowsPerPage )
+						.end()
+					.mouseover( function() { jApp.activeGrid = self } )
+					.appendTo('#page-wrapper');
+
+					self.DOM.$tblMenu = self.DOM.$grid.find('.table-btn-group');
+
+					tbl = self.DOM.$grid;
+
+					if ( !self.options.gridHeader.helpText ) {
+						tbl.find('.helpText').hide();
+					}
+
+				}, // end fn
+
+				/**
+				 * iterates through changed data and updates the DOM
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				updateGrid : function() {
+					// init vars
+					var appendTR = false,
+						appendTD = false;
+
+					if (!!self.oDelta[0] && self.oDelta[0][self.options.pkey] === 'NoData') {
+						var tr = $('<div/>', { class : 'table-row tr-no-data'} ).append( $('<div/>', { class : 'table-cell'} ).html('No Data') );
+
+						tbl.find('.table-body').empty().append( tr );
+						return false;
+					}
+
+					// iterate through the changed data
+					$.each( self.oDelta, function(i,oRow) {
+
+						tbl.find('.table-body .tr-no-data').remove();
+
+						// save the current row.
+						self.currentRow = self.oJSON[i];
+
+						// find row in the table if it exists
+						var	tr = tbl.find('.table-row[data-identifier="' + oRow[self.options.pkey] + '"]');
+
+						// try the json key if you can't find the row by the pkey
+						if (!tr.length) tr = tbl.find('.table-row[data-jsonkey=' + i + ']');
+
+						// create the row if it does not exist
+						if (!tr.length) {
+							tr = $('<div/>', { 'class' : 'table-row', 'data-identifier' : oRow[self.options.pkey], 'data-jsonkey' : i } );
+							appendTR = true;
+
+							if (self.utility.isEditable()) {
+
+
+								var td_chk = $('<div/>', { 'class' : 'table-cell', "nowrap" : "nowrap",  "style" : "position:relative;"} );
+								//var td_chk = $('<div/>', { 'class' : 'table-cell', "nowrap" : "nowrap" } );
+								if (!!self.options.cellAtts['*']) {
+									$.each( self.options.cellAtts['*'], function(at, fn) {
+										td_chk.attr( at,fn() );
+									});
+								}
+
+								var collapseMenu = (!!self.options.toggles.collapseMenu) ?
+									'<button style="padding:0" class="btn btn-success btn-showMenu"> <i class="fa fa-angle-right fa-fw fa-lg"></i> </button>' :
+									'';
+
+								var	tdCheck = (!!oRow[self.options.pkey]) ? '<input type="checkbox" class="chk_cid" name="cid[]" />' : '';
+
+								var lblCheck = '<label class="btn btn-default pull-right lbl-td-check" style="margin-left:20px;"> ' + tdCheck + '</label>';
+
+								td_chk.html( 	'<div class="permanent-handle"> ' +
+													collapseMenu +
+													lblCheck +
+												'<div class="rowMenu-container"></div> \
+												</div>'
+								);
+								tr.append(td_chk);
+							}
+
+						} else { // update the row data- attributes
+							tr.attr('data-identifier',oRow[self.options.pkey]).attr('data-jsonkey',i);
+
+							var td_chk = tr.find('.table-cell').eq(0);
+							// update the attributes on the first cell
+							if (!!self.options.cellAtts['*']) {
+								$.each( self.options.cellAtts['*'], function(at, fn) {
+									td_chk.attr( at,fn() );
+								});
+							}
+						}
+
+
+
+						// iterate through the columns
+						$.each( self.currentRow, function(key, value) {
+
+							// determine if the column is hidden
+							if ($.inArray(key,self.options.hidCols) !== -1) {
+								return false;
+							}
+
+							// find the cell if it exists
+							var td = tr.find('.table-cell[data-identifier="' + key + '"]');
+
+							// create the cell if needed
+							if (!td.length) {
+								td = $('<div/>', { 'class' : 'table-cell', 'data-identifier' : key} );
+								appendTD = true;
+							}
+
+							// set td attributes
+							if (!!self.options.cellAtts['*']) {
+								$.each( self.options.cellAtts['*'], function(at, fn) {
+									td.attr( at,fn() );
+								});
+							}
+
+							if(!!self.options.cellAtts[key]) {
+								$.each( self.options.cellAtts[key], function(at, fn) {
+									td.attr( at,fn() );
+								});
+							}
+
+							// prepare the value
+							value = self.fn.prepareValue(value,key);
+
+							if ( td.html().trim() !== value.trim() ) {
+								// set the cell value
+								td
+								 .html(value)
+								 .addClass('changed')
+							}
+
+
+							// add the cell to the row if needed
+							if (appendTD) {
+								tr.append(td);
+							}
+
+						});// end each
+
+						// add the row if needed
+						if (appendTR) {
+							tbl.find('.table-body').append(tr);
+						}
+					}); // end each
+
+					// reset column widths
+					self.utility.DOM.updateColWidths();
+
+					// animate changed cells
+
+						// .stop()
+						// .css("background-color", "#FFFF9C")
+						// .animate({ backgroundColor: 'transparent'}, 1500, function() { $(this).removeAttr('style');  } );
+
+
+					setTimeout( function() { tbl.find('.table-cell.changed').removeClass('changed') }, 2000 );
+
+
+					self.fn.countdown();
+					self.fn.page( self.options.pageNum );
+
+					// deal with the row checkboxes
+					tbl.find('.table-row')
+						.filter(':not([data-identifier])')
+							.find('.lbl-td-check').remove() // remove the checkbox if there is no primary key for the row
+							.end()
+						.end()
+						.filter('[data-identifier]') // add the checkbox if there is a primary key for the row
+						.each(function(i,elm) {
+							if ( self.utility.isEditable() && $(elm).find('.lbl-td-check').length === 0 ) {
+								$('<label/>', { class : 'btn btn-default pull-right lbl-td-check', style : 'margin-left:20px' })
+									.append( $('<input/>', { type: 'checkbox', class : 'chk_cid', name : 'cid[]' } ))
+									.appendTo ( $(elm).find('.permanent-handle'));
+							}
+						});
+
+					tbl.find('.table-body .table-row, .table-head .table-row:last-child').each( function(i,elm) {
+						if ( $(elm).find('.table-cell,.table-header').length < 4 ) {
+							$('<div/>', {'class' : 'table-cell'}).appendTo( $(elm) );
+						}
+					});
+
+					tbl.find('.table-head .table-row:nth-child(2)').each( function(i,elm) {
+						if ( $(elm).find('.table-cell,.table-header').length < 3 ) {
+							$('<div/>', {'class' : 'table-cell'}).appendTo( $(elm) );
+						}
+					});
+
+					self.fn.bind();
+
+
+					// process pagination
+					self.utility.updatePagination();
+
+
+				},
+
+				/**
+				 * Clear the menus so they can be rebuilt
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				clearMenus : function() {
+					self.DOM.$tblMenu.empty();
+					self.DOM.$rowMenu.empty();
+					self.DOM.$withSelectedMenu.empty();
+				}, // end fn
+
+				/**
+				 * Build a menu
+				 * @method function
+				 * @param  {obj} collection 	collection of menu options to iterate over
+				 * @param  {jQuery} target    DOM target for new buttons/links
+				 * @param  {string} type 			buttons | links
+				 */
+				buildMenu : function(collection, target, type) {
+					var o, key, oo, kk;
+
+					if (typeof type === 'undefined') { type = 'buttons'}
+
+					//build menu
+					_.each( collection, function(o, key) {
+						if ( self.utility.isButtonEnabled(key) ) {
+							if (key === 'custom') {
+								_.each( o, function( oo, kk ) {
+									if (type == 'buttons') {
+										self.utility.DOM.createMenuButton( oo ).appendTo( target );
+									} else {
+										self.utility.DOM.createMenuLink( oo ).appendTo( target );
+									}
+								});
+							} else {
+								if (type == 'buttons') {
+									self.utility.DOM.createMenuButton( o ).appendTo( target );
+								} else {
+									self.utility.DOM.createMenuLink( o ).appendTo( target );
+								}
+							}
+						}
+					});
+				}, //end fn
+
+				/**
+				 * Build a button menu
+				 * @method function
+				 */
+				buildBtnMenu : function(collection, target) {
+					self.utility.buildMenu(collection, target, 'buttons');
+				}, //end fn
+
+				/**
+				 * Build a link menu
+				 * @method function
+				 */
+				buildLnkMenu : function(collection, target) {
+					self.utility.buildMenu(collection, target, 'links');
+				}, // end fn
+
+				/**
+				 * Helper function to create menu links
+				 * @method function
+				 * @param  {obj} o html parameters of the link
+				 * @return {jQuery obj}
+				 */
+				createMenuLink : function( o ) {
+					var $btn, $btn_a, $btn_choice, $ul;
+
+					$btn_choice = $('<a/>', { href : 'javascript:void(0)' });
+
+					//add the icon
+					if (!!o.icon) {
+						$btn_choice.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + o.icon } ) );
+					}
+					// add the label
+					if (!!o.label) {
+						$btn_choice.append( $('<span/>').html(o.label) );
+					}
+					// add the click handler
+					if (!!o.fn) {
+						//console.log('binding function');
+						if (typeof o.fn === 'string') {
+							$btn_choice.off('click.custom').on('click.custom', function() {
+							self.withSelectedButton = $(this);
+							self.fn.withSelected( 'custom', self.fn[o.fn] ) } );
+						} else if (typeof o.fn === 'function') {
+							$btn_choice.off('click.custom').on('click.custom', function() {
+							self.withSelectedButton = $(this);
+							self.fn.withSelected( 'custom', o.fn ) } );
+						}
+					}
+
+					// add the html5 data
+					if (!!o.data) {
+						console.log( 'appending data' );
+						_.each( o.data, function(v,k) {
+							$btn_choice.attr('data-'+k,v);
+						});
+					}
+
+					return $('<li/>', {class : o.class, title : o.title}).append( $btn_choice );
+
+				}, // end fn
+
+				/**
+				 * Helper function to create menu buttons
+				 * @method function
+				 * @param  {obj} o html parameters of the button
+				 * @return {jQuery obj}
+				 */
+				createMenuButton : function( params ) {
+					var $btn, $btn_a, $btn_choice, $ul;
+
+					if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
+						$btn = $('<div/>', { class : 'btn-group btn-group-sm'})
+						// params[0] will contain the dropdown toggle button
+						$btn_a = $('<a/>', {
+											type : 'button',
+											class : 'btn btn-success dropdown-toggle',
+											href : '#',
+											'data-toggle' : 'dropdown'
+								   });
+						// add the icon if applicable
+						if (!!params[0].icon) {
+							$btn_a.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params[0].icon } ) );
+						}
+						// add the label if applicable
+						if (!!params[0].label) {
+							$btn_a.append( $('<span/>').html(params[0].label) );
+						}
+						// add the click handler, if applicable
+						if (!!params[0].fn) {
+							if (typeof params[0].fn === 'string') {
+								$btn_a.off('click.custom').on('click.custom', self.fn[params[0].fn ] );
+							} else if (typeof params[0].fn === 'function') {
+								$btn_a.off('click.custom').on('click.custom', params[0].fn );
+							}
+						}
+						// add the dropdown if there are multiple options
+						if (params.length > 1) {
+							$btn_a.append( $('<span/>', {class : 'fa fa-caret-down'}));
+							$btn.append($btn_a);
+							$ul = $('<ul/>', { class : 'dropdown-menu'});
+
+							_.each( params, function(o,key) {
+								if (key == 0) return false;
+								$btn_choice = $('<a/>', _.extend( o || {}, { href : 'javascript:void(0)' }) );
+
+								//add the icon
+								if (!!o.icon) {
+									$btn_choice.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + o.icon } ) );
+								}
+								// add the label
+								if (!!o.label) {
+									$btn_choice.append( $('<span/>').html(o.label) );
+								}
+								// add the click handler
+								if (!!o.fn) {
+									if (typeof o.fn === 'string') {
+										$btn_choice.off('click.custom').on('click.custom', self.fn[o.fn] );
+									} else if (typeof o.fn === 'function') {
+										$btn_choice.off('click.custom').on('click.custom', o.fn );
+									}
+								}
+
+								$btn_choice.wrap('<li></li>').parent().appendTo($ul);
+							});
+
+							$btn.append($ul);
+						} else {
+							$btn.append($btn_a);
+						}
+
+					} else {
+
+						$btn = $('<button/>', params);
+						if (!!params.icon) {
+							$btn.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params.icon } ) );
+						}
+						if (!!params.label) {
+							$btn.append( $('<span/>').html(params.label) );
+						}
+						if (!!params.fn) {
+							if (typeof params.fn === 'string') {
+								$btn.off('click.custom').on('click.custom', self.fn[params.fn] );
+							} else if (typeof params.fn === 'function') {
+								$btn.off('click.custom').on('click.custom', params.fn );
+							}
+						}
+					}
+
+					return $btn;
+				}, // end fn
+
+				/**
+				 * Build form
+				 * @method function
+				 * @param  {[type]} params [description]
+				 * @param  {[type]} key    [description]
+				 * @return {[type]}        [description]
+				 */
+				buildForm : function( params, key ) {
+					var $frmHandle = '$' + key,
+							oFrmHandle = '$' + key.ucfirst(),
+							oFrm;
+
+					// make sure the form template exists
+					if ( typeof self.html.forms[key] === 'undefined' ) return false;
+
+					// create form object
+					self.forms[oFrmHandle] = oFrm = new jForm( o );
+
+					// create form container
+					self.forms[$frmHandle] = $('<div/>')
+						.html( self.utility.render( self.html.forms[key] ) )
+						.find( '.formContainer' ).append( oFrm.fn.handle() ).end()
+						.appendTo( tbl );
+				}, // end fn
+
+			}, // end DOM fns
 
 		}; // end utility fns
 
@@ -3041,6 +3453,17 @@
 		 * @type {Object}
 		 */
 		this.defaults = {
+
+			/**
+			 * Form Definitions
+			 */
+			formDefs : {},
+
+			/**
+			 * Event Bindings
+			 * @type {Object}
+			 */
+			bind : {},
 
 			/**
 			 * Toggles - true/false switches
@@ -3268,12 +3691,6 @@
 			 * @type {Array}
 			 */
 			disabledFrmElements : [],
-
-			/**
-			 * The name of the edit form
-			 * @type {String}
-			 */
-			editFrmName : 'frm_editGrid',
 
 			/**
 			 * Table buttons appear in the table menu below the header
