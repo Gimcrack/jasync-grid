@@ -10,8 +10,8 @@
  *  Released under the MIT license
  *
  *  Prereqs: 	jQuery, underscore.js,
- *  			jInput, jForm, $.validator
- *  			jApp
+ *  					jInput, jForm, $.validator
+ *  			  	jApp
  */
 
 ;(function(window, jQuery, $, _, jInput, jForm, jApp) {
@@ -118,69 +118,6 @@
 				});
 			},
 
-			/**  **  **  **  **  **  **  **  **  **
-			 *   colParamSetup
-			 *
-			 *  Displays the form setup form so
-			 *  an admin user can edit the form
-			 *  colParams
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
-			colParamSetup : function() {
-				$('.tbl-list,.col-list,.param-list').perfectScrollbar();
-				$('.colParamFormContainer').hide();
-				$('.btn-save').addClass('disabled');
-				self.store.flush();
-				self.forms.oColParamFrm.fn.getColParams();
-				self.action = 'colParam';
-
-				// modal overlay
-				self.fn.overlay(2,'on');
-
-				var $target = tbl.find('#div_colParamFrm')
-				self.fn.setupFormContainer($target);
-
-				// get table list
-				if ( !!self.store.get( 'tableList', false ) ) {
-					self.callback.getTableList(  self.store.get('tableList') );
-				} else {
-					var url = 'index.php?controller=ajax&view=getTableList';
-					var data = {};
-
-					$.getJSON( url
-						, data
-						, self.callback.getTableList
-					).fail( function() {
-						console.error('There was a problem getting the row data');
-					}).always( function(response) {
-						self.store.set('tableList',response);
-					});
-				}
-
-			}, // end fn
-
-
-
-			getColumnList : function( tableName ) {
-
-				// get column list
-				if ( !!self.store.get( 'columnList' + tableName, false ) ) {
-					self.callback.getTableList(  self.store.get( 'columnList' + tableName ) );
-				} else {
-					var url = 'index.php?controller=ajax&view=getColumnList';
-					var data = { tableName : tableName };
-
-					$.getJSON( url
-						, data
-						, self.callback.getColumnList
-					).fail( function() {
-						console.error('There was a problem getting the row data');
-					}).always( function(response) {
-						self.store.set( 'columnList' + tableName,response);
-						self.store.setTTL( 'columnList' + tableName, 120);
-					});
-				}
-			}, // end fn
 
 			/**  **  **  **  **  **  **  **  **  **
 			 *   countdown
