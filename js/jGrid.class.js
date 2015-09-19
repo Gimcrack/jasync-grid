@@ -1210,13 +1210,15 @@
 			resetCurrentForm : function() {
 				try {
 					self.fn.$currentForm().clearForm();
-					self.fn.$currentForm().find(':input:not("[type=button]"):not("[type=submit]"):not("[type=reset]"):not("[type=radio]"):not("[type=checkbox]")').each( function (i,elm) {
+					self.fn.$currentForm().find(':input:not("[type=button]"):not("[type=submit]"):not("[type=reset]"):not("[type=radio]"):not("[type=checkbox]")')
+					.each( function(i,elm) {
 
-					$(elm).data("DateTimePicker").remove();
-					$(elm).val('');
-					if ( $(elm).hasClass('bsms') ) {
-						$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
-					}
+						$(elm).data("DateTimePicker").remove();
+						$(elm).val('');
+						if ( $(elm).hasClass('bsms') ) {
+							$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
+						}
+					});
 				} catch(e) {
 					console.warn(e);
 					return false;
@@ -1260,7 +1262,7 @@
 						.find('.formContainer').css('height','');
 					self.fn.$currentForm().clearForm();
 					self.utility.turnOffOverlays();
-				}
+				} catch(ignore) {}
 			}, // end fn
 
 			/**
@@ -1402,8 +1404,8 @@
 
 						// pagination parameters
 						pagination : {
-							totalPages = -1,
-							rowsPerPage = self.store.get('pref_rowsPerPage',self.options.rowsPerPage)
+							totalPages : -1,
+							rowsPerPage : self.store.get('pref_rowsPerPage',self.options.rowsPerPage)
 						},
 
 						// ajax requests
@@ -1431,9 +1433,9 @@
 
 				self.DOM = {
 					$grid : false,
-					$tblMenu = false,
-					$rowMenu = $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' }),
-					$withSelectedMenu = $('<div/>'),
+					$tblMenu : false,
+					$rowMenu : $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' }),
+					$withSelectedMenu : $('<div/>'),
 				}
 
 				self.DOM.$currentRow = false;
@@ -1540,7 +1542,7 @@
 			 */
 			isToggleMine : function() {
 				return window.location.href.indexOf('/my') !== -1;
-			}
+			}, // end fn
 
 			/**
 			 * Is header filters enabled
@@ -1720,9 +1722,9 @@
 			 * @return {[type]}         [description]
 			 */
 			timeout : function(o) {
-				try(
+				try{
 					clearTimeout( self.dataGrid.timeouts[o.key] )
-				) catch(ignore) {}
+				} catch(ignore) {}
 
 				self.dataGrid.timeouts[o.key] = setTimeout(o.fn, o.delay );
 			}, //end fn
@@ -1736,9 +1738,9 @@
 			 * @return {[type]}         [description]
 			 */
 			interval : function(o) {
-				try(
+				try{
 					clearInterval( self.dataGrid.intervals[o.key] )
-				) catch(ignore) {}
+				} catch(ignore) {}
 
 				self.dataGrid.intervals[o.key] = setInterval(o.fn, o.delay );
 			}, //end fn
@@ -1864,7 +1866,9 @@
 				var events, target, fn, event;
 
 				_.each( self.options.events.grid, function( events, target ) {
-					var $target = self.utility.locateTarget(target) || return false;
+					var $target = self.utility.locateTarget(target) || false;
+
+					if (!$target) return false;
 
 					_.each( events, function(fn, event) {
 							self.utility.setCustomBinding( $target, fn, event )
@@ -1881,7 +1885,9 @@
 				var events, target, fn, event;
 
 				_.each( self.options.events.form, function( events, target ) {
-					var $target = self.utility.locateTarget(target, self.fn.$currentFormWrapper() ) || return false;
+					var $target = self.utility.locateTarget(target, self.fn.$currentFormWrapper() ) || false;
+
+					if (!$target) return false;
 
 					_.each( events, function(fn, event) {
 							self.utility.setCustomBinding( $target, fn, event )
@@ -2145,7 +2151,7 @@
 								// perform the sort on the table rows
 								self.utility.DOM.sortByCol( $btnIndex, $desc );
 							}
-						}
+						},
 
 						"[title]" : {
 							boot : function() {
@@ -2184,7 +2190,7 @@
 							change : function() {
 								self.$().find(':checkbox:visible').prop('checked',$(this).prop('checked'));
 							}
-						}.
+						},
 
 						".chk_cid" : {
 							change : function() {
@@ -2221,15 +2227,12 @@
 						".btn-delete" : {
 							click : function() {
 								self.utility.actionHelper('delete');
-								}
 							}
 						},
 
 						".btn-refresh" : {
 							click : function() {
-								var This = $(this);
-								This.addClass('disabled');
-								setTimeout( function() { This.removeClass('disabled') }, 2000 );
+								$(this).addClass('disabled').delay(2000).removeClass('disabled');
 								self.fn.updateAll();
 							}
 						},
@@ -2631,9 +2634,9 @@
 			 * @return {[type]} [description]
 			 */
 			areHeaderFiltersNonempty : function() {
-				return !!tbl.find('.header-filter').filter( function() [
+				return !!tbl.find('.header-filter').filter( function() {
 					return !!this.value;
-				]).length
+				}).length
 			}, //end fn
 
 			/**
@@ -3484,7 +3487,7 @@
 				 * Close form window after saving
 				 * @type {Boolean} default true
 				 */
-				closeOnSave : true
+				closeOnSave : true,
 
 				/**
 				 * remove all rows when updating data
