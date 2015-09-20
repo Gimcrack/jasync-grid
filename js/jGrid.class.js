@@ -119,14 +119,12 @@
 			},
 
 
-			/**  **  **  **  **  **  **  **  **  **
-			 *   countdown
-			 *
-			 *  Sets up the countdown that displays
+			/**
+			 * Sets up the countdown that displays
 			 *  the time remaining until the next
 			 *  refresh
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
+			 * @return {[type]} [description]
+			 */
 			countdown : function( ) {
 				if ( !self.utility.isAutoUpdate() ) {
 					return false;
@@ -137,6 +135,10 @@
 				self.utility.setCountdownInterval();
 			}, // end fn
 
+			/**
+			 * Update all the grids currently on the page
+			 * @return {[type]} [description]
+			 */
 			updateAll : function() {
 				//console.log('updating all grids');
 
@@ -261,133 +263,6 @@
 				self.utility.setCurrentFormFocus();
 				self.utility.processFormBindings();
 				self.utility.getCurrentFormRowData();
-			}, // end fn
-
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   applyHeaderFilter
-			 *
-			 *  filters the visible rows, displaying
-			 *  only those which match the pattern(s)
-			 *  entered in the header filters
-			 *
-			 **  **  **  **  **  **  **  **  **  **/
-			applyHeaderFilter : function() {
-				var $emptyFilters = true,
-					$matches = [],
-					$tcol,
-					$temp,
-					$totalRows,
-					$totalVis
-
-
-				//iterate through header filters and apply each
-				tbl.find('.header-filter').each( function(i) {
-					if ( $(this).val() != '' ) {
-						$emptyFilters = false;
-						$tcol = (self.utility.isEditable()) ? i+3 : i+2;
-
-						$temp = tbl.find(".table-row .table-cell:nth-child(" + $tcol + "):contains('" + $(this).val() + "')").parent();
-
-						$temp = $.map( $temp, function(obj, i) {
-							return $(obj).index();
-						});
-
-						$matches = (!$matches.length) ?
-							$temp :
-							$.intersect($matches,$temp);
-					}
-				});
-
-				if ($emptyFilters === false) {
-					tbl.find('.divRowsPerPage, .paging').hide(); 	// hide rows per page and paging controls
-					tbl.find('.table-body .table-row').hide();			// hide all rows
-
-					// show appropriate rows
-					tbl.find('.table-body .table-row').filter( function(i) {
-						return $.inArray(i,$matches) !== -1;
-					}).show();
-
-					// update information about visible rows
-					$totalRows = tbl.find('.table-body .table-row').length;
-					$totalVis = $matches.length;
-					tbl.find('.filter-showing').html(
-						self.utility.render( self.html.tmpFilterShowing, { 'totalVis' : $totalVis, 'totalRows' : $totalRows } )
-					);
-
-
-					// update column widths
-					self.utility.DOM.updateColWidths();
-				}
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   removeRows
-			 *
-			 *  inspects each row in the DOM and
-			 *  looks for the corresponding row
-			 *  in the JSON data. If the row is not
-			 *  found in the JSON data it is removed
-			 *  from the DOM.
-			 **  **  **  **  **  **  **  **  **  **/
-			removeRows : function(all) {
-				if (typeof all === 'undefined' || !all) {
-
-					tbl.find('.table-row[data-identifier]').each(function(i, elm) {
-						var found = false;
-						var $id = $(elm).attr('data-identifier');
-						for(var row in self.oJSON) {
-							if (self.oJSON[row][self.options.pkey] === $id) {
-								found = true;
-							}
-						}
-						if (!found) {
-							self.DOM.$rowMenu.detach();
-							$(elm).remove();
-						}
-					});
-				} else {
-					tbl.find('.table-body .table-row').remove();
-				}
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   prepareValue
-			 *
-			 *  @value 	(str) the column value as
-			 *  		specified in the JSON
-			 *  		data
-			 *  @column (str) the column name as
-			 *  		specified in the JSON
-			 *  		data
-			 *
-			 *  @return (str) the prepared value
-			 *
-			 *  prepares the value for display in
-			 *  the DOM, applying a template
-			 *  function if applicable.
-			 **  **  **  **  **  **  **  **  **  **/
-			prepareValue : function(value,column) {
-				var template;
-
-				if (!value || value.toString().toLowerCase() === 'null') {
-					return '';
-				}
-
-				if (typeof self.options.templates[column] === 'function') {
-					template = self.options.templates[column];
-					value = template(value);
-				}
-
-				if (value.toString().indexOf('|') !== -1) {
-					value = value.replace(/\|/gi,', ');
-				}
-
-				if ( self.utility.isEllipses() ) {
-					value = self.utility.ellipsis( value );
-				}
-
-				return value;
 			}, // end fn
 
 			/**  **  **  **  **  **  **  **  **  **
@@ -940,7 +815,7 @@
 
 				// remove all rows, if needed
 				if (self.options.removeAllRows) {
-					self.fn.removeRows(true);
+					self.utility.DOM.removeRows(true);
 				}
 
 				// show the preloader, then update the contents
@@ -1004,7 +879,7 @@
 				self.utility.DOM.updateGrid();
 
 				// remove the rows that may have been removed from the data
-				self.fn.removeRows();
+				self.utility.DOM.removeRows();
 				self.fn.buildMenus();
 				self.fn.bind();
 				self.fn.preload(true);
@@ -1186,6 +1061,7 @@
 		 * @type {Object}
 		 */
 		this.utility = {
+
 
 			/**
 			 * [function description]
@@ -1763,6 +1639,8 @@
 				self.$().find('.table-head .tfilters').show();
 			}, // end fn
 
+
+
 			/**
 			 * Update Grid from cached data
 			 * @method function
@@ -2092,7 +1970,7 @@
 						".deleteicon" : {
 							click : function() {
 								$(this).prev('input').val('').focus().trigger('keyup');
-								self.fn.applyHeaderFilter();
+								self.utility.DOM.applyHeaderFilters();
 							}
 						},
 
@@ -2102,13 +1980,13 @@
 
 								self.utility.timeout( {
 									key : 'applyHeaderFilters',
-									fn : self.fn.applyHeaderFilter,
+									fn : self.utility.DOM.applyHeaderFilters,
 									delay : 300
 								});
 
 							},
 
-							boot : self.fn.applyHeaderFilter
+							boot : self.utility.DOM.applyHeaderFilters
 						},
 
 						".tbl-sort" : {
@@ -2625,8 +2503,55 @@
 			 * @return {[type]} [description]
 			 */
 			getHeaderFilterMatchedRows : function() {
+				var columnOffset = (self.utility.isEditable()) ? 3 : 2,
+						currentColumn,
+						currentMatches,
+						matchedRows,
+						targetString
+
+
+				//iterate through header filters and apply each
+				tbl.find('.header-filter').each( function(i) {
+					if ( !$(this).val().toString().trim() ) return false;
+
+					// calculate the index of the current column
+					currentColumn = +(i + columnOffset);
+
+					// set the target string for the current column
+					// note: using a modified version of $.contains that is case-insensitive
+					targetString = ".table-row .table-cell:nth-child(" + currentColumn + "):contains('" + $(this).val() + "')";
+
+					// find the matched rows in the current column
+					currentMatches = tbl.find(targetString)
+															.parent()
+															.map( function(i, obj) { return $(obj).index(); })
+															.get();
+
+					// if matchedRows is non-empty, find the intersection of the
+					// matched rows and the current rows - ie the rows that match
+					// all of the criteria processed so far.
+					matchedRows = (!matchedRows.length) ?
+						currentMatches :
+						_.intersection(matchedRows,currentMatches);
+
+				});
+
+				return matchedRows;
 
 			}, //end fn
+
+			/**
+			 * Sets the rows that are visible
+			 * @param  {array} visibleRows [indexes of the visible rows]
+			 * @return {[type]}             [description]
+			 */
+			setVisibleRows : function( visibleRows ) {
+				// show appropriate rows
+				tbl.find('.table-body .table-row').hide()
+					 .filter( function(i) {
+						 return _.indexOf(visibleRows, i) !== -1;
+				}).show();
+			}, // end fn
 
 			/**
 			 * Are Header Filters Non-empty
@@ -2638,6 +2563,45 @@
 					return !!this.value;
 				}).length
 			}, //end fn
+
+			/**  **  **  **  **  **  **  **  **  **
+			 *   prepareValue
+			 *
+			 *  @value 	(str) the column value as
+			 *  		specified in the JSON
+			 *  		data
+			 *  @column (str) the column name as
+			 *  		specified in the JSON
+			 *  		data
+			 *
+			 *  @return (str) the prepared value
+			 *
+			 *  prepares the value for display in
+			 *  the DOM, applying a template
+			 *  function if applicable.
+			 **  **  **  **  **  **  **  **  **  **/
+			prepareValue : function(value,column) {
+				var template;
+
+				if (!value || value.toString().toLowerCase() === 'null') {
+					return '';
+				}
+
+				if (typeof self.options.templates[column] === 'function') {
+					template = self.options.templates[column];
+					value = template(value);
+				}
+
+				if (value.toString().indexOf('|') !== -1) {
+					value = value.replace(/\|/gi,', ');
+				}
+
+				if ( self.utility.isEllipses() ) {
+					value = self.utility.ellipsis( value );
+				}
+
+				return value;
+			}, // end fn
 
 			/**
 			 * DOM Manipulation Functions
@@ -2659,18 +2623,56 @@
 				}, // end fn
 
 				/**
+				 * Remove rows from the DOM that do not have corresponding data
+				 * @param  {[type]} all [description]
+				 * @return {[type]}     [description]
+				 */
+				removeRows : function(all) {
+					var identifiers = _.pluck(self.oJSON, self.options.pkey);
+
+					if (typeof all !== 'undefined' && all) {
+						tbl.find('.table-body .table-row').remove();
+					} else {
+						sel.DOM.$rowMenu.detach();
+
+						tbl.find('.table-row[data-identifier]')
+							 .filter( function(i, row) {
+								 	return _.indexOf( identifiers, $(row).attr('data-identifier') ) === -1;
+							 }
+						).remove();
+					}
+				}, // end fn
+
+				/**
 				 * Apply the header filters
 				 * @method function
 				 * @return {[type]} [description]
 				 */
 				applyHeaderFilters : function() {
-					if ( self.utility.areHeaderFiltersNonempty() ) {
+					var matchedRows = [];
 
-					} else {
-						self.utility.DOM.removeHeaderFilters();
+					if ( !self.utility.areHeaderFiltersNonempty() ) {
+						return self.utility.DOM.removeHeaderFilters();
 					}
 
-					var matchedRows = self.utility.getHeaderFilterMatchedRows();
+					self.utility.DOM.hidePaginationControls();
+
+					matchedRows = self.utility.getHeaderFilterMatchedRows();
+
+					self.utility.setVisibleRows( matchedRows );
+
+					tbl.find('.filter-showing').html(
+							 self.utility.render( self.html.tmpFilterShowing,
+								 {
+									 'totalVis' : matchedRows.length,
+									 'totalRows' : tbl.find('.table-body .table-row').length
+								 }
+								)
+						 );
+
+					// update column widths
+					self.utility.DOM.updateColWidths();
+
 				}, // end fn
 
 				/**
@@ -2703,6 +2705,15 @@
 				 */
 				showPaginationControls : function() {
 					tbl.find('.divRowsPerPage, .paging').show();
+				}, // end fn
+
+				/**
+				 * Hide the pagination controls
+				 * @method function
+				 * @return {[type]} [description]
+				 */
+				hidePaginationControls : function() {
+					tbl.find('.divRowsPerPage, .paging').hide();
 				}, // end fn
 
 				/**
@@ -2778,7 +2789,7 @@
 					self.fn.page( self.options.pageNum );
 
 					// apply header filters
-					self.fn.applyHeaderFilter()
+					self.utility.DOM.applyHeaderFilters()
 				}, // end fn
 
 				/**
@@ -3088,7 +3099,7 @@
 							}
 
 							// prepare the value
-							value = self.fn.prepareValue(value,key);
+							value = self.utility.prepareValue(value,key);
 
 							if ( td.html().trim() !== value.trim() ) {
 								// set the cell value
