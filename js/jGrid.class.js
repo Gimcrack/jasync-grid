@@ -39,6 +39,18 @@
 		}
 
 		/**
+		 * Options
+		 * @type {Object}
+		 */
+		this.options = {}
+
+		/**
+		 * HTML Templates
+		 * @type {Object}
+		 */
+		this.html = {}
+
+		/**
 		 * Class Methods
 		 * @type {Object}
 		 */
@@ -50,7 +62,8 @@
 			 * @return {[type]} [description]
 			 */
 			_init : function() {
-				self.utility.setOptions( _.extend(this.defaults, options) );
+				self.utility.setOptions( _.extend(self.defaults, options) );
+				self.utility.setupHtmlTemplates();
 				self.utility.setInitParams();
 				self.fn.initializeTemplate();
 				self.fn.getGridData();
@@ -64,7 +77,7 @@
 					self.fn.toggleMine();
 				}
 
-				self.fn.getCheckedOutRecords();
+				self.utility.getCheckedOutRecords();
 				self.utility.initScrollbar();
 			}, // end fn
 
@@ -75,7 +88,6 @@
 			 */
 			initializeTemplate : function() {
 				self.utility.DOM.emptyPageWrapper();
-				self.utility.bind.windowResize();
 				self.utility.DOM.initGrid();
 			},
 
@@ -114,7 +126,7 @@
 				self.utility.loadFormDefinitions();
 
 				_.each( self.options.formDefs, function( o, key ) {
-					self.utility.buildForm( o, key );
+					self.utility.DOM.buildForm( o, key );
 				});
 			},
 
@@ -157,7 +169,7 @@
 			getGridData : function( preload ) {
 				// show the preload if needed
 				if (!!preload) {
-					self.fn.preload();
+					self.utility.DOM.togglePreloader();
 					self.fn.setupIntervals();
 				}
 
@@ -256,273 +268,13 @@
 			 *  corresponding div
 			 **  **  **  **  **  **  **  **  **  **/
 			setupFormContainer : function() {
-				self.fn.overlay(2,'on');
+				self.utility.DOM.overlay(2,'on');
 				self.hideOverlayOnError = false;
 				self.utility.resetCurrentForm();
 				self.utility.maximizeCurrentForm();
 				self.utility.setCurrentFormFocus();
 				self.utility.processFormBindings();
 				self.utility.getCurrentFormRowData();
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   page
-			 *
-			 *  @pageNum (int) the new page number
-			 *  				to display
-			 *
-			 *  jumps to the desired page number
-			 **  **  **  **  **  **  **  **  **  **/
-			page : function( pageNum ) {
-				var first, last;
-
-				self.fn.preload();
-
-				if (isNaN(pageNum)) return false;
-				pageNum = Math.floor(pageNum);
-
-				self.options.pageNum = pageNum;
-				first = +( (pageNum-1) * self.dataGrid.pagination.rowsPerPage );
-				last  = +(first+self.dataGrid.pagination.rowsPerPage);
-				tbl.find('.table-body .table-row').hide().slice(first,last).show();
-
-				// set col widths
-				setTimeout(	self.utility.DOM.updateColWidths, 100 );
-
-
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   preload
-			 *
-			 *  @hide (bool) hide the preloader
-			 *
-			 *  show/hide the preload animation
-			 **  **  **  **  **  **  **  **  **  **/
-			preload : function( hide ) {
-				if (typeof hide === 'undefined') { hide = false; }
-
-				if (!hide) {
-					tbl.css('background','url("./images/tbody-preload.gif") no-repeat center 175px rgba(0,0,0,0.15)')
-					 .find('[name=RowsPerPage],[name=q]').prop('disabled',true).end()
-					 .find('.table-body').css('filter','blur(1px) grayscale(100%)').css('-webkit-filter','blur(2px) grayscale(100%)') .css('-moz-filter','blur(2px) grayscale(100%)')
-					 //.find('.table-cell, .table-header').css('border','1px solid transparent').css('background','none');
-				} else {
-					tbl.css('background','')
-					 .find('[name=RowsPerPage],[name=q]').prop('disabled',false).end()
-					 .find('.table-body').css('filter','').css('-webkit-filter','').css('-moz-filter','')
-					 //.find('.table-cell, .table-header').css('border','').css('background','');
-				}
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   rowsPerPage
-			 *
-			 *  @rowsPerPage (int) hide the preloader
-			 *
-			 *  show/hide the preload animation
-			 **  **  **  **  **  **  **  **  **  **/
-			rowsPerPage : function( rowsPerPage ) {
-				if ( isNaN(rowsPerPage) ) return false;
-
-				self.store.set('pref_rowsPerPage',rowsPerPage);
-				self.options.pageNum = 1;
-				self.dataGrid.pagination.rowsPerPage = Math.floor(rowsPerPage);
-				self.fn.bind();
-				self.fn.page(1);
-				self.utility.DOM.updateColWidths();
-			}, // end fn
-
-			visibleColumns : function( elm ) {
-				var col = elm.data('column'),
-					i = +elm.closest('li').index()+2;
-
-				if (elm.find('i').hasClass('fa-check-square-o')) {
-					elm.find('i').removeClass('fa-check-square-o').addClass('fa-square-o');
-					tbl.find('.table-head .table-row:not(:first-child) .table-header:nth-child(' + i +'), .table-body .table-cell:nth-child(' + i +')').hide();
-				} else {
-					elm.find('i').addClass('fa-check-square-o').removeClass('fa-square-o');
-					tbl.find('.table-head .table-row:not(:first-child) .table-header:nth-child(' + i +'), .table-body .table-cell:nth-child(' + i +')').show();
-				}
-
-				self.utility.DOM.updateColWidths();
-
-			}, //end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   deltaData
-			 *
-			 *  @prev (obj) previous state of object
-			 *  @now  (obj) current state of object
-			 *
-			 *  computes and returns the difference
-			 *  between two objects
-			 **  **  **  **  **  **  **  **  **  **/
-			deltaData : function(prev, now) {
-				var changes = {}, prop, c;
-				$.each(now, function( i, row) {
-					if (typeof prev[i] === 'undefined') {
-						changes[i] = row;
-					} else {
-						$.each( row, function( prop, value) {
-							if (prev[i][prop] !== value) {
-								if (typeof changes[i] === 'undefined') {
-									changes[i] = {};
-								}
-								changes[i][prop] = value;
-							}
-						})
-					}
-				})
-				if ($.isEmptyObject(changes)) {
-					return false;
-				}
-				return changes;
-
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   overlay
-			 *
-			 *  Controls the modal overlays
-			 **  **  **  **  **  **  **  **  **  **/
-			overlay : function(which,action) {
-				var $which = (which == 1) ? '#modal_overlay' : '#modal_overlay2';
-				if (action == 'on') {
-					$($which).fadeIn('fast');
-				} else {
-					$($which).fadeOut('fast');
-				}
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   ajaxSetupAction
-			 *  @form - the form object that will
-			 *          be submitted
-			 *
-			 *  Sets up the ajax request
-			 *   variables.
-			 **  **  **  **  **  **  **  **  **  **/
-			ajaxSetupAction : function() {
-				var $data = self.fn.$currentForm().serialize();
-				self.ajaxVars = { url: self.options.url, data: $data, type: 'POST', success: self.fn.ajaxSuccessAction };
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   ajaxSubmit
-			 *
-			 *  Calls the ajax function with the
-			 *  request variables that have been
-			 *  set up prior.
-			 **  **  **  **  **  **  **  **  **  **/
-			ajaxSubmit : function() {
-
-				self.temp.lastUpdatedRow = -1;
-
-				if (!!self.fn.$currentForm()) {
-					var oValidate = new $.validator( self.fn.$currentForm() );
-					if (oValidate.errorState) {
-						return false;
-					}
-				}
-
-				// determine if the same request is being currently processed, should cut down on multiple accidental submissions
-				var requestIndex = $.md5( escape(self.ajaxVars.data) ); // );
-				if (typeof self.dataGrid.requests[ requestIndex ] !== 'undefined' ) {
-					self.dataGrid.requests[ requestIndex ].abort();
-				}
-				if (self.ajaxVars.overlay && self.ajaxVars.overlay.toLowerCase() == 'off') {
-					self.fn.overlay(2,'on');
-				} else {
-					self.fn.overlay(1,'on');
-				}
-				self.dataGrid.requests[ requestIndex ] = $.ajax(self.ajaxVars).always( self.fn.bind );
-			},
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *    ajaxSuccessAction
-			 *
-			 *  @response - ajax response
-			 *
-			 *  Success callback function after
-			 *  the action request has been made,
-			 *  sets up and calls the update
-			 *  request.
-			 **  **  **  **  **  **  **  **  **  **/
-			ajaxSuccessAction : function(response) {
-				var type = (response.indexOf('Successful') !== -1) ? 'success' : 'warning';
-				nfx_thumbslide('./images/' + type + '.png',response,type);
-				if (type === 'success') {
-					if (  self.utility.isCheckout()  && self.action !== 'colParam' ) self.fn.checkin('all');
-					if ( !!self.fn.oCurrentForm() && !!self.options.closeOnSave && !!self.fn.$currentFormWrapper ) {
-						self.fn.$currentFormWrapper().removeClass('max');
-						$( window ).unbind("beforeunload");
-					}
-					if (!!self.options.closeOnSave) {
-						self.fn.overlay(2,'off');
-					}
-					self.fn.overlay(1,'off');
-					self.fn.updateAll();
-					tbl.find('.header-filter').each( function(i,elm){
-						setTimeout( function() { $(elm).trigger('keyup');}, 300 );
-					});
-					setTimeout(function() {
-						//$target_btn.removeClass('disabled');
-						var $tr = tbl.find( '.btn-showMenu.active' ).closest('.table-row');
-
-						tbl.find('.btn-showMenu.active').click();
-
-						self.utility.moveRowMenu($tr);
-
-
-					},500 );
-				} else {
-					if (self.hideOverlayOnError) {
-						self.fn.overlay(1,'off');
-					}
-				}
-			}, // end fn
-
-			colParamSaveSuccess : function(response) {
-				var type = (response.indexOf('Successful') !== -1) ? 'success' : 'warning';
-				nfx_thumbslide('./images/' + type + '.png',response,type);
-
-				self.fn.overlay(2,'on');
-			}, // end fn
-
-			/**  **  **  **  **  **  **  **  **  **
-			 *   toggleMine
-			 *
-			 *  Toggles the display of only 'my'
-			 *  objects (applications, servers,
-			 *  etc.)
-			 **  **  **  **  **  **  **  **  **  **/
-			toggleMine : function() {
-				if (self.DOM.$tblMenu.find('#toggleMine span').length === 0) return false;
-				var tmp = self.DOM.$tblMenu.find('#toggleMine span').html();
-				//console.log(tmp);
-
-				if (!!self.dataGrid.requestOptions.data.filterMine) { // turn filter off
-					self.options.removeAllRows = false;
-					self.dataGrid.requestOptions.data.filterMine = 0;
-					self.DOM.$tblMenu
-						.find('#toggleMine')
-							.find('span')
-							.html( tmp.replace('All','My') )
-						.end()
-						.toggleClass('btn-success btn-warning');
-					self.fn.updateAll();
-				} else {
-					self.options.removeAllRows = true;
-					self.dataGrid.requestOptions.data.filterMine = 1;
-					self.DOM.$tblMenu
-						.find('#toggleMine')
-							.find('span')
-							.html( tmp.replace('My','All') )
-						.end()
-						.toggleClass('btn-success btn-warning');
-					self.fn.updateAll();
-				}
 			}, // end fn
 
 
@@ -581,6 +333,13 @@
 
 			}, // end fn
 
+			/**
+			 * With selected actions
+			 * @param  {[type]}   action   [description]
+			 * @param  {Function} callback [description]
+			 * @param  {[type]}   $cid     [description]
+			 * @return {[type]}            [description]
+			 */
 			withSelectedAction : function(action, callback, $cid) {
 
 				if ($cid.length > 0) {
@@ -653,96 +412,6 @@
 				}
 			}, //end fn
 
-			updateColParamForm : function() {
-				var oFrm = self.forms.oColParamFrm;
-				var oElms = oFrm.oInpts;
-				var tmp, type, allowedColParams;
-
-				// hide or show based on value of _enabled
-				if (oElms._enabled.fn.val() === 'yes') {
-					oElms.type.fn.show().enable();
-
-					// hide or show based on value of type
-					type = oElms.type.fn.val();
-					tmp = new jInput( { atts : { type : type } } );
-					allowedColParams = _.union( tmp.allowedAtts[type], tmp.allowedColParams[type], tmp.globalAtts, tmp.globalColParams );
-					allowedColParams = _.difference ( allowedColParams, tmp.disallowedColParams[type] );
-					_.each( oElms, function(o,key) {
-						if ( key === 'type' ||  _.indexOf( allowedColParams, key  ) !== -1) {
-							//console.log('enabling ' + key)
-							o.fn.show().enable();
-						} else {
-							//console.log('disabling ' + key)
-							o.fn.hide().disable();
-						}
-					});
-				} else {
-					_.each( oElms, function(o,key) {
-						if (key !== '_enabled') {
-							o.fn.hide();
-						}
-					});
-				}
-			}, // end fn
-
-			updateHeaderTitle : function(newTitle) {
-				self.options.gridHeader.headerTitle = newTitle;
-				tbl.find('span.header-title').html(newTitle);
-			}, // end fn
-
-			checkout : function(id) {
-				//console.log('Checking out record');
-
-
-				self.ajaxVars = {
-					url: self.options.url,
-					data: {
-						table : self.options.table,
-						id : id,
-						frm_name : 'frm_checkout'
-					},
-					type: 'POST',
-					success: self.callback.checkout
-				};
-
-				$.ajax(self.ajaxVars);
-
-
-			}, // end fn
-
-			checkin : function(id) {
-				//console.log('Checking in record');
-				self.ajaxVars = {
-					url: self.options.url,
-					data: {
-						table : self.options.table,
-						id : id,
-						frm_name : 'frm_checkin'
-					},
-					type: 'POST',
-					success: self.callback.checkin
-				};
-
-				$.ajax(self.ajaxVars);
-			}, // end fn
-
-			getCheckedOutRecords : function() {
-				//console.log('Getting checked out records');
-				self.ajaxVars = {
-					url: self.options.url,
-					data: {
-						table : self.options.table,
-						frm_name : 'frm_getCheckoutOutRecords'
-					},
-					type: 'POST',
-					dataType : 'JSON',
-					success: self.callback.getCheckedOutRecords
-				};
-
-				$.ajax(self.ajaxVars);
-
-			}, // end fn
-
 			/**  **  **  **  **  **  **  **  **  **
 			 *   REPORTS
 			 **  **  **  **  **  **  **  **  **  **/
@@ -753,26 +422,10 @@
 				window.open($url + '/export.php?report=currentView');
 			},
 
-			projectSummary : function() {
-				var $url = window.location.href.replace(window.location.hash,'').replace('#','');
-				$url.pop();
-				$url = $url.join('/');
-				window.open($url + '/export.php?report=projectSummary');
-			},
-
-			mgrReport : function($report,$filter) {
-				var $url = window.location.href.replace(window.location.hash,'').replace('#','');
-				$url.pop();
-				$url = $url.join('/');
-				window.open($url + '/export.php?report=' + $report + '&filter=' + $filter);
-			}
-
-
-
 		}; // end fn defs
 
 		// add any functions to this.fn
-		$.extend(true,this.fn,self.options.fn);
+		_.extend( this.fn, (typeof options.fn === "object") ? options.fn : {} );
 
 		/**  **  **  **  **  **  **  **  **  **
 		 *   CALLBACK
@@ -802,7 +455,7 @@
 
 				// detect changes in data;
 				self.oDelta = ( !$.isEmptyObject(self.oJSON) ) ?
-					self.fn.deltaData(self.oJSON,response) :
+					self.utility.deltaData(self.oJSON,response) :
 					response;
 
 				// merge the changes into self.oJSON
@@ -819,7 +472,7 @@
 				}
 
 				// show the preloader, then update the contents
-				self.fn.preload();
+				self.utility.DOM.togglePreloader();
 
 				// find the header row
 				theaders = tbl.find('.table-head .table-row.colHeaders');
@@ -833,11 +486,6 @@
 					// Append the check all checkbox
 					if (self.utility.isEditable()) {
 						theaders.append( $('<div/>', {'class' : 'table-header table-header-text'}).html( self.utility.render( self.html.tmpCheckAll ) ));
-						//tbl.find('.tfilters .table-cell').eq(0).attr('colspan',2);
-						//tbl.find('thead tr:last-child').attr('colspan',3);
-					} else {
-						//tbl.find('.tfilters .table-cell').eq(0).attr('colspan',1);
-						//tbl.find('thead tr:last-child').attr('colspan',2);
 					}
 
 					// create header for this column if needed
@@ -882,7 +530,7 @@
 				self.utility.DOM.removeRows();
 				self.fn.buildMenus();
 				self.fn.bind();
-				self.fn.preload(true);
+				self.utility.DOM.togglePreloader(true);
 				self.options.removeAllRows = false;
 
 				if (!self.loaded) {
@@ -906,78 +554,13 @@
 				}
 			}, // end fn
 
-			getTableList : function(response) {
-				var target = self.fn.$currentFormWrapper().find('.tbl-list');
-				var ul = $('<ul/>', {class : 'list-group'});
-
-				target.empty();
-
-				_.each(response, function( o, key ) {
-					$('<li/>', {class : 'list-group-item'})
-						.append( $('<a/>', { href : '#' })
-								.click( function(e) {
-											$('.tbl-list').find('.list-group-item').removeClass('chosen');
-											$(this).parent().addClass('chosen')
-											e.preventDefault();
-											self.temp.tableName = o.tableName;
-											self.fn.getColumnList(o.tableName)
-								}).html( o.tableName ) )
-						.appendTo(ul);
-				} );
-
-				ul.appendTo(target);
-
-				target.prepend( $('<h3/>').html('1. Choose Table') );
-
-				target.perfectScrollbar('update');
-
-			}, //end fn
-
-			getColumnList : function(response) {
-				var target = self.fn.$currentFormWrapper().find('.col-list');
-				var ul = $('<ul/>', {class : 'list-group'});
-				var prevFS = false;
-
-				target.empty();
-
-				_.each(response, function( o, key ) {
-					if ( o.fieldset !== prevFS ) {
-						if (prevFS !== false) {
-							ul.appendTo(target);
-						}
-						ul = $('<ul/>', {class : 'list-group'});
-					}
-
-					$('<li/>', {class : 'list-group-item'})
-						.append( $('<a/>', { href : '#' })
-									.click( function(e) {
-										$('.col-list').find('.list-group-item').removeClass('chosen');
-										$(this).parent().addClass('chosen')
-										e.preventDefault();
-										$('.colParamFormContainer').show();
-										$('.btn-save').removeClass('disabled');
-										self.temp.colParamID = o.colParamID;
-										self.fn.oCurrentForm().fn.getRowData(o.colParamID, self.fn.getGridDataColParamForm ) ;
-
-									} ).html( o.columnName ) )
-						.appendTo(ul);
-
-					prevFS = o.fieldset;
-				} );
-
-				ul.appendTo(target);
-				target.prepend( $('<h3/>').html('2. Choose Column') );
-				target.perfectScrollbar('update');
-
-			}, //end fn
-
 			checkout : function(response) {
 				var type = (response.indexOf('Successful') !== -1) ? 'success' : 'warning';
 
 				if (type === 'success') {
 					//console.log('Checked out successfully.');
 					// modal overlay
-					self.fn.overlay(2,'on');
+					self.utility.DOM.overlay(2,'on');
 
 					var $target = (self.action === 'edit') ?
 									tbl.find('#div_editFrm') :
@@ -1072,7 +655,7 @@
 			actionHelper : function(action) {
 				self.action = action;
 				if ( self.utility.needsCheckout() ) {
-					self.fn.checkout( self.utility.getCurrentRowId() );
+					self.utility.checkout( self.utility.getCurrentRowId() );
 				} else {
 					self.fn.setupFormContainer( )
 				}
@@ -1234,13 +817,13 @@
 			 */
 			setupVisibleColumnsMenu : function() {
 				// visible columns
-				_.each( this.options.columns, function( o, i ) {
+				_.each( self.options.columns, function( o, i ) {
 					if (i < self.options.headers.length) {
 						self.options.tableBtns.custom.visColumns.push(
 							{
 								icon : 'fa-check-square-o',
 								label : self.options.headers[i],
-								fn : function() { self.fn.visibleColumns( $(this) ) }, 'data-column' : o
+								fn : function() { self.utility.DOM.toggleColumnVisibility( $(this) ) }, 'data-column' : o
 							}
 						);
 					}
@@ -1259,76 +842,6 @@
 				}
 				return false;
 			}, //end fn
-
-			/**
-			 * Set initial parameters
-			 * @method function
-			 * @return {[type]} [description]
-			 */
-			setInitParams : function() {
-
-				/**
-				 * Placeholders
-				 */
-				self.store = $.jStorage;
-
-				/**
-				 * [dataGrid description]
-				 * @type {Object}
-				 */
-				self.dataGrid = {
-
-						// pagination parameters
-						pagination : {
-							totalPages : -1,
-							rowsPerPage : self.store.get('pref_rowsPerPage',self.options.rowsPerPage)
-						},
-
-						// ajax requests
-						requests : [],
-
-						// request options
-						requestOptions : {
-							url : self.options.url,
-							data : {
-								filter : self.options.filter,
-								filterMine : 0
-							}
-						},
-
-						// intervals
-						intervals : {
-
-						},
-
-						// timeouts
-						timeouts : {
-
-						},
-				}
-
-				self.DOM = {
-					$grid : false,
-					$tblMenu : false,
-					$rowMenu : $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' }),
-					$withSelectedMenu : $('<div/>'),
-				}
-
-				self.DOM.$currentRow = false;
-				self.action = 'new';
-				self.currentRow = {};
-				self.oJSON = {};
-				self.oDelta = {};
-				self.forms = {};
-				self.linkTables = [];
-				self.temp = {};
-				self.store.setTTL('data_' + self.options.schema + '_' + self.options.dbView,self.options.refreshInterval);
-
-				/**
-				 * Deprecated
-				 */
-				//self.url = window.location.href.replace("#/","");
-			}, // end fn
 
 			/**
 			 * Initialize scrollbar
@@ -1522,7 +1035,7 @@
 					page : self.options.pageNum,
 					maxVisible : 20
 				}).on("page", function(event,num) {
-					self.fn.page(num);
+					self.utility.DOM.page(num);
 				});
 			}, // end fn
 
@@ -1534,7 +1047,7 @@
 			setupRowsPerPage : function() {
 				tbl.find('[name=RowsPerPage]').off('change.rpp').on('change.rpp', function() {
 					tbl.find('[name=RowsPerPage]').val( $(this).val() );
-					self.fn.rowsPerPage( $(this).val() );
+					self.utility.DOM.rowsPerPage( $(this).val() );
 				}).parent().show();
 			}, // end fn
 
@@ -1648,7 +1161,7 @@
 			 */
 			updateGridFromCache : function() {
 				self.callback.update( self.utility.getCachedGridData() );
-				self.fn.preload(true);
+				self.utility.DOM.togglePreloader(true);
 				self.fn.buildMenus();
 			}, // end fn
 
@@ -1681,7 +1194,7 @@
 					return $.getJSON(o.url, o.data, o.success )
 						.fail( o.fail )
 						.always( o.always )
-						.complete( p.complete );
+						.complete( o.complete );
 			}, // end fn
 
 			/**
@@ -1712,8 +1225,8 @@
 			 * @return {[type]} [description]
 			 */
 			turnOffOverlays : function() {
-				self.fn.overlay(1,'off');
-				self.fn.overlay(2,'off');
+				self.utility.DOM.overlay(1,'off');
+				self.utility.DOM.overlay(2,'off');
 			}, //end fn
 
 			/**
@@ -1868,7 +1381,7 @@
 						"button.close, .btn-cancel" : {
 							click : function() {
 								if ( self.utility.needsCheckin() )  {
-									self.fn.checkin('all');
+									self.utility.checkin('all');
 								} else {
 									self.utility.closeCurrentForm();
 								}
@@ -2047,7 +1560,7 @@
 						"[name=RowsPerPage]" : {
 							change : function() {
 								tbl.find('[name=RowsPerPage]').val( $(this).val() );
-								self.fn.rowsPerPage( $(this).val() );
+								self.utility.DOM.rowsPerPage( $(this).val() );
 							},
 							boot : function() {
 								if ( self.utility.isPagination() ) {
@@ -2238,7 +1751,7 @@
 					if (self.utility.isCaching()) {
 							self.store.set('data_' + self.options.table,response);
 					}
-					self.fn.preload(true);
+					self.utility.DOM.togglePreloader(true);
 					self.fn.buildMenus();
 				}, // end fn
 
@@ -2296,7 +1809,7 @@
 			setGetCheckedOutRecordsInterval : function() {
 				if ( self.utility.isEditable() ) {
 					self.utility.clearGetCheckedOutRecordsIntevrval();
-					self.dataGrid.intervals.getCheckedOutRecords = setInterval( self.fn.getCheckedOutRecords, 10000 );
+					self.dataGrid.intervals.getCheckedOutRecords = setInterval( self.utility.getCheckedOutRecords, 10000 );
 				}
 			}, // end fn
 
@@ -2603,11 +2116,273 @@
 				return value;
 			}, // end fn
 
+			/**  **  **  **  **  **  **  **  **  **
+			 *   deltaData
+			 *
+			 *  @prev (obj) previous state of object
+			 *  @now  (obj) current state of object
+			 *
+			 *  computes and returns the difference
+			 *  between two objects
+			 **  **  **  **  **  **  **  **  **  **/
+			deltaData : function(prev, now) {
+				var changes = {}, prop, c;
+				$.each(now, function( i, row) {
+					if (typeof prev[i] === 'undefined') {
+						changes[i] = row;
+					} else {
+						$.each( row, function( prop, value) {
+							if (prev[i][prop] !== value) {
+								if (typeof changes[i] === 'undefined') {
+									changes[i] = {};
+								}
+								changes[i][prop] = value;
+							}
+						})
+					}
+				})
+				if ($.isEmptyObject(changes)) {
+					return false;
+				}
+				return changes;
+
+			}, // end fn
+
+			/**
+			 * Checkout record
+			 * @param  {[type]} id [description]
+			 * @return {[type]}    [description]
+			 */
+			checkout : function(id) {
+				//console.log('Checking out record');
+				self.ajaxVars = {
+					url: self.options.url,
+					data: {
+						table : self.options.table,
+						id : id,
+						frm_name : 'frm_checkout'
+					},
+					type: 'POST',
+					success: self.callback.checkout
+				};
+
+				$.ajax(self.ajaxVars);
+			}, // end fn
+
+			/**
+			 * Checkin record
+			 * @param  {[type]} id [description]
+			 * @return {[type]}    [description]
+			 */
+			checkin : function(id) {
+				//console.log('Checking in record');
+				self.ajaxVars = {
+					url: self.options.url,
+					data: {
+						table : self.options.table,
+						id : id,
+						frm_name : 'frm_checkin'
+					},
+					type: 'POST',
+					success: self.callback.checkin
+				};
+
+				$.ajax(self.ajaxVars);
+			}, // end fn
+
+			/**
+			 * Get all checked out records
+			 * @return {[type]} [description]
+			 */
+			getCheckedOutRecords : function() {
+				//console.log('Getting checked out records');
+				self.ajaxVars = {
+					url: self.options.url,
+					data: {
+						table : self.options.table,
+						frm_name : 'frm_getCheckoutOutRecords'
+					},
+					type: 'POST',
+					dataType : 'JSON',
+					success: self.callback.getCheckedOutRecords
+				};
+
+				$.ajax(self.ajaxVars);
+
+			}, // end fn
+
+			/**
+			 * Set initial parameters
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			setInitParams : function() {
+
+				/**
+				 * Placeholders
+				 */
+				self.store = $.jStorage;
+
+				/**
+				 * [dataGrid description]
+				 * @type {Object}
+				 */
+				self.dataGrid = {
+
+						// pagination parameters
+						pagination : {
+							totalPages : -1,
+							rowsPerPage : self.store.get('pref_rowsPerPage',self.options.rowsPerPage)
+						},
+
+						// ajax requests
+						requests : [],
+
+						// request options
+						requestOptions : {
+							url : self.options.url,
+							data : {
+								filter : self.options.filter,
+								filterMine : 0
+							}
+						},
+
+						// intervals
+						intervals : {
+
+						},
+
+						// timeouts
+						timeouts : {
+
+						},
+				}
+
+				self.DOM = {
+					$grid : false,
+					$tblMenu : false,
+					$rowMenu : $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' }),
+					$withSelectedMenu : $('<div/>'),
+				}
+
+				self.DOM.$currentRow = false;
+				self.action = 'new';
+				self.currentRow = {};
+				self.oJSON = {};
+				self.oDelta = {};
+				self.forms = {};
+				self.linkTables = [];
+				self.temp = {};
+				self.store.setTTL('data_' + self.options.schema + '_' + self.options.dbView,self.options.refreshInterval);
+
+				/**
+				 * Deprecated
+				 */
+				//self.url = window.location.href.replace("#/","");
+			}, // end fn
+
 			/**
 			 * DOM Manipulation Functions
 			 * @type {Object}
 			 */
 			DOM : {
+
+				/**
+				 * Update the header title
+				 * @param  {[type]} newTitle [description]
+				 * @return {[type]}          [description]
+				 */
+				updateHeaderTitle : function(newTitle) {
+					self.options.gridHeader.headerTitle = newTitle;
+					tbl.find('span.header-title').html(newTitle);
+				}, // end fn
+
+				/**
+				 * Toggle column visibility
+				 * @param  {[type]} elm [description]
+				 * @return {[type]}     [description]
+				 */
+				toggleColumnVisibility : function( elm ) {
+					var col = elm.data('column'),
+						i = +elm.closest('li').index()+2;
+
+					if (elm.find('i').hasClass('fa-check-square-o')) {
+						elm.find('i').removeClass('fa-check-square-o').addClass('fa-square-o');
+						tbl.find('.table-head .table-row:not(:first-child) .table-header:nth-child(' + i +'), .table-body .table-cell:nth-child(' + i +')').hide();
+					} else {
+						elm.find('i').addClass('fa-check-square-o').removeClass('fa-square-o');
+						tbl.find('.table-head .table-row:not(:first-child) .table-header:nth-child(' + i +'), .table-body .table-cell:nth-child(' + i +')').show();
+					}
+
+					self.utility.DOM.updateColWidths();
+
+				}, //end fn
+
+				/**  **  **  **  **  **  **  **  **  **
+				 *   rowsPerPage
+				 *
+				 *  @rowsPerPage (int) hide the preloader
+				 *
+				 *  show/hide the preload animation
+				 **  **  **  **  **  **  **  **  **  **/
+				rowsPerPage : function( rowsPerPage ) {
+					if ( isNaN(rowsPerPage) ) return false;
+
+					self.store.set('pref_rowsPerPage',rowsPerPage);
+					self.options.pageNum = 1;
+					self.dataGrid.pagination.rowsPerPage = Math.floor(rowsPerPage);
+					self.fn.bind();
+					self.utility.DOM.page(1);
+					self.utility.DOM.updateColWidths();
+				}, // end fn
+
+				/**  **  **  **  **  **  **  **  **  **
+				 *   preload
+				 *
+				 *  @hide (bool) hide the preloader
+				 *
+				 *  show/hide the preload animation
+				 **  **  **  **  **  **  **  **  **  **/
+				togglePreloader : function( hide ) {
+					if (typeof hide === 'undefined') { hide = false; }
+
+					if (!hide) {
+						tbl.css('background','url("./images/tbody-preload.gif") no-repeat center 175px rgba(0,0,0,0.15)')
+						 .find('[name=RowsPerPage],[name=q]').prop('disabled',true).end()
+						 .find('.table-body').css('filter','blur(1px) grayscale(100%)').css('-webkit-filter','blur(2px) grayscale(100%)') .css('-moz-filter','blur(2px) grayscale(100%)')
+						 //.find('.table-cell, .table-header').css('border','1px solid transparent').css('background','none');
+					} else {
+						tbl.css('background','')
+						 .find('[name=RowsPerPage],[name=q]').prop('disabled',false).end()
+						 .find('.table-body').css('filter','').css('-webkit-filter','').css('-moz-filter','')
+						 //.find('.table-cell, .table-header').css('border','').css('background','');
+					}
+				}, // end fn
+
+				/**  **  **  **  **  **  **  **  **  **
+				 *   page
+				 *
+				 *  @pageNum (int) the new page number
+				 *  				to display
+				 *
+				 *  jumps to the desired page number
+				 **  **  **  **  **  **  **  **  **  **/
+				page : function( pageNum ) {
+					var first, last;
+
+					self.utility.DOM.togglePreloader();
+
+					if (isNaN(pageNum)) return false;
+					pageNum = Math.floor(pageNum);
+
+					self.options.pageNum = pageNum;
+					first = +( (pageNum-1) * self.dataGrid.pagination.rowsPerPage );
+					last  = +(first+self.dataGrid.pagination.rowsPerPage);
+					tbl.find('.table-body .table-row').hide().slice(first,last).show();
+
+					// set col widths
+					setTimeout(	self.utility.DOM.updateColWidths, 100 );
+				}, // end fn
 
 				/**  **  **  **  **  **  **  **  **  **
 				 *   updatePanelHeader
@@ -2684,7 +2459,7 @@
 					if ( self.utility.isPagination() ) {
 						self.utility.DOM.showPaginationControls();
 						self.utility.DOM.updateFilterText('');
-						self.fn.page(self.options.pageNum);
+						self.utility.DOM.page(self.options.pageNum);
 					}
 				}, // end fn
 
@@ -2786,7 +2561,7 @@
 					});
 
 					// go to the appropriate page to refresh the view
-					self.fn.page( self.options.pageNum );
+					self.utility.DOM.page( self.options.pageNum );
 
 					// apply header filters
 					self.utility.DOM.applyHeaderFilters()
@@ -2904,7 +2679,7 @@
 					}
 
 					//hide preload mask
-					self.fn.preload(true);
+					self.utility.DOM.togglePreloader(true);
 				}, // end fn
 
 				/**  **  **  **  **  **  **  **  **  **
@@ -3136,7 +2911,7 @@
 
 
 					self.fn.countdown();
-					self.fn.page( self.options.pageNum );
+					self.utility.DOM.page( self.options.pageNum );
 
 					// deal with the row checkboxes
 					tbl.find('.table-row')
@@ -3224,7 +2999,7 @@
 				 * @method function
 				 */
 				buildBtnMenu : function(collection, target) {
-					self.utility.buildMenu(collection, target, 'buttons');
+					self.utility.DOM.buildMenu(collection, target, 'buttons');
 				}, //end fn
 
 				/**
@@ -3232,7 +3007,7 @@
 				 * @method function
 				 */
 				buildLnkMenu : function(collection, target) {
-					self.utility.buildMenu(collection, target, 'links');
+					self.utility.DOM.buildMenu(collection, target, 'links');
 				}, // end fn
 
 				/**
@@ -3386,7 +3161,7 @@
 					if ( typeof self.html.forms[key] === 'undefined' ) return false;
 
 					// create form object
-					self.forms[oFrmHandle] = oFrm = new jForm( o );
+					self.forms[oFrmHandle] = oFrm = new jForm( params );
 
 					// create form container
 					self.forms[$frmHandle] = $('<div/>')
@@ -3394,6 +3169,20 @@
 						.find( '.formContainer' ).append( oFrm.fn.handle() ).end()
 						.appendTo( tbl );
 				}, // end fn
+
+				/**  **  **  **  **  **  **  **  **  **
+				 *   overlay
+				 *
+				 *  Controls the modal overlays
+				 **  **  **  **  **  **  **  **  **  **/
+				overlay : function(which,action) {
+					var $which = (which == 1) ? '#modal_overlay' : '#modal_overlay2';
+					if (action == 'on') {
+						$($which).fadeIn('fast');
+					} else {
+						$($which).fadeOut('fast');
+					}
+				},
 
 			}, // end DOM fns
 
@@ -3415,6 +3204,12 @@
 			 * @type {Object}
 			 */
 			bind : {},
+
+			/**
+			 * Function definitions
+			 * @type {Object}
+			 */
+			fn : {},
 
 			/**
 			 * Toggles - true/false switches

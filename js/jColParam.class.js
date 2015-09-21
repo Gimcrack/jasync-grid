@@ -98,7 +98,108 @@
 				}
 			}, // end fn
 
+      updateColParamForm : function() {
+				var oFrm = self.forms.oColParamFrm;
+				var oElms = oFrm.oInpts;
+				var tmp, type, allowedColParams;
+
+				// hide or show based on value of _enabled
+				if (oElms._enabled.fn.val() === 'yes') {
+					oElms.type.fn.show().enable();
+
+					// hide or show based on value of type
+					type = oElms.type.fn.val();
+					tmp = new jInput( { atts : { type : type } } );
+					allowedColParams = _.union( tmp.allowedAtts[type], tmp.allowedColParams[type], tmp.globalAtts, tmp.globalColParams );
+					allowedColParams = _.difference ( allowedColParams, tmp.disallowedColParams[type] );
+					_.each( oElms, function(o,key) {
+						if ( key === 'type' ||  _.indexOf( allowedColParams, key  ) !== -1) {
+							//console.log('enabling ' + key)
+							o.fn.show().enable();
+						} else {
+							//console.log('disabling ' + key)
+							o.fn.hide().disable();
+						}
+					});
+				} else {
+					_.each( oElms, function(o,key) {
+						if (key !== '_enabled') {
+							o.fn.hide();
+						}
+					});
+				}
+			}, // end fn
+
     } // end fns
+
+    this.callback = {
+
+      getTableList : function(response) {
+				var target = self.fn.$currentFormWrapper().find('.tbl-list');
+				var ul = $('<ul/>', {class : 'list-group'});
+
+				target.empty();
+
+				_.each(response, function( o, key ) {
+					$('<li/>', {class : 'list-group-item'})
+						.append( $('<a/>', { href : '#' })
+								.click( function(e) {
+											$('.tbl-list').find('.list-group-item').removeClass('chosen');
+											$(this).parent().addClass('chosen')
+											e.preventDefault();
+											self.temp.tableName = o.tableName;
+											self.fn.getColumnList(o.tableName)
+								}).html( o.tableName ) )
+						.appendTo(ul);
+				} );
+
+				ul.appendTo(target);
+
+				target.prepend( $('<h3/>').html('1. Choose Table') );
+
+				target.perfectScrollbar('update');
+
+			}, //end fn
+
+			getColumnList : function(response) {
+				var target = self.fn.$currentFormWrapper().find('.col-list');
+				var ul = $('<ul/>', {class : 'list-group'});
+				var prevFS = false;
+
+				target.empty();
+
+				_.each(response, function( o, key ) {
+					if ( o.fieldset !== prevFS ) {
+						if (prevFS !== false) {
+							ul.appendTo(target);
+						}
+						ul = $('<ul/>', {class : 'list-group'});
+					}
+
+					$('<li/>', {class : 'list-group-item'})
+						.append( $('<a/>', { href : '#' })
+									.click( function(e) {
+										$('.col-list').find('.list-group-item').removeClass('chosen');
+										$(this).parent().addClass('chosen')
+										e.preventDefault();
+										$('.colParamFormContainer').show();
+										$('.btn-save').removeClass('disabled');
+										self.temp.colParamID = o.colParamID;
+										self.fn.oCurrentForm().fn.getRowData(o.colParamID, self.fn.getGridDataColParamForm ) ;
+
+									} ).html( o.columnName ) )
+						.appendTo(ul);
+
+					prevFS = o.fieldset;
+				} );
+
+				ul.appendTo(target);
+				target.prepend( $('<h3/>').html('2. Choose Column') );
+				target.perfectScrollbar('update');
+
+			}, //end fn
+
+    }
 
   }
 
