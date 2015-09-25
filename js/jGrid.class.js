@@ -39,10 +39,27 @@
 		}
 
 		/**
-		 * Options
+		 * Declare Options vars
 		 * @type {Object}
 		 */
-		this.options = {}
+ 		this.options = {
+ 			formDefs : {},
+ 			bind : {},
+			events : {},
+ 			fn : {},
+ 			toggles : {},
+ 			bsmsDefaults : {},
+ 			gridHeader : {},
+ 			tableBtns : {
+				custom : {}
+			},
+ 			rowBtns : {
+				custom : {}
+ 			},
+ 			withSelectedBtns : {
+ 				custom : {}
+ 			},
+ 		}; // end options
 
 		/**
 		 * HTML Templates
@@ -62,7 +79,8 @@
 			 * @return {[type]} [description]
 			 */
 			_init : function() {
-				self.utility.setOptions( _.extend(self.defaults, options) );
+
+				self.utility.setOptions( $.extend(true, {}, self.defaults, options) );
 				self.utility.setupHtmlTemplates();
 				self.utility.setInitParams();
 				self.fn.initializeTemplate();
@@ -128,6 +146,7 @@
 				_.each( self.options.formDefs, function( o, key ) {
 					self.utility.DOM.buildForm( o, key );
 				});
+
 			},
 
 
@@ -152,10 +171,7 @@
 			 * @return {[type]} [description]
 			 */
 			updateAll : function() {
-				//console.log('updating all grids');
-
 				_.each( jApp.oG, function(o, key) {
-					//console.log('updating ' + key);
 					o.fn.getGridData();
 				})
 			}, //end fn
@@ -425,7 +441,7 @@
 		}; // end fn defs
 
 		// add any functions to this.fn
-		_.extend( this.fn, (typeof options.fn === "object") ? options.fn : {} );
+		$.extend(true,  this.fn, options.fn );
 
 		/**  **  **  **  **  **  **  **  **  **
 		 *   CALLBACK
@@ -462,7 +478,6 @@
 				if (!!self.oDelta) {
 					self.oJSON = response;
 				} else { // abort if no changes in the data
-					//console.log('no changes in the data');
 					return false;
 				}
 
@@ -558,7 +573,6 @@
 				var type = (response.indexOf('Successful') !== -1) ? 'success' : 'warning';
 
 				if (type === 'success') {
-					//console.log('Checked out successfully.');
 					// modal overlay
 					self.utility.DOM.overlay(2,'on');
 
@@ -568,7 +582,6 @@
 
 					self.fn.setupFormContainer($target);
 				} else {
-					//console.log('Problem checking out.');
 					nfx_thumbslide('./images/' + type + '.png',response,type);
 				}
 
@@ -581,7 +594,6 @@
 
 			getCheckedOutRecords : function(response) {
 				var $tr,  $i = $('<i/>', { class : 'fa fa-lock fa-fw checkedOut'});
-				//console.log(response);
 
 				tbl.find('.chk_cid').parent().removeClass('disabled').show();
 				tbl.find('.rowMenu-container').removeClass('disabled');
@@ -622,7 +634,6 @@
 
 				// once all linkTable requests are complete, apply the updates to the forms
 				if (self.linkTableRequestsComplete == self.options.linkTables.length) {
-					console.log('all linkTables in');
 
 					// update the edit form
 					self.forms.oEditFrm.options.colParamsAdd = self.linkTables;
@@ -806,7 +817,7 @@
 			 * @return {[type]}         [description]
 			 */
 			setOptions : function(options) {
-				_.extend(self.options,options);
+				$.extend(true, self.options,options);
 				return self;
 			}, //end fn
 
@@ -818,7 +829,7 @@
 			setupVisibleColumnsMenu : function() {
 				// visible columns
 				_.each( self.options.columns, function( o, i ) {
-					if (i < self.options.headers.length) {
+					if (i < self.options.headers.length ) {
 						self.options.tableBtns.custom.visColumns.push(
 							{
 								icon : 'fa-check-square-o',
@@ -1182,19 +1193,21 @@
 			 * @return {[type]}                [description]
 			 */
 			getJSON : function( requestOptions ) {
-					var defaults = {
-						url : null,
-						data : {},
-						success : function() { },
-						fail : function() { },
-						always : function() {},
-						complete : function() {}
-					}, o = _.extend( defaults , requestOptions );
 
-					return $.getJSON(o.url, o.data, o.success )
-						.fail( o.fail )
-						.always( o.always )
-						.complete( o.complete );
+					var options = $.extend(true,
+						{
+							url : null,
+							data : {},
+							success : function() { },
+							fail : function() { },
+							always : function() {},
+							complete : function() {}
+						} , requestOptions );
+
+					return $.getJSON(options.url, options.data, options.success )
+						.fail( options.fail )
+						.always( options.always )
+						.complete( options.complete );
 			}, // end fn
 
 			/**
@@ -1203,20 +1216,20 @@
 			 * @return {[type]} [description]
 			 */
 			executeGridDataRequest : function() {
-				var callbacks = {
+				var params = $.extend(true,  self.dataGrid.requestOptions,
+						{
 							success : self.callback.update,
 							fail 		: self.utility.gridDataRequestCallback.fail,
 							always 	: self.utility.gridDataRequestCallback.always,
 							complete: self.utility.gridDataRequestCallback.complete
-						},
-						o = _.extend( self.dataGrid.requestOptions, callbacks ),
+						} ),
 						r = self.dataGrid.requests;
 
 				// show the preloader
 				self.utility.DOM.activityPreloader('show');
 
 				// execute the request
-				r.gridData = self.utility.getJSON( o );
+				r.gridData = self.utility.getJSON( params );
 			}, //end fn
 
 			/**
@@ -1309,7 +1322,8 @@
 			 * @return {[type]} [description]
 			 */
 			loadBindings : function() {
-					self.options.events.form = _.extend({
+					// form bindings
+					$.extend(true, self.options.events.form, {
 						// the bind function will assume the scope is relative to the current form
 						// unless the key is found in the global scope
 						// boot functions will be automatically called at runtime
@@ -1429,7 +1443,6 @@
 
 						"[_linkedElmID]" : {
 							change : function() {
-								//console.log( 'Setting up linked Element' )
 								var This = $(this),
 									$col = This.attr('_linkedElmFilterCol'),
 									$id	 = This.val(),
@@ -1438,7 +1451,6 @@
 									oFrm = self.fn.oCurrentForm(),
 									oElm = oFrm.fn.getElmById( This.attr('_linkedElmID') );
 
-								//console.log(oElm);
 
 								// set data to always expire;
 								oElm.fn.setTTL(-1);
@@ -1464,7 +1476,8 @@
 
 					}, self.options.events.form);
 
-					self.options.events.grid = _.extend({
+					// grid events
+					$.extend(true, self.options.events.grid, {
 						// the bind function will assume the scope is relative to the grid
 						// unless the key is found in the global scope
 						// boot functions will be automatically called at runtime
@@ -1638,7 +1651,6 @@
 
 								clearTimeout(self.intervals.cancelRowMenuUpdate);
 								self.intervals.moveRowMenu = setTimeout( function() {
-									//console.log('do the thing');
 									tbl.find('.btn-showMenu').removeClass('hover');
 									if (tbl.find('.rowMenu').hasClass('expand') === false) {
 										tbl.find('.btn-showMenu').removeClass('active');
@@ -1660,10 +1672,7 @@
 									tbl.find('.rowMenu').removeClass('active');
 								}, 100 );
 							}
-						},
-
-
-
+						}
 					}, self.options.events.grid);
 			}, //end fn
 
@@ -1673,7 +1682,7 @@
 			 * @return {[type]} [description]
 			 */
 			loadFormDefinitions : function() {
-				self.options.formDefs = _.extend({
+				$.extend(true, self.options.formDefs, {
 
 					editFrm : {
 						table : self.options.table,
@@ -1908,7 +1917,7 @@
 				 *  Parameters of the form {@ParamName}
 				 *  are expanded by the render function
 				 */
-				self.html = {
+				$.extend(true, self.html, {
 
 					// main grid body
 					tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group"> <button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh"> <i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span> </button> </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> Filter : </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
@@ -1940,10 +1949,7 @@
 						// Colparams Form Template
 						colParamFrm	: '<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-lblue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body" style="padding:0 0px !important;"> <div class="row side-by-side"> <div class="col-lg-3 tbl-list"></div> <div class="col-lg-2 col-list"></div> <div class="col-lg-7 param-list"> <div class="side-by-side colParamFormContainer formContainer"> </div> </div> </div> </div> <div class="panel-heading"> <input type="button" class="btn btn-success btn-save" id="btn_save" value="Save"> <input type="button" class="btn btn-warning btn-reset" id="btn_reset" value="Reset"> <input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form"> <input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel"> </div> </div> </div> </div>',
 					}
-				};// end html templates
-
-				// add any templates to this.html
-				_.extend(self.html,self.options.html);
+				},self.options.html);
 
 			}, // end fn
 
@@ -2154,7 +2160,6 @@
 			 * @return {[type]}    [description]
 			 */
 			checkout : function(id) {
-				//console.log('Checking out record');
 				self.ajaxVars = {
 					url: self.options.url,
 					data: {
@@ -2175,7 +2180,6 @@
 			 * @return {[type]}    [description]
 			 */
 			checkin : function(id) {
-				//console.log('Checking in record');
 				self.ajaxVars = {
 					url: self.options.url,
 					data: {
@@ -2195,7 +2199,6 @@
 			 * @return {[type]} [description]
 			 */
 			getCheckedOutRecords : function() {
-				//console.log('Getting checked out records');
 				self.ajaxVars = {
 					url: self.options.url,
 					data: {
@@ -2408,7 +2411,7 @@
 					if (typeof all !== 'undefined' && all) {
 						tbl.find('.table-body .table-row').remove();
 					} else {
-						sel.DOM.$rowMenu.detach();
+						self.DOM.$rowMenu.detach();
 
 						tbl.find('.table-row[data-identifier]')
 							 .filter( function(i, row) {
@@ -2692,7 +2695,6 @@
 				 *  with the corresponding data.
 				 **  **  **  **  **  **  **  **  **  **/
 				moveRowMenu : function($tr) {
-					//console.log('updating the row menu');
 
 					// set the current row
 					self.DOM.$currentRow = $tr;
@@ -2985,7 +2987,7 @@
 								});
 							} else {
 								if (type == 'buttons') {
-									self.utility.DOM.createMenuButton( o ).appendTo( target );
+									self.utility.DOM.createMenuButton( o ).clone().appendTo( target );
 								} else {
 									self.utility.DOM.createMenuLink( o ).appendTo( target );
 								}
@@ -3031,7 +3033,6 @@
 					}
 					// add the click handler
 					if (!!o.fn) {
-						//console.log('binding function');
 						if (typeof o.fn === 'string') {
 							$btn_choice.off('click.custom').on('click.custom', function() {
 							self.withSelectedButton = $(this);
@@ -3045,7 +3046,6 @@
 
 					// add the html5 data
 					if (!!o.data) {
-						console.log( 'appending data' );
 						_.each( o.data, function(v,k) {
 							$btn_choice.attr('data-'+k,v);
 						});
@@ -3097,7 +3097,7 @@
 
 							_.each( params, function(o,key) {
 								if (key == 0) return false;
-								$btn_choice = $('<a/>', _.extend( o || {}, { href : 'javascript:void(0)' }) );
+								$btn_choice = $('<a/>', $.extend(true, {}, o, { href : 'javascript:void(0)' }) );
 
 								//add the icon
 								if (!!o.icon) {
@@ -3543,7 +3543,7 @@
 			 */
 			linkTables : [ ],
 
-		}; // end options
+		}; // end defaults
 
 		// initialize
 		this.fn._init();
