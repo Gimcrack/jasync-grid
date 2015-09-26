@@ -3,14 +3,10 @@
  *
  *  jInput.class.js - Custom Form Input JS class
  *
- *  Matsu Borough IT Dashboard
- *
  *  Defines the properties and methods of the
- *  custom form class.
+ *  custom input class.
  *
- *  Jeremy Bloomstrom | jeremy.bloomstrom@matsugov.us
- *  Programmer Analyst
- *  Matsu Borough IT
+ *  Jeremy Bloomstrom | jeremy@in.genio.us
  *
  *  Created: 		4/20/15
  *  Last Updated: 	4/20/15
@@ -408,7 +404,7 @@
 				opt = oAtts._optionssource.split('.')[1];
 				where = ( !!oAtts._optionsFilter && !!oAtts._optionsFilter.length ) ? oAtts._optionsFilter : '1=1';
 
-				url = "index.php?controller=json&view=select-options";
+				url = "/select-options/";
 				data = { tbl : tbl, lbl : lbl, opt : opt, where : where};
 
 				//console.log('executing request for external options');

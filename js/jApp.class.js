@@ -14,6 +14,9 @@
 	var jApp = function() {
 
 		this.oG = {
+			admin : {
+				
+			}
 			// extend this oG object with the individual page grid objects
 		};
 

@@ -50,15 +50,9 @@
  			toggles : {},
  			bsmsDefaults : {},
  			gridHeader : {},
- 			tableBtns : {
-				custom : {}
-			},
- 			rowBtns : {
-				custom : {}
- 			},
- 			withSelectedBtns : {
- 				custom : {}
- 			},
+ 			tableBtns : {},
+ 			rowBtns : {},
+ 			withSelectedBtns : {},
  		}; // end options
 
 		/**
@@ -66,6 +60,12 @@
 		 * @type {Object}
 		 */
 		this.html = {}
+
+		/**
+		 * Container for events once they have been delegated to avoid collisions
+		 * @type {Array}
+		 */
+		this.delegatedEvents = [];
 
 		/**
 		 * Class Methods
@@ -80,7 +80,7 @@
 			 */
 			_init : function() {
 
-				self.utility.setOptions( $.extend(true, {}, self.defaults, options) );
+				self.utility.setOptions( $.extend(true, {}, self.utility.getDefaultOptions(), options) );
 				self.utility.setupHtmlTemplates();
 				self.utility.setInitParams();
 				self.fn.initializeTemplate();
@@ -88,7 +88,8 @@
 				self.fn.setupIntervals();
 				self.fn.buildMenus();
 				self.fn.buildForms();
-				//self.fn.linkTables();
+				self.fn.bind();
+				self.fn.linkTables();
 
 				// toggle the mine button if needed
 				if ( self.utility.isToggleMine() ) {
@@ -149,6 +150,22 @@
 
 			},
 
+			/**  **  **  **  **  **  **  **  **  **
+			 *   linkTables
+			 *
+			 *  iterates through the linktable
+			 *  definitions in the options and
+			 *  adds the appropriate elements to the
+			 *  forms
+			 **  **  **  **  **  **  **  **  **  **/
+			linkTables : function() {
+				var oLT;
+				_.each( self.options.linkTables, function(o,key) {
+					o.dataView = self.options.dataView;
+					o.callback = self.callback.linkTables;
+					oLT = new jLinkTable( o );
+				});
+			}, // end fn
 
 			/**
 			 * Sets up the countdown that displays
@@ -214,15 +231,17 @@
 			 *
 			 **  **  **  **  **  **  **  **  **  **/
 			oCurrentForm : function() {
+				var key;
 
-				_.each( self.forms, function(o, key) {
-						if ( key.toLowerCase().indexOf( self.action.toLowerCase() ) !== -1 ) {
-							return o;
-						}
-				});
-
-				console.warn( 'There is no valid form associated with the current action' );
-				return false;
+				if (!! (key = _.findKey( self.forms, function(o, key) {
+					if (key.indexOf('o') !== 0) return false;
+					return key.toLowerCase().indexOf( self.action.toString().toLowerCase() ) !== -1;
+				}) )) {
+					return self.forms[key];
+				} else {
+					console.warn( 'There is no valid form associated with the current action' );
+					return false;
+				}
 			},
 
 			/**  **  **  **  **  **  **  **  **  **
@@ -239,6 +258,7 @@
 				try {
 					return self.fn.oCurrentForm().$()
 				} catch(e) {
+					console.warn('No current form object found');
 					return false
 				}
 			},
@@ -258,6 +278,7 @@
 				try {
 					return self.fn.$currentForm().closest('.div-form-panel-wrapper');
 				} catch(e) {
+					console.warn('No current form wrapper found');
 					return false;
 				}
 			},
@@ -273,7 +294,9 @@
 				self.utility.setupHeaderFilters();
 				self.utility.setupSortButtons();
 				self.utility.turnOffOverlays();
+				self.utility.loadBindings();
 				self.utility.processGridBindings();
+				self.utility.processFormBindings();
 			}, // end bind fn
 
 			/**  **  **  **  **  **  **  **  **  **
@@ -289,7 +312,7 @@
 				self.utility.resetCurrentForm();
 				self.utility.maximizeCurrentForm();
 				self.utility.setCurrentFormFocus();
-				self.utility.processFormBindings();
+				self.utility.formBootup();
 				self.utility.getCurrentFormRowData();
 			}, // end fn
 
@@ -441,7 +464,7 @@
 		}; // end fn defs
 
 		// add any functions to this.fn
-		$.extend(true,  this.fn, options.fn );
+		this.fn = $.extend(true,  this.fn, options.fn );
 
 		/**  **  **  **  **  **  **  **  **  **
 		 *   CALLBACK
@@ -544,7 +567,6 @@
 				// remove the rows that may have been removed from the data
 				self.utility.DOM.removeRows();
 				self.fn.buildMenus();
-				self.fn.bind();
 				self.utility.DOM.togglePreloader(true);
 				self.options.removeAllRows = false;
 
@@ -562,11 +584,9 @@
 			}, // end fn
 
 			updateDOMFromRowData : function(response) {
-				if (!!response[0]) {
-					var data = response[0];
-					self.rowData = response[0];
-					self.fn.getGridDataPanelHeader( data[ self.options.columnFriendly ] );
-				}
+					var data = response;
+					self.rowData = response;
+					self.utility.DOM.updatePanelHeader( data[ self.options.columnFriendly ] );
 			}, // end fn
 
 			checkout : function(response) {
@@ -620,6 +640,12 @@
 
 			}, //end fn
 
+			/**
+			 * Process the grid link tables
+			 * @method function
+			 * @param  {[type]} colParams [description]
+			 * @return {[type]}           [description]
+			 */
 			linkTables : function( colParams ) {
 
 				// add the colParams to the linkTable store
@@ -656,6 +682,378 @@
 		 */
 		this.utility = {
 
+			/**
+			 * Get the default grid options
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			getDefaultOptions : function() {
+				/**
+				 * Default Options
+				 * @type {Object}
+				 */
+				return {
+
+					/**
+					 * Form Definitions
+					 */
+					formDefs : {},
+
+					/**
+					 * Event Bindings
+					 * @type {Object}
+					 */
+					bind : {},
+
+					/**
+					 * Function definitions
+					 * @type {Object}
+					 */
+					fn : {},
+
+					/**
+					 * Toggles - true/false switches
+					 * @type {Object}
+					 */
+					toggles : {
+
+						/**
+						 * Data is editable
+						 * @type {Boolean} default true
+						 */
+						editable : true,
+
+						/**
+						 * Show the 'new' button
+						 * @type {Boolean} default true
+						 */
+						new : true,
+
+						/**
+						 * Show the 'edit' button
+						 * @type {Boolean} default true
+						 */
+						edit : true,
+
+						/**
+						 * Show the 'delete' buton
+						 * @type {Boolean} default true
+						 */
+						del : true,
+
+						/**
+						 * Show the sort buttons above each header
+						 * @type {Boolean} default true
+						 */
+						sort : true,
+
+						/**
+						 * Autoupdate the grid data automatically
+						 * @type {Boolean} default true
+						 */
+						autoUpdate : true,
+
+						/**
+						 * Auto-paginate the grid data
+						 * @type {Boolean} default true
+						 */
+						paginate : true,
+
+						/**
+						 * Show the filter text boxes above each header
+						 * @type {Boolean} default true
+						 */
+						headerFilters : true,
+
+						/**
+						 * Collapse the row menu
+						 * @type {Boolean} default true
+						 */
+						collapseMenu : true,
+
+						/**
+						 * Cache the grid data for faster load times
+						 * @type {Boolean} default false
+						 */
+						caching : false,
+
+						/**
+						 * Show the ellipsis ... and readmore buttons
+						 * @type {Boolean} default true
+						 */
+						ellipses : true,
+
+						/**
+						 * Checkout records before editing
+						 * @type {Boolean} default true
+						 */
+						checkout : false,
+
+						/**
+						 * Close form window after saving
+						 * @type {Boolean} default true
+						 */
+						closeOnSave : true,
+
+						/**
+						 * remove all rows when updating data
+						 * @type {Boolean}
+						 */
+						removeAllRows : false,
+					},
+
+					/**
+					 * General Grid Options
+					 */
+
+					/**
+					 * If options.toggles.autoUpdate, interval to autorefresh data in ms
+					 * @type {Number} default 602000
+					 */
+					refreshInterval : 602000,
+
+					/**
+					 * jQuery DOM target
+					 * @type {String} default '.table-responsive'
+					 */
+					target : '.table-responsive',						// htmlTable target
+
+					/**
+					 * Data request options
+					 */
+
+					/**
+					 * URL of JSON resource (grid data)
+					 * @type {String}
+					 */
+					url	: options.table + '/json', 	// url of JSON resource
+
+					/**
+					 * Database table name of grid data
+					 * @type {String}
+					 */
+					table : '',											// db table (for updates / inserts)
+
+					/**
+					 * Primary key of table
+					 * @type {String}
+					 */
+					pkey : 'id',
+
+					/**
+					 * Where clause of data query
+					 * @type {String}
+					 */
+					filter : '',										// where clause for query
+
+					/**
+					 * db columns to show
+					 * @type {Array}
+					 */
+					columns : [ ],										// columns to query
+
+					/**
+					 * Friendly headers for db columns
+					 * @type {Array}
+					 */
+					headers : [ ],										// headers for table
+
+					/**
+					 * Data Presentation options
+					 */
+
+
+					/**
+					 * Pagination - Rows per page
+					 * @type {Number} default 10
+					 */
+					rowsPerPage : 10,
+
+					/**
+					 * Pagination - Starting page number
+					 * @type {Number} default 1
+					 */
+		 			pageNum	: 1,
+
+					/**
+					 * The friendly name of the table e.g. Users
+					 * @type {String}
+					 */
+					tableFriendly : '',									// friendly name of table
+
+					/**
+					 * The column containing the friendly name of each row e.g. username
+					 * @type {String}
+					 */
+					columnFriendly : '',								// column containing friendly name of each row
+
+					/**
+					 * The text shown when deleting a record
+					 * @type {String}
+					 */
+					deleteText : 'Deleting',
+
+					/**
+					 * html attributes to apply to individual columns
+					 * @type {Array}
+					 */
+					cellAtts : [ ],										// column attributes
+
+					/**
+					 * html templates
+					 * @type {Array}
+					 */
+					templates : [ ],									// html templates
+
+					/**
+					 * Max cell length in characters, if toggles.ellipses
+					 * @type {Number} default 38
+					 */
+					maxCellLength : 38,
+
+					/**
+					 * Max column length in pixels
+					 * @type {Number} default 450
+					 */
+					maxColWidth: 450,
+
+					/**
+					 * Bootstrap Multiselect Default Options
+					 * @type {Object}
+					 */
+					bsmsDefaults : {
+						buttonContainer : '<div class="btn-group" />',
+						enableFiltering: true,
+						includeSelectAllOption: true,
+						maxHeight: 185
+					},
+
+					/**
+					 * Header Options
+					 * @type {Object}
+					 */
+					gridHeader : {
+						icon : 'fa-dashboard',
+						headerTitle : 'Manage',
+						helpText : false,
+					},
+
+					/**
+					 * Disabled Form Elements - e.g. password
+					 * @type {Array}
+					 */
+					disabledFrmElements : [],
+
+					/**
+					 * Table buttons appear in the table menu below the header
+					 * @type {Object}
+					 */
+					tableBtns : {
+
+						/**
+						 * New Button
+						 * @type {Object}
+						 */
+						new : {
+							type : 'button',
+							class : 'btn btn-success btn-new',
+							id : 'btn_edit',
+							icon : 'fa-plus-circle',
+							label : 'New',
+						},
+
+						/**
+						 * Define custom buttons here. Custom buttons may also be defined at runtime.
+						 * @type {Object}
+						 */
+						custom : {
+							visColumns : [
+								{ icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
+							],
+						}
+					},
+
+
+					/**
+					 * Row buttons appear in each row of the grid
+					 * @type {Object}
+					 */
+					rowBtns : {
+
+						/**
+						 * Edit Button
+						 * @type {Object}
+						 */
+						edit : {
+							type : 'button',
+							class : 'btn btn-primary btn-edit',
+							id : 'btn_edit',
+							icon : 'fa-pencil',
+							label : '',
+							title : 'Edit Record ...',
+						},
+
+						/**
+						 * Delete Button
+						 * @type {Object}
+						 */
+						del : {
+							type : 'button',
+							class : 'btn btn-danger btn-delete',
+							id : 'btn_delete',
+							icon : 'fa-trash-o',
+							label : '',
+							title : 'Delete Record ...'
+						},
+
+						/**
+						 * Define custom buttons here. Custom buttons may also be defined at runtime.
+						 * @type {Object}
+						 */
+						custom : {
+							//custom : { type : 'button' } // etc.
+						}
+					},
+
+					/**
+					 * With Selected Buttons appear in the dropdown menu of the header
+					 * @type {Object}
+					 */
+					withSelectedBtns : {
+
+						/**
+						 * Delete Selected ...
+						 * @type {Object}
+						 */
+						del : {
+							type : 'button',
+							class : 'li-red',
+							id : 'btn_delete',
+							icon : 'fa-trash-o',
+							label : 'Delete Selected ...',
+							fn : function() { self.fn.withSelected('delete'); },
+						},
+
+						/**
+						 * Define custom buttons here. Custom buttons may also be defined at runtime.
+						 * @type {Object}
+						 */
+						custom : {
+							//custom : { type : 'button' } // etc.
+						}
+					},
+
+					/**
+					 * linktables define the relationships between tables
+					 * @type {Array}
+					 */
+					linkTables : [ ],
+
+				}; // end defaults
+
+			}, // end fn
+
+
 
 			/**
 			 * [function description]
@@ -682,8 +1080,7 @@
 					self.fn.$currentForm().clearForm();
 					self.fn.$currentForm().find(':input:not("[type=button]"):not("[type=submit]"):not("[type=reset]"):not("[type=radio]"):not("[type=checkbox]")')
 					.each( function(i,elm) {
-
-						$(elm).data("DateTimePicker").remove();
+						//$(elm).data("DateTimePicker").remove();
 						$(elm).val('');
 						if ( $(elm).hasClass('bsms') ) {
 							$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
@@ -728,7 +1125,7 @@
 			closeCurrentForm : function() {
 				try {
 					$.noty.closeAll();
-					self.fn.$currentFormWrapper.removeClass('max')
+					self.fn.$currentFormWrapper().removeClass('max')
 						.find('.formContainer').css('height','');
 					self.fn.$currentForm().clearForm();
 					self.utility.turnOffOverlays();
@@ -751,8 +1148,18 @@
 			 */
 			getCurrentFormRowData : function() {
 				if (self.action === 'new') return false;
-				var id = self.utility.getCurrentRowId();
-				self.fn.oCurrentForm.fn.getRowData(id, self.callback.updateDOMFromRowData)
+				var url = self.utility.getCurrentRowDataUrl();
+
+				self.fn.oCurrentForm().fn.getRowData(url, self.callback.updateDOMFromRowData);
+			}, //end fn
+
+			/**
+			 * Get the data url of the current row
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			getCurrentRowDataUrl : function() {
+				return self.options.table + '/' + self.utility.getCurrentRowId() + '/json';
 			}, //end fn
 
 			/**
@@ -817,7 +1224,7 @@
 			 * @return {[type]}         [description]
 			 */
 			setOptions : function(options) {
-				$.extend(true, self.options,options);
+				self.options = $.extend(true, self.options,options);
 				return self;
 			}, //end fn
 
@@ -827,18 +1234,24 @@
 			 * @return {[type]} [description]
 			 */
 			setupVisibleColumnsMenu : function() {
-				// visible columns
-				_.each( self.options.columns, function( o, i ) {
-					if (i < self.options.headers.length ) {
-						self.options.tableBtns.custom.visColumns.push(
-							{
-								icon : 'fa-check-square-o',
-								label : self.options.headers[i],
-								fn : function() { self.utility.DOM.toggleColumnVisibility( $(this) ) }, 'data-column' : o
-							}
-						);
-					}
-				})
+				if ( typeof self.temp.visibleColumnsMenuSetup === 'undefined' || self.temp.visibleColumnsMenuSetup === false) {
+					// visible columns
+					_.each( self.options.columns, function( o, i ) {
+						if (i < self.options.headers.length ) {
+							self.options.tableBtns.custom.visColumns.push(
+								{
+									icon : 'fa-check-square-o',
+									label : self.options.headers[i],
+									fn : function() { self.utility.DOM.toggleColumnVisibility( $(this) ) }, 'data-column' : o
+								}
+							);
+						}
+					});
+
+					self.temp.visibleColumnsMenuSetup = true;
+				} else {
+					return false;
+				}
 			}, //end fn
 
 			/**
@@ -1270,12 +1683,10 @@
 				var events, target, fn, event;
 
 				_.each( self.options.events.grid, function( events, target ) {
-					var $target = self.utility.locateTarget(target) || false;
-
-					if (!$target) return false;
-
 					_.each( events, function(fn, event) {
-							self.utility.setCustomBinding( $target, fn, event )
+							if (typeof fn === 'function') {
+								self.utility.setCustomBinding( target, fn, event )
+							}
 					});
 				})
 			}, //end fn
@@ -1289,12 +1700,8 @@
 				var events, target, fn, event;
 
 				_.each( self.options.events.form, function( events, target ) {
-					var $target = self.utility.locateTarget(target, self.fn.$currentFormWrapper() ) || false;
-
-					if (!$target) return false;
-
 					_.each( events, function(fn, event) {
-							self.utility.setCustomBinding( $target, fn, event )
+							self.utility.setCustomBinding( target, fn, event, '.div-form-panel-wrapper' )
 					});
 				})
 			}, //end fn
@@ -1306,15 +1713,65 @@
 			 * @param  {Function} fn    [description]
 			 * @return {[type]}         [description]
 			 */
-			setCustomBinding : function( $target, fn, event ) {
-				var eventKey = event + '.custom';
+			setCustomBinding : function( target, fn, event, scope ) {
+				var eventKey = event + '.custom-' + $.md5( fn.toString() ),
+						$scope = (typeof scope === 'undefined') ? $(document) : $(scope),
+						scope = (typeof scope === 'undefined') ? 'document' : scope;
 
 				if ( event === 'boot' ) {
 					return (typeof fn === 'function') ? fn() : false;
 				}
 
-				return $target.off(eventKey).on(eventKey, fn);
+				if ( !!$(window[target]).length ) {
+					self.utility.locateTarget(target).off(eventKey).on(eventKey, fn);
+				} else if ( !self.utility.isEventDelegated(target,eventKey,scope) ) {
+					$scope.delegate(target, eventKey, fn);
+					self.utility.eventIsDelegated(target,eventKey,scope);
+				}
 			}, // end fn
+
+			/**
+			 * Has the event been delegated for the target?
+			 * @method function
+			 * @param  {[type]} target   [description]
+			 * @param  {[type]} eventKey [description]
+			 * @return {[type]}          [description]
+			 */
+			isEventDelegated : function( target, eventKey, scope ) {
+				return _.indexOf(self.delegatedEvents, scope + '-' + target + '-' + eventKey) !== -1;
+			}, // end fn
+
+			/**
+			 * Mark event delegated
+			 * @method function
+			 * @param  {[type]} target   [description]
+			 * @param  {[type]} eventKey [description]
+			 * @param  {[type]} scope    [description]
+			 * @return {[type]}          [description]
+			 */
+			eventIsDelegated : function( target, eventKey, scope) {
+				return self.delegatedEvents.push( scope + '-' + target + '-' + eventKey );
+			}, // end fn
+
+			/**
+			 * Form boot up function
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			formBootup : function() {
+				self.fn.$currentFormWrapper()
+					//reset validation stuff
+					.find('.has-error').removeClass('has-error').end()
+					.find('.has-success').removeClass('has-success').end()
+					.find('.help-block').hide().end()
+					.find('.form-control-feedback').hide().end()
+
+					//multiselects
+					.find('select').addClass('bsms').end()
+					.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
+
+					.find('[_linkedElmID]').change();
+			}, //end fn
 
 			/**
 			 * Load event bindings for processing
@@ -1323,30 +1780,10 @@
 			 */
 			loadBindings : function() {
 					// form bindings
-					$.extend(true, self.options.events.form, {
+					self.options.events.form = $.extend(true, {
 						// the bind function will assume the scope is relative to the current form
 						// unless the key is found in the global scope
 						// boot functions will be automatically called at runtime
-						"formBootup" : {
-							boot : function() {
-								self.fn.$currentFormWrapper()
-									//reset validation stuff
-									.find('.has-error').removeClass('has-error').end()
-									.find('.has-success').removeClass('has-success').end()
-									.find('.help-block').hide().end()
-									.find('.form-control-feedback').hide().end()
-							}
-						},
-
-						"select" : {
-							boot : function() {
-								self.fn.$currentFormWrapper()
-									//multiselects
-									.find('select').addClass('bsms').end()
-									.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
-							}
-						},
-
 						"[data-validType='Phone Number']" : {
 							keyup : function() {
 								$(this).val( formatPhone( $(this).val() ) );
@@ -1468,16 +1905,12 @@
 								oElm.fn.initSelectOptions(true);
 
 							},
-
-							boot : function() {
-								self.fn.$currentFormWrapper().find('[_linkedElmID]').change();
-							}
 						}
 
 					}, self.options.events.form);
 
 					// grid events
-					$.extend(true, self.options.events.grid, {
+					self.options.events.grid = $.extend(true, {
 						// the bind function will assume the scope is relative to the grid
 						// unless the key is found in the global scope
 						// boot functions will be automatically called at runtime
@@ -1642,15 +2075,15 @@
 						},
 
 						".btn-showMenu" : {
-							click : self.utility.toggleRowMenu
+							click : self.utility.DOM.toggleRowMenu
 						},
 
 						".table-body .table-row" : {
 							mouseover : function() {
 								var $tr = $(this);
 
-								clearTimeout(self.intervals.cancelRowMenuUpdate);
-								self.intervals.moveRowMenu = setTimeout( function() {
+								clearTimeout(self.dataGrid.intervals.cancelRowMenuUpdate);
+								self.dataGrid.intervals.moveRowMenu = setTimeout( function() {
 									tbl.find('.btn-showMenu').removeClass('hover');
 									if (tbl.find('.rowMenu').hasClass('expand') === false) {
 										tbl.find('.btn-showMenu').removeClass('active');
@@ -1663,8 +2096,8 @@
 							mouseout : function() {
 
 								var $tr = $(this);
-								clearTimeout(self.intervals.moveRowMenu);
-								self.intervals.cancelRowMenuUpdate = setTimeout( function() {
+								clearTimeout(self.dataGrid.intervals.moveRowMenu);
+								self.dataGrid.intervals.cancelRowMenuUpdate = setTimeout( function() {
 									tbl.find('.btn-showMenu').removeClass('hover');
 									if (!tbl.find('.rowMenu').hasClass('expand')) {
 										$tr.find('.btn-showMenu').removeClass('active');
@@ -1682,7 +2115,7 @@
 			 * @return {[type]} [description]
 			 */
 			loadFormDefinitions : function() {
-				$.extend(true, self.options.formDefs, {
+				self.options.formDefs = $.extend(true, {}, {
 
 					editFrm : {
 						table : self.options.table,
@@ -1700,7 +2133,7 @@
 						disabledElements : self.options.disabledFrmElements
 					},
 
-					delFrm : {
+					deleteFrm : {
 						table : self.options.table,
 						pkey : self.options.pkey,
 						tableFriendly : self.options.tableFriendly,
@@ -1733,7 +2166,7 @@
 							'legend' : '3. Edit Column Parameters',
 						}
 					}
-				}, self.options.formDefs);
+				}, options.formDefs);
 			}, //end fn
 
 			/**
@@ -1917,7 +2350,7 @@
 				 *  Parameters of the form {@ParamName}
 				 *  are expanded by the render function
 				 */
-				$.extend(true, self.html, {
+				self.html = $.extend(true, {}, {
 
 					// main grid body
 					tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group"> <button type="button" name="btn_refresh_grid" class="btn btn-success pull-left btn-refresh"> <i class="fa fa-refresh fa-fw"></i><span>&nbsp;</span> </button> </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> Filter : </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
@@ -1949,7 +2382,7 @@
 						// Colparams Form Template
 						colParamFrm	: '<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-lblue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body" style="padding:0 0px !important;"> <div class="row side-by-side"> <div class="col-lg-3 tbl-list"></div> <div class="col-lg-2 col-list"></div> <div class="col-lg-7 param-list"> <div class="side-by-side colParamFormContainer formContainer"> </div> </div> </div> </div> <div class="panel-heading"> <input type="button" class="btn btn-success btn-save" id="btn_save" value="Save"> <input type="button" class="btn btn-warning btn-reset" id="btn_reset" value="Reset"> <input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form"> <input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel"> </div> </div> </div> </div>',
 					}
-				},self.options.html);
+				}, options.html);
 
 			}, // end fn
 
@@ -1969,7 +2402,7 @@
 			render : function(str,params) {
 				var ptrn, key, val;
 
-				if (typeof params !== 'object') return '';
+				//if (typeof params !== 'object') return '';
 
 				_.each( params, function(val, key) {
 					ptrn = new RegExp( '\{@' + key + '\}', 'gi' );
@@ -2160,6 +2593,7 @@
 			 * @return {[type]}    [description]
 			 */
 			checkout : function(id) {
+				return true;
 				self.ajaxVars = {
 					url: self.options.url,
 					data: {
@@ -2180,6 +2614,7 @@
 			 * @return {[type]}    [description]
 			 */
 			checkin : function(id) {
+				return true;
 				self.ajaxVars = {
 					url: self.options.url,
 					data: {
@@ -2199,6 +2634,7 @@
 			 * @return {[type]} [description]
 			 */
 			getCheckedOutRecords : function() {
+				return true;
 				self.ajaxVars = {
 					url: self.options.url,
 					data: {
@@ -2334,7 +2770,6 @@
 					self.store.set('pref_rowsPerPage',rowsPerPage);
 					self.options.pageNum = 1;
 					self.dataGrid.pagination.rowsPerPage = Math.floor(rowsPerPage);
-					self.fn.bind();
 					self.utility.DOM.page(1);
 					self.utility.DOM.updateColWidths();
 				}, // end fn
@@ -2350,7 +2785,7 @@
 					if (typeof hide === 'undefined') { hide = false; }
 
 					if (!hide) {
-						tbl.css('background','url("./images/tbody-preload.gif") no-repeat center 175px rgba(0,0,0,0.15)')
+						tbl.css('background','url("/images/tbody-preload.gif") no-repeat center 175px rgba(0,0,0,0.15)')
 						 .find('[name=RowsPerPage],[name=q]').prop('disabled',true).end()
 						 .find('.table-body').css('filter','blur(1px) grayscale(100%)').css('-webkit-filter','blur(2px) grayscale(100%)') .css('-moz-filter','blur(2px) grayscale(100%)')
 						 //.find('.table-cell, .table-header').css('border','1px solid transparent').css('background','none');
@@ -2706,9 +3141,6 @@
 					//table row
 					$tr.find('.table-cell .rowMenu-container').eq(0).append(self.DOM.$rowMenu);
 
-					// update bindings
-					self.fn.bind();
-
 					// update lastUpdatedRow;
 					self.temp.lastUpdatedRow = $tr.index();
 
@@ -2726,7 +3158,7 @@
 
 					$rowMenu.removeClass('expand');
 
-					self.utility.moveRowMenu($tr);
+					self.utility.DOM.moveRowMenu($tr);
 
 					$btn.toggleClass('active rotate');
 
@@ -2846,10 +3278,14 @@
 
 
 						// iterate through the columns
-						$.each( self.currentRow, function(key, value) {
+						//$.each( self.currentRow, function(key, value) {
+						$.each( self.options.columns, function(i, key) {
+
+							// get the value of the current key
+							var value = self.currentRow[key];
 
 							// determine if the column is hidden
-							if ($.inArray(key,self.options.hidCols) !== -1) {
+							if ( _.indexOf(self.options.hidCols, key) !== -1) {
 								return false;
 							}
 
@@ -2941,9 +3377,6 @@
 							$('<div/>', {'class' : 'table-cell'}).appendTo( $(elm) );
 						}
 					});
-
-					self.fn.bind();
-
 
 					// process pagination
 					self.utility.updatePagination();
@@ -3154,7 +3587,7 @@
 				 */
 				buildForm : function( params, key ) {
 					var $frmHandle = '$' + key,
-							oFrmHandle = '$' + key.ucfirst(),
+							oFrmHandle = 'o' + key.ucfirst(),
 							oFrm;
 
 					// make sure the form template exists
@@ -3164,10 +3597,10 @@
 					self.forms[oFrmHandle] = oFrm = new jForm( params );
 
 					// create form container
-					self.forms[$frmHandle] = $('<div/>')
+					self.forms[$frmHandle] = $('<div/>', { 'class' : 'gridFormContainer' })
 						.html( self.utility.render( self.html.forms[key] ) )
 						.find( '.formContainer' ).append( oFrm.fn.handle() ).end()
-						.appendTo( tbl );
+						.appendTo( self.$() );
 				}, // end fn
 
 				/**  **  **  **  **  **  **  **  **  **
@@ -3187,363 +3620,6 @@
 			}, // end DOM fns
 
 		}; // end utility fns
-
-		/**
-		 * Default Options
-		 * @type {Object}
-		 */
-		this.defaults = {
-
-			/**
-			 * Form Definitions
-			 */
-			formDefs : {},
-
-			/**
-			 * Event Bindings
-			 * @type {Object}
-			 */
-			bind : {},
-
-			/**
-			 * Function definitions
-			 * @type {Object}
-			 */
-			fn : {},
-
-			/**
-			 * Toggles - true/false switches
-			 * @type {Object}
-			 */
-			toggles : {
-
-				/**
-				 * Data is editable
-				 * @type {Boolean} default true
-				 */
-				editable : true,
-
-				/**
-				 * Show the 'new' button
-				 * @type {Boolean} default true
-				 */
-				new : true,
-
-				/**
-				 * Show the 'edit' button
-				 * @type {Boolean} default true
-				 */
-				edit : true,
-
-				/**
-				 * Show the 'delete' buton
-				 * @type {Boolean} default true
-				 */
-				del : true,
-
-				/**
-				 * Show the sort buttons above each header
-				 * @type {Boolean} default true
-				 */
-				sort : true,
-
-				/**
-				 * Autoupdate the grid data automatically
-				 * @type {Boolean} default true
-				 */
-				autoUpdate : true,
-
-				/**
-				 * Auto-paginate the grid data
-				 * @type {Boolean} default true
-				 */
-				paginate : true,
-
-				/**
-				 * Show the filter text boxes above each header
-				 * @type {Boolean} default true
-				 */
-				headerFilters : true,
-
-				/**
-				 * Collapse the row menu
-				 * @type {Boolean} default true
-				 */
-				collapseMenu : true,
-
-				/**
-				 * Cache the grid data for faster load times
-				 * @type {Boolean} default false
-				 */
-				caching : false,
-
-				/**
-				 * Show the ellipsis ... and readmore buttons
-				 * @type {Boolean} default true
-				 */
-				ellipses : true,
-
-				/**
-				 * Checkout records before editing
-				 * @type {Boolean} default true
-				 */
-				checkout : true,
-
-				/**
-				 * Close form window after saving
-				 * @type {Boolean} default true
-				 */
-				closeOnSave : true,
-
-				/**
-				 * remove all rows when updating data
-				 * @type {Boolean}
-				 */
-				removeAllRows : false,
-			},
-
-			/**
-			 * General Grid Options
-			 */
-
-			/**
-			 * If options.toggles.autoUpdate, interval to autorefresh data in ms
-			 * @type {Number} default 602000
-			 */
-			refreshInterval : 602000,
-
-			/**
-			 * jQuery DOM target
-			 * @type {String} default '.table-responsive'
-			 */
-			target : '.table-responsive',						// htmlTable target
-
-			/**
-			 * Data request options
-			 */
-
-			/**
-			 * URL of JSON resource (grid data)
-			 * @type {String}
-			 */
-			url	: '', 	// url of JSON resource
-
-			/**
-			 * Database table name of grid data
-			 * @type {String}
-			 */
-			table : '',											// db table (for updates / inserts)
-
-			/**
-			 * Where clause of data query
-			 * @type {String}
-			 */
-			filter : '',										// where clause for query
-
-			/**
-			 * db columns to show
-			 * @type {Array}
-			 */
-			columns : [ ],										// columns to query
-
-			/**
-			 * Friendly headers for db columns
-			 * @type {Array}
-			 */
-			headers : [ ],										// headers for table
-
-			/**
-			 * Data Presentation options
-			 */
-
-
-			/**
-			 * Pagination - Rows per page
-			 * @type {Number} default 10
-			 */
-			rowsPerPage : 10,
-
-			/**
-			 * Pagination - Starting page number
-			 * @type {Number} default 1
-			 */
- 			pageNum	: 1,
-
-			/**
-			 * The friendly name of the table e.g. Users
-			 * @type {String}
-			 */
-			tableFriendly : '',									// friendly name of table
-
-			/**
-			 * The column containing the friendly name of each row e.g. username
-			 * @type {String}
-			 */
-			columnFriendly : '',								// column containing friendly name of each row
-
-			/**
-			 * The text shown when deleting a record
-			 * @type {String}
-			 */
-			deleteText : 'Deleting',
-
-			/**
-			 * html attributes to apply to individual columns
-			 * @type {Array}
-			 */
-			cellAtts : [ ],										// column attributes
-
-			/**
-			 * html templates
-			 * @type {Array}
-			 */
-			templates : [ ],									// html templates
-
-			/**
-			 * Max cell length in characters, if toggles.ellipses
-			 * @type {Number} default 38
-			 */
-			maxCellLength : 38,
-
-			/**
-			 * Max column length in pixels
-			 * @type {Number} default 450
-			 */
-			maxColWidth: 450,
-
-			/**
-			 * Bootstrap Multiselect Default Options
-			 * @type {Object}
-			 */
-			bsmsDefaults : {
-				buttonContainer : '<div class="btn-group" />',
-				enableFiltering: true,
-				includeSelectAllOption: true,
-				maxHeight: 185
-			},
-
-			/**
-			 * Header Options
-			 * @type {Object}
-			 */
-			gridHeader : {
-				icon : 'fa-dashboard',
-				headerTitle : 'Manage',
-				helpText : false,
-			},
-
-			/**
-			 * Disabled Form Elements - e.g. password
-			 * @type {Array}
-			 */
-			disabledFrmElements : [],
-
-			/**
-			 * Table buttons appear in the table menu below the header
-			 * @type {Object}
-			 */
-			tableBtns : {
-
-				/**
-				 * New Button
-				 * @type {Object}
-				 */
-				new : {
-					type : 'button',
-					class : 'btn btn-success btn-new',
-					id : 'btn_edit',
-					icon : 'fa-plus-circle',
-					label : 'New',
-				},
-
-				/**
-				 * Define custom buttons here. Custom buttons may also be defined at runtime.
-				 * @type {Object}
-				 */
-				custom : {
-					visColumns : [
-						{ icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
-					],
-				}
-			},
-
-
-			/**
-			 * Row buttons appear in each row of the grid
-			 * @type {Object}
-			 */
-			rowBtns : {
-
-				/**
-				 * Edit Button
-				 * @type {Object}
-				 */
-				edit : {
-					type : 'button',
-					class : 'btn btn-primary btn-edit',
-					id : 'btn_edit',
-					icon : 'fa-pencil',
-					label : '',
-					title : 'Edit Record ...',
-				},
-
-				/**
-				 * Delete Button
-				 * @type {Object}
-				 */
-				del : {
-					type : 'button',
-					class : 'btn btn-danger btn-delete',
-					id : 'btn_delete',
-					icon : 'fa-trash-o',
-					label : '',
-					title : 'Delete Record ...'
-				},
-
-				/**
-				 * Define custom buttons here. Custom buttons may also be defined at runtime.
-				 * @type {Object}
-				 */
-				custom : {
-					//custom : { type : 'button' } // etc.
-				}
-			},
-
-			/**
-			 * With Selected Buttons appear in the dropdown menu of the header
-			 * @type {Object}
-			 */
-			withSelectedBtns : {
-
-				/**
-				 * Delete Selected ...
-				 * @type {Object}
-				 */
-				del : {
-					type : 'button',
-					class : 'li-red',
-					id : 'btn_delete',
-					icon : 'fa-trash-o',
-					label : 'Delete Selected ...',
-					fn : function() { self.fn.withSelected('delete'); },
-				},
-
-				/**
-				 * Define custom buttons here. Custom buttons may also be defined at runtime.
-				 * @type {Object}
-				 */
-				custom : {
-					//custom : { type : 'button' } // etc.
-				}
-			},
-
-			/**
-			 * linktables define the relationships between tables
-			 * @type {Array}
-			 */
-			linkTables : [ ],
-
-		}; // end defaults
 
 		// initialize
 		this.fn._init();

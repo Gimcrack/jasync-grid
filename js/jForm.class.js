@@ -408,27 +408,25 @@
 		this.callback = {
 
 			getRowData : function(response) {
-				if (!!response[0]) {
 
-          //console.log(response[0]);
+        //console.log(response[0]);
 
-					self.DOM.$frm.clearForm();
+				self.DOM.$frm.clearForm();
 
-					_.each( response[0], function( value, key ) {
-						//console.log( key + ' = ' + value);
-						if (typeof self.oInpts[key] !== 'undefined') {
-							if (!!value && value.indexOf('|') !== -1 && key !== '_labelsSource' && key !== '_optionsSource') {
-								value = value.split('|');
-							}
-							self.oInpts[key].fn.enable();
-							self.oInpts[key].fn.val(value);
-							if (self.oInpts[key].options.atts.type === 'select') {
-								self.oInpts[key].DOM.$inpt.multiselect('refresh').change();
-							}
+				_.each( response, function( value, key ) {
+					if (typeof self.oInpts[key] !== 'undefined') {
+						if (!!value && value.indexOf('|') !== -1 && key !== '_labelsSource' && key !== '_optionsSource') {
+							value = value.split('|');
 						}
+						self.oInpts[key].fn.enable();
+						self.oInpts[key].fn.val(value);
+						if (self.oInpts[key].options.atts.type === 'select') {
+							self.oInpts[key].DOM.$inpt.multiselect('refresh').change();
+						}
+					}
 
-					});
-				}
+				});
+
 				self.DOM.$frm.find('.bsms').multiselect('refresh');
 				$('.panel-overlay').hide();
 			},

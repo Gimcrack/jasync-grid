@@ -54,8 +54,6 @@
 			tables : {
 				parent : 'ptable',
 				child : 'ctable',
-				child2 : '',
-				child3 : '',
 			},
 
 			dataView : '',
@@ -75,7 +73,7 @@
 			},
 
 			// external data for tables, etc.
-			extData : true,
+			extData : false,
 
 			// TTL for external data (mins)
 			ttl : 60*60000,
@@ -127,11 +125,7 @@
 					// use default schema
 
 					self.callback.preinit(
-					[ 	'lk_ApplicationContact', 'lk_ApplicationServer', 'lk_ApplicationTask',
-						'lk_ContactGroup', 'lk_DatabaseContact', 'lk_DatabaseServer',
-						'lk_ModuleContact', 'lk_Notification', 'lk_OutageTask',
-						'lk_OutageTaskApplicationContact', 'lk_OutageTaskServerContact',
-						'lk_ProjectGroup', 'lk_ServerContact', 'lk_ServerTask', 'lk_UserContact' ]
+					[ 	'group_user' ]
 					);
 				}
 
@@ -140,14 +134,8 @@
 			_init : function() {
 				var p = self.options.tables.parent,
 					c1 = self.options.tables.child,
-					c2 = self.options.tables.child2,
-					c3 = self.options.tables.child3,
-					test = ['lk_' + p + c1,
-							'lk_' + c1 + p,
-							'lk_' + p + c1 + c2 + c3,
-							'lk_' + p + c1 + c3 + c2,
-							'lk_' + c1 + p + c2 + c3,
-							'lk_' + c1 + p + c3 + c2],
+					test = [p + '_' + c1,
+							c1 + '_' + p],
 					found = '';
 
 				_.each( test, function(v) {
@@ -165,8 +153,8 @@
 				var p = self.options.tables.parent,
 					c = self.options.tables.child,
 					source = (self.options.dataView !== '') ? self.options.dataView : c,
-					pid = p + 'ID',
-					cid = c + 'ID',
+					pid = p + '_id',
+					cid = c + '_id',
 					selectName = (self.options.multiple) ? cid + 's' : cid,
 					optsSource = source + '.' + cid,
 					lblsSource = source + '.' + self.options.childFriendlyName;
