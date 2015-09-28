@@ -14,7 +14,7 @@
  *  			  	jApp
  */
 
-;(function(window, jQuery, $, _, jInput, jForm, jApp) {
+;(function(window, jQuery, $, jInput, jForm, jApp) {
 
 	'use strict';
 
@@ -161,8 +161,8 @@
 			linkTables : function() {
 				var oLT;
 				_.each( self.options.linkTables, function(o,key) {
-					o.dataView = self.options.dataView;
 					o.callback = self.callback.linkTables;
+					console.log(o);
 					oLT = new jLinkTable( o );
 				});
 			}, // end fn
@@ -651,6 +651,8 @@
 				// add the colParams to the linkTable store
 				self.linkTables = _.union( self.linkTables, colParams );
 
+				console.log(colParams);
+
 				// count the number of completed requests
 				if ( !self.linkTableRequestsComplete ) {
 					self.linkTableRequestsComplete = 1;
@@ -660,7 +662,7 @@
 
 				// once all linkTable requests are complete, apply the updates to the forms
 				if (self.linkTableRequestsComplete == self.options.linkTables.length) {
-
+					console.log('all linktables in, process the result');
 					// update the edit form
 					self.forms.oEditFrm.options.colParamsAdd = self.linkTables;
 					self.forms.oEditFrm.fn.processColParams();
@@ -1083,7 +1085,7 @@
 						//$(elm).data("DateTimePicker").remove();
 						$(elm).val('');
 						if ( $(elm).hasClass('bsms') ) {
-							$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
+							//$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
 						}
 					});
 				} catch(e) {
@@ -1767,8 +1769,8 @@
 					.find('.form-control-feedback').hide().end()
 
 					//multiselects
-					.find('select').addClass('bsms').end()
-					.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
+					//.find('select').addClass('bsms').end()
+					//.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
 
 					.find('[_linkedElmID]').change();
 			}, //end fn
@@ -2671,7 +2673,7 @@
 						// pagination parameters
 						pagination : {
 							totalPages : -1,
-							rowsPerPage : self.store.get('pref_rowsPerPage',self.options.rowsPerPage)
+							rowsPerPage : $.jStorage.get('pref_rowsPerPage',self.options.rowsPerPage)
 						},
 
 						// ajax requests
@@ -3629,4 +3631,4 @@
 	window.jGrid = jGrid;
 
 
-})(window, jQuery, $, _, jInput, jForm, jApp);
+})(window, jQuery, $, jInput, jForm, jApp);

@@ -20,7 +20,7 @@
  */
 // javascript closure
 /* jshint ignore:end */
-;(function( window, $, _ ) {
+;(function( window, $) {
 
 	'use strict';
 
@@ -396,16 +396,16 @@
 				}
 
 
-				var tbl, lbl, opt, where, tmp, url, data;
+				var model, lbl, opt, where, tmp, url, data;
 
 				tmp = oAtts._labelssource.split('.');
-				tbl = tmp[0]; // db table that contains option/label pairs
+				model = tmp[0]; // db table that contains option/label pairs
 				lbl = tmp[1]; // db column that contains labels
 				opt = oAtts._optionssource.split('.')[1];
 				where = ( !!oAtts._optionsFilter && !!oAtts._optionsFilter.length ) ? oAtts._optionsFilter : '1=1';
 
-				url = "/select-options/";
-				data = { tbl : tbl, lbl : lbl, opt : opt, where : where};
+				url = "/selopts/_" + model + "_" + opt + "_" + lbl;
+				data = {};
 
 				//console.log('executing request for external options');
 				$.getJSON( url, data, self.fn.buildOptions )
@@ -420,8 +420,8 @@
 				// load JSON data if applicable
 				if (!!data) {
 					self.JSON = data;
-					oAtts._labels = data[0];
-					oAtts._options = data[1];
+					oAtts._labels = _.pluck(data,'label');
+					oAtts._options = _.pluck(data,'option');
 					if (self.options.cache) {
 						self.store.set( 'selectOptions_' + self.options.atts.name, JSON.stringify(data) );
 					}
@@ -546,4 +546,4 @@
 
 	window.jInput = jInput; // add to global scope
 
-})( window, $, _ );
+})( window, $);

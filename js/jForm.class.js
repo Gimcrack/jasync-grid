@@ -30,7 +30,7 @@
 };
 
 // javascript closure
-;(function( window, $, jQuery, _ ) {
+;(function( window, $, jQuery ) {
 
 	'use strict';
 
@@ -476,4 +476,4 @@
 
 	window.jForm = jForm; // add to global scope
 
-})(window, $, jQuery, _);
+})(window, $, jQuery);

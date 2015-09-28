@@ -14,14 +14,14 @@
  *  Created: 		5/1/15
  *  Last Updated: 	4/20/15
  *
- *  Prereqs: 	jQuery, underscore.js, jStorage.js
+ *  Prereqs: 	jQuery, jStorage.js
  *
  *  Changelog:
  *   5-1-15		Created the class
  *
  */
 // javascript closure
-;(function( window, jQuery, $, _, jInput, jForm, jApp ) {
+;(function( window, jQuery, $, jInput, jForm, jApp ) {
 
 	'use strict';
 
@@ -50,15 +50,14 @@
 
 			oFrm : {},
 
-			// tables
-			tables : {
-				parent : 'ptable',
-				child : 'ctable',
-			},
+			// the name of the input element
+			selectLabel : '',
+			selectName : '',
 
-			dataView : '',
-
-			childFriendlyName : '',
+			// the eloquent model name, value column and label column
+			model : '',
+			valueColumn : '',
+			labelColumn: '',
 
 			// whether to allow multiple
 			multiple : true,
@@ -86,102 +85,20 @@
 		// set the runtime values for the options
 		$.extend(true,this.options, options);
 
-		this.store.setTTL( 'lkTable_names', self.options.ttl );
-
 		/**  **  **  **  **  **  **  **  **  **
  		 *   FUNCTION DEFS
  		 **  **  **  **  **  **  **  **  **  **/
 		this.fn = {
 
-			preinit : function() {
-
-				// load external data
-				if (!!self.options.extData) {
-
-					// find out if we have it cached locally
-					if ( !!self.store.get( 'lkTable_names', false ) ) {
-
-						// retrieve from storage
-						self.callback.preinit( self.store.get( 'lkTable_names' ) );
-
-					} else { // get external options
-						// set up request
-						self.requestOptions = {
-							url : window.location.href,
-							data : {
-								frm_name : 'frm_getLinkTables'
-							},
-						};
-
-						// execute request
-						$.getJSON(self.requestOptions.url,
-									self.requestOptions.data,
-									self.callback.preinit
-						).always( function(response) {
-							self.store.set( 'lkTable_names', response );
-						});
-					}
-				} else {
-					// use default schema
-
-					self.callback.preinit(
-					[ 	'group_user' ]
-					);
-				}
-
-			}, // end fn
-
 			_init : function() {
-				var p = self.options.tables.parent,
-					c1 = self.options.tables.child,
-					test = [p + '_' + c1,
-							c1 + '_' + p],
-					found = '';
-
-				_.each( test, function(v) {
-					var f = _.find( self.options.schema, function(val) { return !val &&  val.indexOf(v) > -1 });
-					if (typeof f !== 'undefined') { found = f; }
-				});
-
-				self.linkTable = found;
-
-				self.fn.form();
-
-			}, // end fn
-
-			form : function() {
-				var p = self.options.tables.parent,
-					c = self.options.tables.child,
-					source = (self.options.dataView !== '') ? self.options.dataView : c,
-					pid = p + '_id',
-					cid = c + '_id',
-					selectName = (self.options.multiple) ? cid + 's' : cid,
-					optsSource = source + '.' + cid,
-					lblsSource = source + '.' + self.options.childFriendlyName;
-
-				self.colParams =
-					 [
+				self.colParams = [
 						{
-							name : 'linkTable',
-							type : 'hidden',
-							value : self.linkTable,
-							multiple : true,
-							fieldset : 3,
-							colOrder : 1,
-						},{
-							type : 'hidden',
-							name : 'skey',
-							value : selectName,
-							multiple : true,
-							fieldset : 3,
-							colOrder : 2,
-						},{
 							type : 'select',
-							name : selectName,
+							name : self.options.selectName,
 							multiple : self.options.multiple,
-							_label : (!!self.options.multiple) ? c + 's' : c,
-							_optionssource : optsSource,
-							_labelssource : lblsSource,
+							_label : self.options.selectLabel,
+							_optionssource : self.options.model + '.' + self.options.valueColumn,
+							_labelssource : self.options.model + '.' + self.options.labelColumn,
 							_firstlabel : (!!self.options.multiple) ? false : '--Choose--',
 							_firstoption : (!!self.options.multiple) ? false : '0',
 							required : (!!self.options.required) ? 'required' : '__OFF__',
@@ -191,37 +108,17 @@
 						}
 					];
 
-				// store the end result
 
 			}, // end fn
-
 		}
 
-		/**  **  **  **  **  **  **  **  **  **
- 		 *   CALLBACK FN DEFS
- 		 **  **  **  **  **  **  **  **  **  **/
-		this.callback = {
+		// initialize
+		this.fn._init();
 
-			preinit : function(response) {
-				console.log(response);
-
-				// set the table schema
-				self.options.schema = response;
-
-				// initialize
-				self.fn._init();
-
-				// return to calling object
-				self.options.callback( self.colParams );
-			}
-
-		}
-
-		// pre-initialize
-		this.fn.preinit();
-
+		// callback the processed result
+		this.options.callback( this.colParams );
 	}; // end jInput declaration
 
 	window.jLinkTable = jLinkTable; // add to global scope
 
-})( window, jQuery, $, _, jInput, jForm, jApp );
+})( window, jQuery, $, jInput, jForm, jApp );
