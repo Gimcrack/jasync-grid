@@ -13,7 +13,7 @@
  // jquery function for clearing a form of all its values
  $.fn.clearForm = function() {
   return this.each(function() {
-    if ( !!$(this).prop('disabled') ) return false;
+    if ( !!$(this).prop('disabled') || !!$(this).prop('readonly') ) return false;
 
 	var type = this.type, tag = this.tagName.toLowerCase();
     if (tag == 'form')
@@ -91,10 +91,13 @@
 		};
 
 		// set the runtime values for the options
-		_.extend(this.options,options);
+		$.extend(true, this.options,options);
 
     // set up the callback functions
-    _.extend(this.callback, options.callback);
+    $.extend(true, this.callback, options.callback);
+
+    // alias for attributes container
+		var oAtts = this.options.atts;
 
 		// set default values
 		if (!this.options.fieldset) {
@@ -122,12 +125,9 @@
 		if (!this.options.hiddenElms) {
 			// setup the hidden elements
 			this.options.hiddenElms = [
-				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : '_method', 'value' : self.options.atts.method } },
+				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : '_method', 'value' : options.atts.method, 'data-static' : true } },
 			];
 		}
-
-		// alias for attributes container
-		var oAtts = this.options.atts;
 
 		// container for jQuery DOM elements
 		this.DOM = {
@@ -285,7 +285,7 @@
 
 				// process static or dynamically loaded colParams
 				_.each( _.sortBy( self.options.colParams, function( o ) { return (!isNaN(o['data-ordering'])) ? +o['data-ordering'] : 1000 } ) , function( o, key ) {
-					var inpt, eq;
+          var inpt, eq;
 					if (!!o && !!o.name && _.indexOf( self.options.disabledElements, o.name ) === -1 ) {
 
 						eq = ( !!o['data-fieldset'] ) ? Number( o['data-fieldset'] )-1 : 0;
@@ -419,7 +419,11 @@
 							value = value.split('|');
 						}
 						self.oInpts[key].fn.enable();
-						self.oInpts[key].fn.val(value);
+            if (typeof value === 'object' && !!_.pluck(value,'id').length) {
+              self.oInpts[key].fn.val(_.pluck(value,'id'));
+            } else {
+              self.oInpts[key].fn.val(value);
+            }
 						if (self.oInpts[key].options.atts.type === 'select') {
 							self.oInpts[key].DOM.$inpt.multiselect('refresh').change();
 						}

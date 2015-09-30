@@ -387,50 +387,21 @@
 						// DELETE SELECTED
 						case 'delete' :
 							self.action = 'withSelectedDelete';
-							bootbox.prompt("Are you sure you want to delete " + $cid.length + " items? Type your password to continue.", function(response) {
-								var $data = 'frm_name=frm_deleteSelected&table=' + self.options.table  + '&cid=' + $cid.join('|') + '&pwd=' + response;
-								self.ajaxVars = { url: self.url, data: $data, type: 'POST', success: self.fn.ajaxSuccessAction };
-								self.fn.ajaxSubmit();
-							});
-						break;
+							bootbox.confirm("Are you sure you want to delete " + $cid.length + " items?", function(response) {
+								if (!!response) {
+									var requestOptions = {
+										url : self.utility.getCurrentFormAction(),
+										success : self.callback.submitCurrentForm,
+										data : {
+											'_method' : 'delete',
+											'users' : $cid
+										}
+									}
 
-						// MARK SELECTED COMPLETE - OUTAGE TASKS
-						case 'markComplete' :
-							bootbox.prompt("Are you sure you want to complete " + $cid.length + " tasks? Type yes to continue.", function(response) {
-								if (response == 'yes') {
-									tbl.find('.chk_cid:checked').each( function(i) {
-										var $tr = $(this).closest('.table-row');
-										var $jsonData = $.parseJSON( htmlspecialchars_decode( $tr.find('#hid_jsondata').html() ) );
-										self.btn.completeTask($jsonData);
-										//$row.find('#btn_menuBtn_0').trigger('click');
-									});
+									self.utility.postJSON( requestOptions );
 								}
-							});
-						break;
 
-						// ASSIGN SELECTED TO ME - OUTAGE TASKS
-						case 'assignToMe' :
-							bootbox.prompt("Are you sure you want to assign " + $cid.length + " tasks to you? Type yes to continue.", function(response) {
-								if (response == 'yes') {
-									tbl.find('.chk_cid:checked').each( function(i) {
-										var $tr = $(this).closest('.table-row');
-										var $jsonData = $.parseJSON( htmlspecialchars_decode( $tr.find('#hid_jsondata').html() ) );
-										self.btn.assignToMe($jsonData);
-									});
-								}
-							});
-						break;
 
-						// PROJECTS - VIEW
-
-						// MARK SELECTED PROJECTS COMPLETE
-						case 'completeProject' :
-							bootbox.prompt("Are you sure you want mark " + $cid.length + " projects compelte? Type yes to continue.", function(response) {
-								if (response == 'yes') {
-									var $data = 'frm_name=frm_completeSelectedProjects&cid=' + $cid.join('|');
-									self.ajaxVars = { url: self.url, data: $data, type: 'POST', success: self.fn.ajaxSuccessAction };
-									self.fn.ajaxSubmit();
-								}
 							});
 						break;
 
@@ -447,7 +418,7 @@
 						break;
 					}
 				} else {
-					nfx_thumbslide('./images/warning.png','Nothing selected.','warning');
+					self.msg.warning('Nothing selected.')
 				}
 			}, //end fn
 
@@ -473,6 +444,24 @@
 		 *  used by the various AJAX calls
 		 **  **  **  **  **  **  **  **  **  **/
 		this.callback = {
+
+			/**
+			 * Process the result of the form submission
+			 * @method function
+			 * @param  {[type]} response [description]
+			 * @return {[type]}          [description]
+			 */
+			submitCurrentForm : function(response) {
+				if ( self.utility.isResponseErrors(response) ) {
+					self.msg.error( self.utility.getErrorMessage(response) )
+				} else {
+					self.msg.success( 'Operation Completed Successfully!');
+					if (self.options.closeOnSave) {
+						self.utility.closeCurrentForm();
+					}
+					self.fn.getGridData();
+				}
+			}, // end fn
 
 			/**  **  **  **  **  **  **  **  **  **
 			 *   update
@@ -1056,6 +1045,23 @@
 			}, // end fn
 
 
+			/**
+			 * Get the action of the current form
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			getCurrentFormAction : function() {
+				switch (self.action) {
+					case 'edit' :
+					case 'delete' :
+						return self.options.table + '/' + self.utility.getCurrentRowId();
+					break;
+
+					default :
+						return self.options.table;
+					break;
+				}
+			}, // end fn
 
 			/**
 			 * [function description]
@@ -1082,10 +1088,12 @@
 					self.fn.$currentForm().clearForm();
 					self.fn.$currentForm().find(':input:not("[type=button]"):not("[type=submit]"):not("[type=reset]"):not("[type=radio]"):not("[type=checkbox]")')
 					.each( function(i,elm) {
+						if ( !!$(elm).attr('data-static') ) { return false; }
+
 						//$(elm).data("DateTimePicker").remove();
 						$(elm).val('');
 						if ( $(elm).hasClass('bsms') ) {
-							//$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
+							$(elm).multiselect(self.options.bsmsDefaults).multiselect('refresh');
 						}
 					});
 				} catch(e) {
@@ -1171,14 +1179,22 @@
 			 */
 			submitCurrentForm : function() {
 				var requestOptions = {
-					url : self.fn.$currentForm.attr('action'),
-					data : self.fn.$currentForm.serialize(),
+					url : self.utility.getCurrentFormAction(),
+					data : self.fn.$currentForm().serialize(),
 					success : self.callback.submitCurrentForm,
 					fail : console.warn
 				};
 
-				$.noty.closeAll();
-				self.utility.getJSON( requestOptions );
+				self.msg.clear();
+
+				if (!!self.fn.$currentForm()) {
+					var oValidate = new validator( self.fn.$currentForm() );
+					if (oValidate.errorState) {
+						return false;
+					}
+				}
+
+				self.utility.postJSON( requestOptions );
 
 			}, // end fn
 
@@ -1329,7 +1345,7 @@
 			 * @return {[type]} [description]
 			 */
 			isFormOpen : function() {
-				return !!self.$().find('.div-form-pael-wrapper.max').count();
+				return !!self.$().find('.div-form-panel-wrapper.max').length;
 			}, // end fn
 
 			/**
@@ -1386,6 +1402,28 @@
 			isDataCacheAvailable : function() {
 				return (self.utility.isCaching() && !!self.store.get('data_' + self.options.table,false) );
 			}, // end fn
+
+			/**
+			 * Are there errors in the response
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			isResponseErrors : function(response) {
+				 return (typeof response.errors !== 'undefined' &&
+				 								!!response.errors);
+			}, // end fn
+
+			/**
+			 * Get error message from response
+			 * @method function
+			 * @param  {[type]} response [description]
+			 * @return {[type]}          [description]
+			 */
+			getErrorMessage : function(response) {
+				return (typeof response.message !== 'undefined') ?
+					response.message :
+					'There was a problem completing your request.'
+			}, //end fn
 
 			/**
 			 * The row needs to be checked out
@@ -1626,6 +1664,36 @@
 			}, // end fn
 
 			/**
+			 * post JSON
+			 * @method function
+			 * @param  {[type]} requestOptions [description]
+			 * @return {[type]}                [description]
+			 */
+			postJSON : function( requestOptions ) {
+
+					var options = $.extend(true,
+						{
+							url : null,
+							data : {},
+							success : function() { },
+							fail : function() { },
+							always : function() {},
+							complete : function() {}
+						} , requestOptions );
+
+					return $.ajax({
+							url: options.url,
+							data : options.data,
+							success : options.success,
+							type : 'POST',
+							dataType : 'json'
+						})
+						.fail( options.fail )
+						.always( options.always )
+						.complete( options.complete );
+			}, // end fn
+
+			/**
 			 * Execute the grid data request
 			 * @method function
 			 * @return {[type]} [description]
@@ -1725,7 +1793,7 @@
 				}
 
 				if ( !!$(window[target]).length ) {
-					self.utility.locateTarget(target).off(eventKey).on(eventKey, fn);
+					$(window[target]).off(eventKey).on(eventKey, fn);
 				} else if ( !self.utility.isEventDelegated(target,eventKey,scope) ) {
 					$scope.delegate(target, eventKey, fn);
 					self.utility.eventIsDelegated(target,eventKey,scope);
@@ -1769,8 +1837,8 @@
 					.find('.form-control-feedback').hide().end()
 
 					//multiselects
-					//.find('select').addClass('bsms').end()
-					//.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
+					.find('select').addClass('bsms').end()
+					.find('.bsms').multiselect(self.options.bsmsDefaults).multiselect('refresh').end()
 
 					.find('[_linkedElmID]').change();
 			}, //end fn
@@ -1873,9 +1941,9 @@
 						"#confirmation" : {
 							keyup : function() {
 								if( $(this).val().toString().toLowerCase() === 'yes' ) {
-									$target.find('.btn-go').removeClass('disabled');
+									self.fn.$currentForm().find('.btn-go').removeClass('disabled');
 								} else {
-									$target.find('.btn-go').addClass('disabled');
+									self.fn.$currentForm().find('.btn-go').addClass('disabled');
 								}
 							}
 						},
@@ -2123,15 +2191,15 @@
 						table : self.options.table,
 						pkey : self.options.pkey,
 						tableFriendly : self.options.tableFriendly,
-						atts : { name : 'frm_editGrid' },
-						disabledElements : self.options.disabledFrmElements
+						atts : { name : 'frm_editGrid', method : 'PATCH' },
+						disabledElements : self.options.disabledFrmElements,
 					},
 
 					newFrm : {
 						table : self.options.table,
 						pkey : self.options.pkey,
 						tableFriendly : self.options.tableFriendly,
-						atts : { name : 'frm_editGrid' },
+						atts : { name : 'frm_editGrid', method : 'POST' },
 						disabledElements : self.options.disabledFrmElements
 					},
 
@@ -2142,6 +2210,7 @@
 						loadExternal : false,
 						atts : {
 							name : 'frm_deleteGrid', // + self.options.tableFriendly,
+							method : 'DELETE'
 						},
 						btns : [
 							{ 'type' : 'button', 'class' : 'btn btn-success btn-go disabled', 	'id' : 'btn_go', 'value' : 'Go' },
@@ -2149,7 +2218,6 @@
 						],
 						colParams : [
 							{ 'type' : 'text', '_label' : 'Type yes to continue', 'name' : 'confirmation', 'id' : 'confirmation'  },
-							{ 'type' : 'hidden', 'name' : self.options.pkey }
 						],
 						fieldset : {
 							'legend' : 'Delete Record',
@@ -3041,9 +3109,9 @@
 
 					// table height
 					if( !$('#page-wrapper').hasClass('scrolled') ) {
-						$('.grid-panel-body .table').css('height',+$(window).height()-425);
+						$('.grid-panel-body .table').css('height',+$(document).height()-425);
 					} else {
-						$('.grid-panel-body .table').css('height',+$(window).height()-290);
+						$('.grid-panel-body .table').css('height',+$(document).height()-290);
 					}
 
 					// perfect scrollbar
@@ -3060,7 +3128,7 @@
 									// table height
 									$('#page-wrapper').addClass('scrolled');
 									$('.grid-panel-body .table').animate(
-										{ 'height' : +$(window).height()-290 },
+										{ 'height' : +$(document).height()-290 },
 										500,
 										'linear',
 										function() {
@@ -3075,7 +3143,7 @@
 									$('#page-wrapper').removeClass('scrolled');
 									// table height
 									$('.grid-panel-body .table').animate(
-										{'height' : +$(window).height()-425},
+										{'height' : +$(document).height()-425},
 										300,
 										'linear',
 										function() {
@@ -3260,7 +3328,7 @@
 													collapseMenu +
 													lblCheck +
 												'<div class="rowMenu-container"></div> \
-												</div>'
+												</div>&nbsp;'
 								);
 								tr.append(td_chk);
 							}
@@ -3622,6 +3690,70 @@
 			}, // end DOM fns
 
 		}; // end utility fns
+
+		/**
+		 * Message handler
+		 * @type {Object}
+		 */
+		this.msg = {
+
+			/**
+			 * Clear all messages
+			 * @method function
+			 * @return {[type]} [description]
+			 */
+			clear : function() {
+					$.noty.closeAll();
+			}, // end fn
+
+			/**
+			 * Show a message
+			 * @method function
+			 * @param  {[type]} message [description]
+			 * @param  {[type]} type    [description]
+			 * @return {[type]}         [description]
+			 */
+			show : function(message, type) {
+				var n = noty({
+					layout: 'top',
+					text : message,
+					type : type || 'info',
+					dismissQueue: true,
+					timeout : 3000
+				})
+			},
+
+			/**
+			 * Display a success message
+			 * @method function
+			 * @param  {[type]} message [description]
+			 * @return {[type]}         [description]
+			 */
+			success : function(message) {
+				self.msg.show(message,'success');
+			}, // end fn
+
+			/**
+			 * Display a error message
+			 * @method function
+			 * @param  {[type]} message [description]
+			 * @return {[type]}         [description]
+			 */
+			error : function(message) {
+				self.msg.show(message,'error');
+			}, // end fn
+
+			/**
+			 * Display a warning message
+			 * @method function
+			 * @param  {[type]} message [description]
+			 * @return {[type]}         [description]
+			 */
+			warning : function(message) {
+				self.msg.show(message,'warning');
+			}, // end fn
+
+		}
 
 		// initialize
 		this.fn._init();

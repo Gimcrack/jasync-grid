@@ -103,8 +103,8 @@
 							_firstoption : (!!self.options.multiple) ? false : '0',
 							required : (!!self.options.required) ? 'required' : '__OFF__',
 							'data-validType' : (!!self.options.required) ? 'select' : '__OFF__',
-							fieldset : 3,
-							colOrder : 3
+							'data-fieldset' : 3,
+							'data-ordering' : 3
 						}
 					];
 
