@@ -13,9 +13,13 @@
 
 	var jApp = function() {
 
+		var self = this;
+
+		this.debug = true;
+
 		this.oG = {
 			admin : {
-				
+
 			}
 			// extend this oG object with the individual page grid objects
 		};
@@ -34,6 +38,44 @@
 		}
 
 		this.activeGrid = {};
+
+		/**
+		 * Convenience function to access the active grid object
+		 * @method function
+		 * @return {[type]} [description]
+		 */
+		this.aG = function() {
+			return this.activeGrid;
+		}
+
+
+		/**
+		 * Convenience function to access the $grid object
+		 * in the active grid
+		 * @method function
+		 * @return {[type]} [description]
+		 */
+		this.tbl = function() {
+			return this.activeGrid.DOM.$grid;
+		}
+
+
+		/**
+		 * Convenience function to access the options
+		 * of the active grid
+		 * @method function
+		 * @return {[type]} [description]
+		 */
+		this.opts = function() {
+			return this.activeGrid.options;
+		}
+
+		this.log = function(msg,force) {
+			if (!!self.debug || !!self.force) {
+				console.log(msg);
+			}
+		}
+
 	};
 
 	window.jApp = jApp;
