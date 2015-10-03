@@ -135,7 +135,7 @@
            * Checkout records before editing
            * @type {Boolean} default true
            */
-          checkout : false,
+          checkout : true,
 
           /**
            * Close form window after saving
@@ -1330,7 +1330,7 @@
           "button.close, .btn-cancel" : {
             click : function() {
               if ( jUtility.needsCheckin() )  {
-                jUtility.checkin('all');
+                jUtility.checkin( jUtility.getCurrentRowId() );
               } else {
                 jUtility.closeCurrentForm();
               }
@@ -2042,13 +2042,21 @@
     prepareValue : function(value,column) {
       var template;
 
-      if (!value || value.toString().toLowerCase() === 'null') {
+      if (typeof value === 'undefined') {
+        value = '';
+      }
+
+      if (value.toString().toLowerCase() === 'null') {
         return '';
       }
 
       if (typeof jApp.opts().templates[column] === 'function') {
         template = jApp.opts().templates[column];
         value = template(value);
+      }
+
+      if (value.toString().trim() === '') {
+        return '';
       }
 
       if (value.toString().indexOf('|') !== -1) {
@@ -2100,19 +2108,10 @@
      * @return {[type]}    [description]
      */
     checkout : function(id) {
-      return true;
-      jApp.aG().ajaxVars = {
-        url: jApp.opts().url,
-        data: {
-          table : jApp.opts().table,
-          id : id,
-          frm_name : 'frm_checkout'
-        },
-        type: 'POST',
-        success: jUtility.callback.checkout
-      };
-
-      $.ajax(jApp.aG().ajaxVars);
+      jUtility.getJSON( {
+        url : '/checkout/_' + jApp.opts().model + '_' + id,
+        success : jUtility.callback.checkout
+      });
     }, // end fn
 
     /**
@@ -2121,19 +2120,10 @@
      * @return {[type]}    [description]
      */
     checkin : function(id) {
-      return true;
-      jApp.aG().ajaxVars = {
-        url: jApp.opts().url,
-        data: {
-          table : jApp.opts().table,
-          id : id,
-          frm_name : 'frm_checkin'
-        },
-        type: 'POST',
-        success: jUtility.callback.checkin
-      };
-
-      $.ajax(jApp.aG().ajaxVars);
+      jUtility.getJSON({
+        url : '/checkin/_' + jApp.opts().model + '_' + id,
+        success : jUtility.callback.checkin
+      });
     }, // end fn
 
     /**
@@ -2556,6 +2546,22 @@
      * @type {Object}
      */
     DOM : {
+
+      /**
+       * Updates the grid when there is
+       * or is not any data
+       * @method function
+       * @param  {Boolean} isDataEmpty [description]
+       * @return {[type]}              [description]
+       */
+
+      dataEmptyHandler : function(isDataEmpty) {
+        if (isDataEmpty) {
+          $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
+        } else {
+          $('.table-cell.no-data').remove();
+        }
+      }, // end fn
 
       /**
        * Update the header title
@@ -3470,7 +3476,11 @@
 				} else {
 					jUtility.msg.success( 'Operation Completed Successfully!');
 					if (jApp.opts().closeOnSave) {
-						jUtility.closeCurrentForm();
+            if ( jUtility.needsCheckin() )  {
+              jUtility.checkin( jUtility.getCurrentRowId() );
+            } else {
+              jUtility.closeCurrentForm();
+            }
 					}
 					jUtility.getGridData();
 					jUtility.DOM.resetRowMenu();
@@ -3488,6 +3498,12 @@
 			 **  **  **  **  **  **  **  **  **  **/
 			update : function(response) {
 				jApp.log('6.6 data received. processing...')
+
+        if ($.isEmptyObject(response)) {
+          jUtility.DOM.dataEmptyHandler(true);
+        } else {
+          jUtility.DOM.dataEmptyHandler(false);
+        }
 
 				// init vars
 				var	appendTH = false,
@@ -3608,9 +3624,12 @@
        * @return {[type]}          [description]
        */
 			checkout : function(response) {
-				/**
-				 * To DO
-				 */
+				if ( !jUtility.isResponseErrors(response) ) {
+          jUtility.msg.success('Record checked out for editing.');
+          jUtility.setupFormContainer();
+        } else {
+          jUtility.msg.error( jUtility.getErrorMessage(response) )
+        }
 			}, //end fn
 
       /**
@@ -3618,8 +3637,11 @@
        * @method function
        * @return {[type]} [description]
        */
-			checkin : function() {
-				jUtility.closeCurrentForm();
+			checkin : function(response) {
+        if ( jUtility.isResponseErrors(response) ) {
+          jUtility.msg.warning( jUtility.getErrorMessage(response) )
+        }
+        jUtility.closeCurrentForm();
 			}, //end fn
 
       /**
