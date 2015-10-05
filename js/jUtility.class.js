@@ -481,6 +481,10 @@
           return jApp.opts().table + '/' + jUtility.getCurrentRowId();
         break;
 
+        case 'resetPassword' :
+          return 'resetPassword/' + jUtility.getCurrentRowId();
+        break;
+
         default :
           return jApp.opts().table;
         break;
@@ -743,7 +747,7 @@
      * @return {[type]} [description]
      */
     isCheckout : function() {
-      return !!jApp.opts().toggles.checkout;
+      return !!jApp.opts().toggles.checkout && jUtility.isEditable();
     }, // end fn
 
     /**
@@ -1576,6 +1580,12 @@
             click : jUtility.DOM.toggleRowMenu
           },
 
+          ".table-body" : {
+            mouseover : function() {
+              $(this).focus();
+            }
+          },
+
           ".table-body .table-row" : {
             mouseover : function() {
               var $tr = $(this);
@@ -1619,7 +1629,7 @@
           table : jApp.opts().table,
           pkey : jApp.opts().pkey,
           tableFriendly : jApp.opts().tableFriendly,
-          atts : { name : 'frm_editGrid', method : 'PATCH' },
+          atts : { method : 'PATCH' },
           disabledElements : jApp.opts().disabledFrmElements,
         },
 
@@ -1627,7 +1637,7 @@
           table : jApp.opts().table,
           pkey : jApp.opts().pkey,
           tableFriendly : jApp.opts().tableFriendly,
-          atts : { name : 'frm_editGrid', method : 'POST' },
+          atts : { method : 'POST' },
           disabledElements : jApp.opts().disabledFrmElements
         },
 
@@ -1636,10 +1646,7 @@
           pkey : jApp.opts().pkey,
           tableFriendly : jApp.opts().tableFriendly,
           loadExternal : false,
-          atts : {
-            name : 'frm_deleteGrid', // + jApp.opts().tableFriendly,
-            method : 'DELETE'
-          },
+          atts : { method : 'DELETE' },
           btns : [
             { 'type' : 'button', 'class' : 'btn btn-success btn-go disabled', 	'id' : 'btn_go', 'value' : 'Go' },
             { 'type' : 'button', 'class' : 'btn btn-danger btn-cancel', 'id' : 'btn_cancel', 'value' : 'Cancel' },
@@ -1747,7 +1754,7 @@
      * @return {[type]} [description]
      */
     setGetCheckedOutRecordsInterval : function() {
-      if ( jUtility.isEditable() ) {
+      if ( jUtility.isCheckout() ) {
         jUtility.clearGetCheckedOutRecordsIntevrval();
         jApp.aG().dataGrid.intervals.getCheckedOutRecords = setInterval( jUtility.getCheckedOutRecords, 10000 );
       }
@@ -2131,20 +2138,10 @@
      * @return {[type]} [description]
      */
     getCheckedOutRecords : function() {
-      return true;
-      jApp.aG().ajaxVars = {
-        url: jApp.opts().url,
-        data: {
-          table : jApp.opts().table,
-          frm_name : 'frm_getCheckoutOutRecords'
-        },
-        type: 'POST',
-        dataType : 'JSON',
-        success: jUtility.callback.getCheckedOutRecords
-      };
-
-      $.ajax(jApp.aG().ajaxVars);
-
+      jUtility.getJSON({
+        url : '/checkedout/_' + jApp.opts().model,
+        success : jUtility.callback.getCheckedOutRecords
+      });
     }, // end fn
 
     /**
@@ -2276,9 +2273,13 @@
      * @return {[type]} [description]
      */
     setupIntervals : function() {
-      if (!jUtility.isAutoUpdate()) { return false; }
-      jUtility.setCountdownInterval();
-      jUtility.setGetCheckedOutRecordsInterval();
+      if ( jUtility.isAutoUpdate() ) {
+        jUtility.setCountdownInterval();
+
+        if ( jUtility.isCheckout() ) {
+          jUtility.setGetCheckedOutRecordsInterval();
+        }
+      }
     },
 
     /**
@@ -2556,7 +2557,8 @@
        */
 
       dataEmptyHandler : function(isDataEmpty) {
-        if (isDataEmpty) {
+        if ( isDataEmpty ) {
+          $('.table-cell.no-data').remove();
           $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
         } else {
           $('.table-cell.no-data').remove();
@@ -2872,6 +2874,11 @@
        * @return {[type]} [description]
        */
       updateColWidths : function() {
+        if (typeof jApp.aG().tableBodyInitialOffset === 'undefined') {
+          jApp.aG().tableBodyInitialOffset = $('.table-body').offset().top;
+          console.log( jApp.aG().tableBodyInitialOffset );
+        }
+
         // set column widths
         $('.grid-panel-body .table-row').find('.table-cell, .table-header').css('width','');
 
@@ -2891,35 +2898,24 @@
             clearInterval(jApp.aG().scrollTimeout);
           }
           jApp.aG().scrollTimeout = setTimeout( function() {
-            if (  $('.table-body').offset().top < 10 ) {
-              if( !$('#page-wrapper').hasClass('scrolled') ) {
-                // table height
-                $('#page-wrapper').addClass('scrolled');
-                $('.grid-panel-body .table').animate(
-                  { 'height' : +$(window).height()-290 },
-                  500,
-                  'linear',
-                  function() {
-                    // perfect scrollbar
-                    $('.table-grid').perfectScrollbar('update');
-                  }
-                );
-              }
-            } else if ($('.table-body').offset().top > 50  ) {
-              if( $('#page-wrapper').hasClass('scrolled') ) {
-
-                $('#page-wrapper').removeClass('scrolled');
-                // table height
-                $('.grid-panel-body .table').animate(
-                  {'height' : +$(document).height()-425},
-                  300,
-                  'linear',
-                  function() {
-                    // perfect scrollbar
-                    $('.table-grid').perfectScrollbar('update');
-                  }
-                );
-              }
+            if ( !$('#page-wrapper').hasClass('scrolled') && jApp.aG().tableBodyInitialOffset - $('.table-body').offset().top > 75 ) {
+              // table height
+              $('#page-wrapper').addClass('scrolled');
+              $('.grid-panel-body .table').animate(
+                { 'height' : +$(window).height()-290 },
+                500,
+                'linear',
+                function() { $('.table-grid').perfectScrollbar('update'); }
+              );
+            } else if ( $('#page-wrapper').hasClass('scrolled') && jApp.aG().tableBodyInitialOffset - $('.table-body').offset().top < 150  ) {
+              $('#page-wrapper').removeClass('scrolled');
+              // table height
+              $('.grid-panel-body .table').animate(
+                {'height' : +$(document).height()-425},
+                300,
+                'linear',
+                function() { $('.table-grid').perfectScrollbar('update'); }
+              );
             }
           }, 300)
         });
@@ -3627,6 +3623,7 @@
 				if ( !jUtility.isResponseErrors(response) ) {
           jUtility.msg.success('Record checked out for editing.');
           jUtility.setupFormContainer();
+          jUtility.getCheckedOutRecords();
         } else {
           jUtility.msg.error( jUtility.getErrorMessage(response) )
         }
@@ -3641,6 +3638,7 @@
         if ( jUtility.isResponseErrors(response) ) {
           jUtility.msg.warning( jUtility.getErrorMessage(response) )
         }
+        jUtility.getCheckedOutRecords();
         jUtility.closeCurrentForm();
 			}, //end fn
 
@@ -3655,30 +3653,34 @@
          * To do
          */
 
-        // var $tr,  $i = $('<i/>', { class : 'fa fa-lock fa-fw checkedOut'});
-        //
-				// self.DOM.$grid.find('.chk_cid').parent().removeClass('disabled').show();
-				// self.DOM.$grid.find('.rowMenu-container').removeClass('disabled');
-				// self.DOM.$grid.find('.checkedOut').remove();
-				// self.DOM.$grid.find('.btn-showMenu').removeClass('disabled')
-				// 			.attr('title','')
-				// 			.tooltip({delay:300})
-				// 			.find('i')
-				// 				.addClass('fa-angle-right')
-				// 				//.removeClass('fa-lock')
-        //
-				// _.each(response, function(o,key) {
-				// 	if (!!o && !!o.PkeyID) {
-				// 		$tr = $('.table-row[data-identifier="' + o.PkeyID + '"]');
-				// 		$tr.find('.chk_cid').parent().addClass('disabled').hide()
-				// 			.closest('.table-cell').append( $('<span/>',{class : 'btn btn-default btn-danger pull-right checkedOut'}).html($i.prop('outerHTML')).clone().attr('title','Locked By ' + o.FullName).tooltip({delay:300}));
-				// 		$tr.find('.rowMenu-container').addClass('disabled').find('.rowMenu.expand').removeClass('expand');
-				// 		$tr.find('.btn-showMenu').addClass('disabled')
-				// 			.find('i')
-				// 				.removeClass('fa-angle-right')
-				// 				//.addClass('fa-lock')
-				// 	}
-				//});
+        var $tr,
+            $i = $('<i/>', { class : 'fa fa-lock fa-fw checkedOut'}),
+            self = jApp.aG();
+
+				self.DOM.$grid.find('.chk_cid').parent().removeClass('disabled').show();
+				self.DOM.$grid.find('.rowMenu-container').removeClass('disabled');
+				self.DOM.$grid.find('.checkedOut').remove();
+				self.DOM.$grid.find('.btn-showMenu').removeClass('disabled').prop('disabled',false)
+							.attr('title','')
+							.find('i')
+								.addClass('fa-angle-right')
+								//.removeClass('fa-lock')
+
+				_.each(response, function(o,key) {
+
+					if (!!o && !!o.lockable_id) {
+						$tr = $('.table-row[data-identifier="' + o.lockable_id + '"]');
+
+						$tr.find('.chk_cid').parent().addClass('disabled').hide()
+							.closest('.table-cell').append( $('<span/>',{class : 'btn btn-default btn-danger pull-right checkedOut'})
+              .html($i.prop('outerHTML')).clone().attr('title','Locked By ' + o.user.name));
+						$tr.find('.rowMenu-container').addClass('disabled').find('.rowMenu.expand').removeClass('expand');
+						$tr.find('.btn-showMenu').addClass('disabled').prop('disabled',true)
+							.find('i')
+								.removeClass('fa-angle-right')
+								//.addClass('fa-lock')
+					}
+				});
 
       }, //end fn
 

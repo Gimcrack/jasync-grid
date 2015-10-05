@@ -81,7 +81,7 @@
 			_init : function() {
 
 				jApp.log('1. Setting Options');
-				jUtility.setOptions( $.extend(true, {}, jUtility.getDefaultOptions(), options) );
+				jUtility.setOptions( $.extend(true, {}, jUtility.getDefaultOptions(), { tableBtns : { new : { label : 'New ' + options.model }} }, options) );
 
 				jApp.log('2. Setting up html templates');
 				jUtility.setupHtmlTemplates();

@@ -90,7 +90,7 @@
 		// alias to attributes object
 		var oAtts = self.options.atts;
 
-		oAtts.name = (oAtts.multiple === true || oAtts.multiple === 'multiple') ? oAtts.name.replace('[]','') + '[]' : oAtts.name;
+		oAtts.name = (Number(oAtts.multiple) || oAtts.multiple === true || oAtts.multiple === 'multiple') ? oAtts.name.replace('[]','') + '[]' : oAtts.name;
 
 		/**  **  **  **  **  **  **  **  **  **
  		 *   ALLOWABLE ATTRIBUTES BY INPUT TYPE

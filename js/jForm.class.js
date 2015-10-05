@@ -444,10 +444,10 @@
 
 				//console.log('loading colParams')
 				self.options.colParams = $.map( response, function( o ) {
-					if ( !( o && o._enabled && typeof o._enabled !== 'undefined' && o._enabled.toLowerCase() === 'yes' && _.indexOf( self.options.disabledElements, o.name ) === -1 ) ) { return false }
+					if ( !( o && o._enabled && typeof o._enabled !== 'undefined' && Number(o._enabled) && _.indexOf( self.options.disabledElements, o.name ) === -1 ) ) { return false }
 					tmp = {};
 					for(prop in o) {
-						if (o && o[prop] && o[prop].toString().toLowerCase() !== 'null' && o[prop].toString().toLowerCase() !== '__off__' ) {
+						if (o && o[prop] && o[prop].toString().toLowerCase() !== 'null' && o[prop].toString().toLowerCase() !== '__off__' && Number(o[prop]) != 0 ) {
 							tmp[prop] = o[prop];
 						}
 					}

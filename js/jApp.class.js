@@ -17,6 +17,10 @@
 
 		this.debug = true;
 
+		if (this.debug) {
+			console.warn( 'DEBUG MODE ON ')
+		}
+
 		this.oG = {
 			admin : {
 
