@@ -409,12 +409,14 @@
 
 			getRowData : function(response) {
 
-        //console.log(response[0]);
+        if (typeof response[0] !== 'undefined') {
+          response = response[0];
+        }
 
 				self.DOM.$frm.clearForm();
 
 				_.each( response, function( value, key ) {
-					if (typeof self.oInpts[key] !== 'undefined') {
+          if (typeof self.oInpts[key] !== 'undefined') {
 						if (!!value && value.indexOf('|') !== -1 && key !== '_labelsSource' && key !== '_optionsSource') {
 							value = value.split('|');
 						}

@@ -596,6 +596,9 @@
      * @return {[type]} [description]
      */
     getCurrentRowDataUrl : function() {
+      if (typeof jApp.opts().rowDataUrl !== 'undefined') {
+        return jApp.opts().rowDataUrl;
+      }
       return jApp.opts().table + '/' + jUtility.getCurrentRowId() + '/json';
     }, //end fn
 
@@ -2874,10 +2877,19 @@
        * @return {[type]} [description]
        */
       updateColWidths : function() {
+        var headerRowIndex = ( jUtility.isSort() ) ? 1 : 2;
+
+        if ( !jUtility.isSort() ) {
+          $('.grid-panel-body').css('marginTop',330);
+        }
+
+
         if (typeof jApp.aG().tableBodyInitialOffset === 'undefined') {
           jApp.aG().tableBodyInitialOffset = $('.table-body').offset().top;
           console.log( jApp.aG().tableBodyInitialOffset );
         }
+
+        jUtility.setupSortButtons();
 
         // set column widths
         $('.grid-panel-body .table-row').find('.table-cell, .table-header').css('width','');
@@ -2922,8 +2934,11 @@
 
         jApp.opts().maxColWidth =  +350/1920 * +$(window).innerWidth();
 
+
+
+
         //visible columns
-        var visCols = +$('.table-head .table-row').eq(1).find('.table-header:visible').length-1;
+        var visCols = +$('.table-head .table-row').eq( headerRowIndex ).find('.table-header:visible').length-1;
 
         for(var ii=1; ii <= visCols; ii++ ) {
 
@@ -2936,14 +2951,14 @@
           }
 
           if ( ii == visCols ) {
-            colWidth = +$(window).innerWidth()-$('.table-head .table-row').eq(1).find('.table-header:visible').slice(0,-1).map( function(i) { return $(this).innerWidth() } ).get().reduce( function(p,c) { return p+c } )-40;
+            colWidth = +$(window).innerWidth()-$('.table-head .table-row').eq(headerRowIndex).find('.table-header:visible').slice(0,-1).map( function(i) { return $(this).innerWidth() } ).get().reduce( function(p,c) { return p+c } )-40;
           }
 
           var nindex = +ii+1;
 
           // set widths of each cell
           $(  '.grid-panel-body .table-row:not(.tr-no-data) .table-cell:visible:nth-child(' + nindex + '),' +
-            '.grid-panel-body .table-row:not(.tr-no-data) .table-header:visible:nth-child(' + nindex + ')').css('width',+colWidth+14);
+            '.grid-panel-body .table-row:not(.tr-no-data) .table-header:nth-child(' + nindex + ')').css('width',+colWidth+14);
 
           if (ii==1) {
             //$('.tfilters .table-header').eq(1).css('width', +colWidth+90);
