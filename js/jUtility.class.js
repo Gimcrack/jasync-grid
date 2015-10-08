@@ -108,10 +108,15 @@
           paginate : true,
 
           /**
-           * Show the filter text boxes above each header
+           * Enable the filter text boxes above each header
            * @type {Boolean} default true
            */
           headerFilters : true,
+
+          /**
+           * Display the header filters above each header
+           */
+          displayHeaderFilters : false,
 
           /**
            * Collapse the row menu
@@ -323,6 +328,18 @@
           },
 
           /**
+           * Header Filters Button
+           * @type {Object}
+           */
+          headerFilters : {
+            type : 'button',
+            class : 'btn btn-success btn-headerFilters',
+            id : 'btn_toggle_header_filters',
+            icon : 'fa-filter',
+            label : '',
+          },
+
+          /**
            * Define custom buttons here. Custom buttons may also be defined at runtime.
            * @type {Object}
            */
@@ -330,6 +347,7 @@
             visColumns : [
               { icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
             ],
+
           }
         },
 
@@ -817,6 +835,15 @@
     }, // end fn
 
     /**
+     * Are header filters currently displayed
+     * @method function
+     * @return {[type]} [description]
+     */
+    isHeaderFiltersDisplay : function() {
+      return !!jApp.opts().toggles.headerFiltersDisplay;
+    }, // end fn
+
+    /**
      * Is the button with name 'key' enabled
      * @method function
      * @param  {[type]} key [description]
@@ -964,10 +991,12 @@
      */
     setupHeaderFilters : function() {
       if (jUtility.isHeaderFilters() ) {
-        jUtility.showHeaderFilters();
         jUtility.DOM.headerFilterDeleteIcons();
+      }
+      if (jUtility.isHeaderFiltersDisplay()) {
+        jUtility.DOM.showHeaderFilters();
       } else {
-        jUtility.hideHeaderFilters();
+        jUtility.DOM.hideHeaderFilters();
       }
     }, // end fn
 
@@ -1029,26 +1058,6 @@
 
       jApp.aG().dataGrid.intervals[o.key] = setInterval(o.fn, o.delay );
     }, //end fn
-
-    /**
-     * Hide header filters
-     * @method function
-     * @return {[type]} [description]
-     */
-    hideHeaderFilters : function() {
-      jApp.aG().$().find('.table-head .tfilters').hide();
-    }, // end fn
-
-    /**
-     * Show header filters
-     * @method function
-     * @return {[type]} [description]
-     */
-    showHeaderFilters : function() {
-      jApp.aG().$().find('.table-head .tfilters').show();
-    }, // end fn
-
-
 
     /**
      * Update Grid from cached data
@@ -1566,6 +1575,10 @@
             }
           },
 
+          ".btn-headerFilters" : {
+            click : jUtility.DOM.toggleHeaderFilters
+          },
+
           ".btn-delete" : {
             click : function() {
               jUtility.actionHelper('delete');
@@ -1868,7 +1881,7 @@
       jApp.aG().html = $.extend(true, {}, {
 
         // main grid body
-        tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group">  </div> </div> </div> <div class="table-row tfilters"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
+        tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group">  </div> </div> </div> <div class="table-row tfilters" style="display:none"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
 
         // check all checkbox template
         tmpCheckAll	: '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul></div>',
@@ -2455,10 +2468,10 @@
      **  **  **  **  **  **  **  **  **  **/
     bind : function() {
       jUtility.setupBootpag();
-      jUtility.setupHeaderFilters();
       jUtility.setupSortButtons();
       jUtility.turnOffOverlays();
       jUtility.loadBindings();
+      jUtility.setupHeaderFilters();
       jUtility.processGridBindings();
       jUtility.processFormBindings();
     }, // end bind fn
@@ -2550,6 +2563,26 @@
      * @type {Object}
      */
     DOM : {
+
+      /**
+       * Hide header filters
+       * @method function
+       * @return {[type]} [description]
+       */
+      hideHeaderFilters : function() {
+        jApp.aG().$().find('.table-head .tfilters').slideUp();
+        $('#btn_toggle_header_filters').removeClass('active');
+      }, // end fn
+
+      /**
+       * Show header filters
+       * @method function
+       * @return {[type]} [description]
+       */
+      showHeaderFilters : function() {
+        jApp.aG().$().find('.table-head .tfilters').slideDown();
+        $('#btn_toggle_header_filters').addClass('active');
+      }, // end fn
 
       /**
        * Updates the grid when there is
@@ -2872,17 +2905,44 @@
       }, //end fn
 
       /**
+       * Toggle header filters
+       * @method function
+       * @return {[type]} [description]
+       */
+      toggleHeaderFilters : function() {
+        jApp.log('headerFilters toggled');
+
+        jApp.opts().toggles.headerFiltersDisplay =
+          !jApp.opts().toggles.headerFiltersDisplay;
+
+        if ( $('.tfilters:visible').length ) {
+          jUtility.DOM.hideHeaderFilters();
+        } else {
+          jUtility.DOM.showHeaderFilters();
+        }
+
+        jUtility.DOM.updateColWidths();
+      }, //end fn
+
+      /**
        * Update column widths
        * @method function
        * @return {[type]} [description]
        */
       updateColWidths : function() {
-        var headerRowIndex = ( jUtility.isSort() ) ? 1 : 2;
+        var headerRowIndex = 2,
+            bottomOffset = 0;
 
-        if ( !jUtility.isSort() ) {
+        if ( !jUtility.isHeaderFiltersDisplay() ) {
           $('.grid-panel-body').css('marginTop',330);
+          bottomOffset += 50;
+        } else {
+          $('.grid-panel-body').css('marginTop','');
         }
 
+        // if ( !$('.paging:visible').length ) {
+        //   bottomOffset += 10;
+        // }
 
         if (typeof jApp.aG().tableBodyInitialOffset === 'undefined') {
           jApp.aG().tableBodyInitialOffset = $('.table-body').offset().top;
@@ -2896,9 +2956,9 @@
 
         // table height
         if( !$('#page-wrapper').hasClass('scrolled') ) {
-          $('.grid-panel-body .table').css('height',+$(window).height()-425);
+          $('.grid-panel-body .table').css('height',+$(window).height()-425+bottomOffset);
         } else {
-          $('.grid-panel-body .table').css('height',+$(window).height()-290);
+          $('.grid-panel-body .table').css('height',+$(window).height()-290+bottomOffset);
         }
 
         // perfect scrollbar
@@ -2914,7 +2974,7 @@
               // table height
               $('#page-wrapper').addClass('scrolled');
               $('.grid-panel-body .table').animate(
-                { 'height' : +$(window).height()-290 },
+                { 'height' : +$(window).height()-290+bottomOffset },
                 500,
                 'linear',
                 function() { $('.table-grid').perfectScrollbar('update'); }
@@ -2923,7 +2983,7 @@
               $('#page-wrapper').removeClass('scrolled');
               // table height
               $('.grid-panel-body .table').animate(
-                {'height' : +$(document).height()-425},
+                {'height' : +$(document).height()-425+bottomOffset},
                 300,
                 'linear',
                 function() { $('.table-grid').perfectScrollbar('update'); }
@@ -3363,7 +3423,7 @@
             $btn_a.append( $('<span/>').html(params[0].label) );
           }
           // add the click handler, if applicable
-          if (!!params[0].fn) {
+          if (typeof params[0].fn !== 'undefined') {
             if (typeof params[0].fn === 'string') {
               $btn_a.off('click.custom').on('click.custom', jApp.aG().fn[params[0].fn ] );
             } else if (typeof params[0].fn === 'function') {
