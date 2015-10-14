@@ -431,6 +431,18 @@
 
     }, // end fn
 
+    /**
+     * Calculate where the grid should be positioned
+     * @return {[type]} [description]
+     */
+    calculateGridPosition : function() {
+      if ( typeof $('.colHeaders').offset() === 'undefined' ) {return false};
+      return {
+        marginTop : +$('.colHeaders').height()+$('.colHeaders').offset().top,
+        height : +$(window).height()-95-$('.colHeaders').offset().top
+      }
+    }, // end fn
+
     /**  **  **  **  **  **  **  **  **  **
      *   withSelected
      *  @action - The action to perform
@@ -1236,11 +1248,20 @@
         return (typeof fn === 'function') ? fn() : false;
       }
 
-      if ( !!$(window[target]).length ) {
-        $(window[target]).off(eventKey).on(eventKey, fn);
-      } else if ( !jUtility.isEventDelegated(target,eventKey,scope) ) {
-        $scope.delegate(target, eventKey, fn);
-        jUtility.eventIsDelegated(target,eventKey,scope);
+      // we cannot use event bubbling for scroll
+      // events, we must use capturing
+      if ( event !== 'scroll' ) {
+        if ( !!$(window[target]).length ) {
+          jApp.log('Found target within global scope ' + target);
+          jApp.log('Binding event ' + eventKey + ' to target ' + target);
+          $(window[target]).off(eventKey).on(eventKey, fn);
+        } else if ( !jUtility.isEventDelegated(target,eventKey,scope) ) {
+          jApp.log('Binding event ' + event + ' to target ' + target + ' within scope ' + scope);
+          $scope.delegate(target, eventKey, fn);
+          jUtility.eventIsDelegated(target,eventKey,scope);
+        }
+      } else {
+        document.addEventListener(event, fn , true);
       }
     }, // end fn
 
@@ -1438,6 +1459,16 @@
             },
 
             beforeunload : jUtility.unloadWarning,
+          },
+
+          ".table-grid" : {
+            "scroll" : function() {
+              jUtility.timeout( {
+                key : 'tableGridScroll',
+                fn : jUtility.DOM.pageWrapperScrollHandler,
+                delay : 300
+              })
+            }
           },
 
           ".deleteicon" : {
@@ -2925,6 +2956,52 @@
       }, //end fn
 
       /**
+       * Update the grid position
+       * @return {[type]} [description]
+       */
+      updateGridPosition : function() {
+        var p = jUtility.calculateGridPosition();
+        if (!p) return false;
+
+        $('.grid-panel-body')
+          .css({ 'marginTop' : p.marginTop })
+          .find('.table')
+            .css({ 'height' : p.height });
+
+        $('.table-grid').perfectScrollbar('update');
+      }, // end fn
+
+      /**
+       * Handles the page wrapper after scrolling
+       * @return {[type]} [description]
+       */
+      pageWrapperScrollHandler : function() {
+
+        var pw = $('#page-wrapper'),
+            isScrolled = pw.hasClass('scrolled'),
+            offsetTop = $('.table-body').offset().top,
+            lowerBound = 150,
+            upperBound = 180;
+
+        if ( !isScrolled && offsetTop < lowerBound ) {
+          pw.addClass('scrolled');
+          jUtility.DOM.updateGridPosition();
+        } else if ( isScrolled && offsetTop > upperBound  ) {
+          pw.removeClass('scrolled');
+          jUtility.DOM.updateGridPosition();
+        }
+
+      }, // end fn
+
+      /**
+       * Clear the column widths
+       * @return {[type]} [description]
+       */
+      clearColumnWidths : function() {
+        $('.grid-panel-body .table-row').find('.table-cell, .table-header').css('width','');
+      }, //end fn
+
+      /**
        * Update column widths
        * @method function
        * @return {[type]} [description]
@@ -2933,64 +3010,15 @@
         var headerRowIndex = 2,
             bottomOffset = 0;
 
-        if ( !jUtility.isHeaderFiltersDisplay() ) {
-          $('.grid-panel-body').css('marginTop',330);
-          bottomOffset += 50;
-        } else {
-          $('.grid-panel-body').css('marginTop','');
-        }
-
-        // if ( !$('.paging:visible').length ) {
-        //   bottomOffset += 10;
-        // }
-
-        if (typeof jApp.aG().tableBodyInitialOffset === 'undefined') {
-          jApp.aG().tableBodyInitialOffset = $('.table-body').offset().top;
-          console.log( jApp.aG().tableBodyInitialOffset );
-        }
-
+        jUtility.DOM.updateGridPosition();
         jUtility.setupSortButtons();
 
-        // set column widths
-        $('.grid-panel-body .table-row').find('.table-cell, .table-header').css('width','');
-
-        // table height
-        if( !$('#page-wrapper').hasClass('scrolled') ) {
-          $('.grid-panel-body .table').css('height',+$(window).height()-425+bottomOffset);
-        } else {
-          $('.grid-panel-body .table').css('height',+$(window).height()-290+bottomOffset);
-        }
+        jUtility.DOM.clearColumnWidths();
 
         // perfect scrollbar
         $('.table-grid').perfectScrollbar('update');
 
-        //add scroll listener
-        $('.table-grid').off('scroll.custom').on('scroll.custom', function() {
-          if ( typeof jApp.aG().scrollTimeout !== 'undefined' ) {
-            clearInterval(jApp.aG().scrollTimeout);
-          }
-          jApp.aG().scrollTimeout = setTimeout( function() {
-            if ( !$('#page-wrapper').hasClass('scrolled') && jApp.aG().tableBodyInitialOffset - $('.table-body').offset().top > 75 ) {
-              // table height
-              $('#page-wrapper').addClass('scrolled');
-              $('.grid-panel-body .table').animate(
-                { 'height' : +$(window).height()-290+bottomOffset },
-                500,
-                'linear',
-                function() { $('.table-grid').perfectScrollbar('update'); }
-              );
-            } else if ( $('#page-wrapper').hasClass('scrolled') && jApp.aG().tableBodyInitialOffset - $('.table-body').offset().top < 150  ) {
-              $('#page-wrapper').removeClass('scrolled');
-              // table height
-              $('.grid-panel-body .table').animate(
-                {'height' : +$(document).height()-425+bottomOffset},
-                300,
-                'linear',
-                function() { $('.table-grid').perfectScrollbar('update'); }
-              );
-            }
-          }, 300)
-        });
+
 
         jApp.opts().maxColWidth =  +350/1920 * +$(window).innerWidth();
 
@@ -3019,10 +3047,6 @@
           // set widths of each cell
           $(  '.grid-panel-body .table-row:not(.tr-no-data) .table-cell:visible:nth-child(' + nindex + '),' +
             '.grid-panel-body .table-row:not(.tr-no-data) .table-header:nth-child(' + nindex + ')').css('width',+colWidth+14);
-
-          if (ii==1) {
-            //$('.tfilters .table-header').eq(1).css('width', +colWidth+90);
-          }
         }
 
         //hide preload mask
