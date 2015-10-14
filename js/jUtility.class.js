@@ -1094,7 +1094,7 @@
             data : {},
             success : function() { },
             fail : function() { },
-            always : function() {},
+            always : jUtility.callback.displayResponseErrors,
             complete : function() {}
           } , requestOptions );
 
@@ -1119,7 +1119,7 @@
             data : {},
             success : function() { },
             fail : function() { },
-            always : function() {},
+            always : jUtility.callback.displayResponseErrors,
             complete : function() {}
           } , requestOptions );
 
@@ -1711,6 +1711,7 @@
        * @return {[type]}          [description]
        */
       always : function(response) {
+        jUtility.callback.displayResponseErrors(response);
         if (jUtility.isCaching()) {
             jApp.aG().store.set('data_' + jApp.opts().table,response);
         }
@@ -2145,7 +2146,8 @@
     checkin : function(id) {
       jUtility.getJSON({
         url : '/checkin/_' + jApp.opts().model + '_' + id,
-        success : jUtility.callback.checkin
+        success : jUtility.callback.checkin,
+        always : function() { /* ignore */ }
       });
     }, // end fn
 
@@ -2600,6 +2602,24 @@
           $('.table-cell.no-data').remove();
         }
       }, // end fn
+
+      /**
+       * Updates the grid when is or is not errors
+       * in the response
+       * @method function
+       * @param  {Boolean} isDataEmpty [description]
+       * @return {[type]}              [description]
+       */
+
+      dataErrorHandler : function(isErrors) {
+        if ( isErrors ) {
+          $('.table-cell.no-data').remove();
+          $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-danger"> <i class="fa fa-fw fa-warning"></i> There was an error retrieving the data.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
+        } else {
+          $('.table-cell.no-data').remove();
+        }
+      }, // end fn
+
 
       /**
        * Update the header title
@@ -3570,6 +3590,12 @@
 			update : function(response) {
 				jApp.log('6.6 data received. processing...')
 
+        if ( jUtility.isResponseErrors(response) ) {
+          return jUtility.DOM.dataErrorHandler(true);
+        } else {
+          jUtility.DOM.dataErrorHandler(false);
+        }
+
         if ($.isEmptyObject(response)) {
           jUtility.DOM.dataEmptyHandler(true);
         } else {
@@ -3699,8 +3725,6 @@
           jUtility.msg.success('Record checked out for editing.');
           jUtility.setupFormContainer();
           jUtility.getCheckedOutRecords();
-        } else {
-          jUtility.msg.error( jUtility.getErrorMessage(response) )
         }
 			}, //end fn
 
@@ -3716,6 +3740,18 @@
         jUtility.getCheckedOutRecords();
         jUtility.closeCurrentForm();
 			}, //end fn
+
+      /**
+       * Display response errors
+       * @method function
+       * @param  {[type]} response [description]
+       * @return {[type]}          [description]
+       */
+      displayResponseErrors : function(response) {
+        if ( jUtility.isResponseErrors(response) ) {
+          jUtility.msg.error( jUtility.getErrorMessage(response) )
+        }
+      }, //end fn
 
       /**
        * Get Checked out records
