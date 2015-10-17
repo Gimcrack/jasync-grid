@@ -9,10 +9,27 @@
  *  Prereqs: 	jQuery, jApp
  *
  */
-
 ;(function(window, $, jApp) {
 
   'use strict';
+
+  $.fn.serializeObject = function() {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function() {
+          if ($(this).prop('disabled')) return false;
+
+          if (o[this.name]) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+  };
 
   var jUtility = {
 
@@ -325,6 +342,7 @@
             id : 'btn_edit',
             icon : 'fa-plus-circle',
             label : 'New',
+            'data-permission' : 'create_enabled'
           },
 
           /**
@@ -348,6 +366,18 @@
               { icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
             ],
 
+          },
+
+          /**
+           * The row menu heading. Displayed when an item is checked.
+           * @type {Object}
+           */
+          rowMenu : {
+            type : 'button',
+            class : 'btn btn-success btn-rowMenu',
+            id : 'btn_row_menu_heading',
+            label : 'Row Menu',
+            style : 'display:none'
           }
         },
 
@@ -367,8 +397,9 @@
             class : 'btn btn-primary btn-edit',
             id : 'btn_edit',
             icon : 'fa-pencil',
-            label : '',
-            title : 'Edit Record ...',
+            label : 'Edit Record',
+            'data-permission' : 'update_enabled',
+            'data-multiple' : false
           },
 
           /**
@@ -380,8 +411,9 @@
             class : 'btn btn-danger btn-delete',
             id : 'btn_delete',
             icon : 'fa-trash-o',
-            label : '',
-            title : 'Delete Record ...'
+            label : 'Delete Selected',
+            //title : 'Delete Record ...',
+            'data-permission' : 'delete_enabled'
           },
 
           /**
@@ -410,6 +442,7 @@
             icon : 'fa-trash-o',
             label : 'Delete Selected ...',
             fn : 'delete',
+            'data-permission' : 'delete_enabled',
           },
 
           /**
@@ -429,6 +462,41 @@
 
       }; // end defaults
 
+    }, // end fn
+
+    /**
+     * Get users permissions
+     * @method function
+     * @return {[type]} [description]
+     */
+    getPermissions : function( model ) {
+      var storeKey = jApp.opts().model + '_permissions';
+
+      if (!!$.jStorage.get(storeKey,false)) {
+        return jUtility.callback.getPermissions( $.jStorage.get(storeKey)  )
+      }
+
+      var requestOptions = {
+        url : ( model != null ) ? '/getPermissions/' + model : '/getPermissions/' + jApp.opts().model,
+        success : jUtility.callback.getPermissions,
+      }
+
+      jApp.log(requestOptions.url);
+
+      jUtility.getJSON( requestOptions );
+    }, // end fn
+
+    /**
+     * Check permission on the button parameters
+     * @method function
+     * @param  {[type]} params [description]
+     * @return {[type]}        [description]
+     */
+    isPermission : function( params ) {
+      jApp.log('Checking permissions')
+      jApp.log(params);
+      if (params['data-permission'] == null) return true;
+      return !!jApp.aG().permissions[ params['data-permission'] ];
     }, // end fn
 
     /**
@@ -633,16 +701,37 @@
     }, //end fn
 
     /**
+     * Toggle a button to prevent it being clicked multiple times
+     * @method function
+     * @return {[type]} [description]
+     */
+    toggleButton : function($btn) {
+      if( $btn.prop('disabled') ) {
+        $btn.prop('disabled',false)
+            .removeClass('disabled')
+            .html( $btn.attr('data-original-text'));
+      } else {
+        $btn.attr('data-original-text', $btn.html() )
+            .prop('disabled',true)
+            .addClass('disabled')
+            .html('<i class="fa fa-spinner fa-pulse"></i>')
+      }
+    }, // end fn
+
+    /**
      * Submit the current form
      * @method function
      * @return {[type]} [description]
      */
-    submitCurrentForm : function() {
+    submitCurrentForm : function( $btn ) {
       var requestOptions = {
         url : jUtility.getCurrentFormAction(),
-        data : jUtility.$currentForm().serialize(),
+        data : jUtility.oCurrentForm().fn.getFormData(),
         success : jUtility.callback.submitCurrentForm,
-        fail : console.warn
+        fail : console.warn,
+        always : function() {
+          jUtility.toggleButton($btn);
+        }
       };
 
       jUtility.msg.clear();
@@ -653,6 +742,10 @@
           return false;
         }
       }
+
+      // turn off the button to avoid multiple clicks;
+      jUtility.toggleButton($btn);
+
 
       jUtility.postJSON( requestOptions );
 
@@ -665,8 +758,7 @@
      */
     saveCurrentForm : function() {
       jApp.opts().closeOnSave = false;
-      jUtility.submitCurrentForm();
-      $(this).addClass('disabled').delay(2000).removeClass('disabled');
+      jUtility.submitCurrentForm( $(this) );
     }, // end fn
 
     /**
@@ -675,9 +767,9 @@
      * @return {[type]} [description]
      */
     saveCurrentFormAndClose : function() {
+
       jApp.opts().closeOnSave = true;
-      jUtility.submitCurrentForm();
-      $(this).addClass('disabled').delay(2000).removeClass('disabled');
+      jUtility.submitCurrentForm( $(this) );
       //jUtility.toggleRowMenu;
     }, // end fn
 
@@ -920,7 +1012,7 @@
      * @return {[type]} [description]
      */
     getCurrentRowId : function() {
-      return +jApp.aG().DOM.$rowMenu.closest('.table-row').attr('data-identifier') || -1;
+      return jUtility.getCheckedItems(true);
     }, //end fn
 
     /**
@@ -1140,7 +1232,9 @@
             data : opts.data,
             success : opts.success,
             type : 'POST',
-            dataType : 'json'
+            dataType : 'json',
+            processData : false,
+            contentType : false
           })
           .fail( opts.fail )
           .always( opts.always )
@@ -1471,13 +1565,6 @@
             }
           },
 
-          ".deleteicon" : {
-            click : function() {
-              $(this).prev('input').val('').focus().trigger('keyup');
-              jUtility.DOM.applyHeaderFilters();
-            }
-          },
-
           ".header-filter" : {
             keyup : function() {
               jUtility.toggleDeleteIcon( $(this) );
@@ -1565,12 +1652,17 @@
           ".deleteicon" : {
             boot : function() {
               $(this).remove();
+            },
+            click : function() {
+              $(this).prev('input').val('').focus().trigger('keyup');
+              jUtility.DOM.applyHeaderFilters();
             }
           },
 
           ".chk_all" : {
             change : function() {
               jApp.aG().$().find(':checkbox:visible').prop('checked',$(this).prop('checked'));
+              $('.chk_cid').eq(0).change();
             }
           },
 
@@ -1586,6 +1678,8 @@
               $checks = jApp.tbl().find('.chk_cid');
               total_num = $checks.length;
               num_checked = jApp.tbl().find('.chk_cid:checked').length
+
+              jUtility.DOM.updateRowMenu( num_checked );
 
               // set the state of the checkAll checkbox
               $chk_all
@@ -1612,7 +1706,7 @@
 
           ".btn-delete" : {
             click : function() {
-              jUtility.actionHelper('delete');
+              jUtility.withSelected('delete');
             }
           },
 
@@ -1623,9 +1717,9 @@
             }
           },
 
-          ".btn-showMenu" : {
-            click : jUtility.DOM.toggleRowMenu
-          },
+          // ".btn-showMenu" : {
+          //   click : jUtility.DOM.toggleRowMenu
+          // },
 
           ".table-body" : {
             mouseover : function() {
@@ -1633,34 +1727,35 @@
             }
           },
 
-          ".table-body .table-row" : {
-            mouseover : function() {
-              var $tr = $(this);
+          // ".table-body .table-row" : {
+          //   mouseover : function() {
+          //     var $tr = $(this);
+          //
+          //     clearTimeout(jApp.aG().dataGrid.intervals.cancelRowMenuUpdate);
+          //     jApp.aG().dataGrid.intervals.moveRowMenu = setTimeout( function() {
+          //       jApp.tbl().find('.btn-showMenu').removeClass('hover');
+          //       if (jApp.tbl().find('.rowMenu').hasClass('expand') === false) {
+          //         jApp.tbl().find('.btn-showMenu').removeClass('active');
+          //       }
+          //       $tr.find('.btn-showMenu').addClass('hover');
+          //
+          //     }, 250 );
+          //   },
+          //
+          //   mouseout : function() {
+          //
+          //     var $tr = $(this);
+          //     clearTimeout(jApp.aG().dataGrid.intervals.moveRowMenu);
+          //     jApp.aG().dataGrid.intervals.cancelRowMenuUpdate = setTimeout( function() {
+          //       jApp.tbl().find('.btn-showMenu').removeClass('hover');
+          //       if (!jApp.tbl().find('.rowMenu').hasClass('expand')) {
+          //         $tr.find('.btn-showMenu').removeClass('active');
+          //       }
+          //       jApp.tbl().find('.rowMenu').removeClass('active');
+          //     }, 100 );
+          //   }
+          // }
 
-              clearTimeout(jApp.aG().dataGrid.intervals.cancelRowMenuUpdate);
-              jApp.aG().dataGrid.intervals.moveRowMenu = setTimeout( function() {
-                jApp.tbl().find('.btn-showMenu').removeClass('hover');
-                if (jApp.tbl().find('.rowMenu').hasClass('expand') === false) {
-                  jApp.tbl().find('.btn-showMenu').removeClass('active');
-                }
-                $tr.find('.btn-showMenu').addClass('hover');
-
-              }, 250 );
-            },
-
-            mouseout : function() {
-
-              var $tr = $(this);
-              clearTimeout(jApp.aG().dataGrid.intervals.moveRowMenu);
-              jApp.aG().dataGrid.intervals.cancelRowMenuUpdate = setTimeout( function() {
-                jApp.tbl().find('.btn-showMenu').removeClass('hover');
-                if (!jApp.tbl().find('.rowMenu').hasClass('expand')) {
-                  $tr.find('.btn-showMenu').removeClass('active');
-                }
-                jApp.tbl().find('.rowMenu').removeClass('active');
-              }, 100 );
-            }
-          }
         }, jApp.opts().events.grid);
     }, //end fn
 
@@ -1913,13 +2008,13 @@
       jApp.aG().html = $.extend(true, {}, {
 
         // main grid body
-        tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row"> <div class="table-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group">  </div> </div> </div> <div class="table-row tfilters" style="display:none"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
+        tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row table-menu-row"> <div class="table-header table-menu-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group">  </div> </div> </div> <div style="display:none" class="table-row table-rowMenu-row"></div>  <div class="table-row tfilters" style="display:none"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
 
         // check all checkbox template
-        tmpCheckAll	: '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul></div>',
+        tmpCheckAll	: '<label for="chk_all" class="btn btn-default pull-right"> <input type="checkbox" class="chk_all" name="chk_all"> </label>',
 
         // header filter clear text button
-        tmpClearHeaderFilterBtn : '<div class="btn-group btn-group-sm"> <label for="chk_all" class="btn btn-default"> <input type="checkbox" class="chk_all" name="chk_all"> </label> <button title="Do With Selected" type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-expanded="false"> &nbsp;<span class="caret"></span> </button> <ul class="with-selected-menu dropdown-menu" role="menu"> {@WithSelectedOptions} </ul> </div>',
+        tmpClearHeaderFilterBtn : '<span class="fa-stack fa-lg"><i class="fa fa-circle-thin fa-stack-2x"></i><i class="fa fa-remove fa-stack-1x"></i></span>',
 
         // filter showing ie Showing X / Y Rows
         tmpFilterShowing : '<i class="fa fa-filter fa-fw"></i>{@totalVis} / {@totalRows}',
@@ -2025,11 +2120,14 @@
 
 
       //iterate through header filters and apply each
-      jApp.tbl().find('.header-filter').each( function(i) {
-        if ( !$(this).val().toString().trim() ) return false;
+      jApp.tbl().find('.header-filter').filter( function() {
+        return !!$(this).val().toString().trim().length
+      }).each( function(i) {
 
-        // calculate the index of the current column
-        currentColumn = +(i + columnOffset);
+        // calculate the 1-indexed index of the current column
+        currentColumn = +1+$(this).parent().index();
+
+        jApp.log( 'The current column is'  + currentColumn);
 
         // set the target string for the current column
         // note: using a modified version of $.contains that is case-insensitive
@@ -2097,7 +2195,7 @@
     prepareValue : function(value,column) {
       var template;
 
-      if (typeof value === 'undefined') {
+      if (value == null) {
         value = '';
       }
 
@@ -2208,6 +2306,7 @@
         action : 'new',
         store : $.jStorage,
         currentRow : {},
+        permissions : {},
         dataGrid : {
 
           // pagination parameters
@@ -2245,8 +2344,7 @@
           $grid : false,
           $currentRow : false,
           $tblMenu : false,
-          $rowMenu : $('<div/>', { class : 'btn-group rowMenu', style : 'position:relative !important' }),
-          $withSelectedMenu : $('<div/>'),
+          $rowMenu : $('<div/>', { class : 'btn-group btn-group-sm rowMenu', style : 'position:relative !important' }),
         },
 
         forms : {},
@@ -2342,7 +2440,9 @@
       jUtility.setupVisibleColumnsMenu();
       jUtility.DOM.buildBtnMenu( jApp.opts().tableBtns, jApp.aG().DOM.$tblMenu );
       jUtility.DOM.buildBtnMenu( jApp.opts().rowBtns, jApp.aG().DOM.$rowMenu);
-      jUtility.DOM.buildLnkMenu( jApp.opts().withSelectedBtns, jApp.aG().DOM.$withSelectedMenu );
+      //jUtility.DOM.buildLnkMenu( jApp.opts().withSelectedBtns, jApp.aG().DOM.$withSelectedMenu );
+
+      jUtility.DOM.attachRowMenu();
     }, // end fn
 
     /**
@@ -2603,7 +2703,7 @@
        * @return {[type]} [description]
        */
       hideHeaderFilters : function() {
-        jApp.aG().$().find('.table-head .tfilters').slideUp();
+        jApp.aG().$().find('.table-head .tfilters').hide();
         $('#btn_toggle_header_filters').removeClass('active');
       }, // end fn
 
@@ -2613,7 +2713,8 @@
        * @return {[type]} [description]
        */
       showHeaderFilters : function() {
-        jApp.aG().$().find('.table-head .tfilters').slideDown();
+        jUtility.DOM.headerFilterDeleteIcons();
+        jApp.aG().$().find('.table-head .tfilters').show();
         $('#btn_toggle_header_filters').addClass('active');
       }, // end fn
 
@@ -2621,17 +2722,12 @@
        * Updates the grid when there is
        * or is not any data
        * @method function
-       * @param  {Boolean} isDataEmpty [description]
        * @return {[type]}              [description]
        */
 
-      dataEmptyHandler : function(isDataEmpty) {
-        if ( isDataEmpty ) {
-          $('.table-cell.no-data').remove();
-          $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
-        } else {
-          $('.table-cell.no-data').remove();
-        }
+      dataEmptyHandler : function() {
+        $('.table-cell.no-data').remove();
+        $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
       }, // end fn
 
       /**
@@ -2641,14 +2737,9 @@
        * @param  {Boolean} isDataEmpty [description]
        * @return {[type]}              [description]
        */
-
-      dataErrorHandler : function(isErrors) {
-        if ( isErrors ) {
-          $('.table-cell.no-data').remove();
-          $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-danger"> <i class="fa fa-fw fa-warning"></i> There was an error retrieving the data.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
-        } else {
-          $('.table-cell.no-data').remove();
-        }
+      dataErrorHandler : function() {
+        $('.table-cell.no-data').remove();
+        $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-danger"> <i class="fa fa-fw fa-warning"></i> There was an error retrieving the data.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
       }, // end fn
 
 
@@ -2773,7 +2864,7 @@
         if (typeof all !== 'undefined' && all) {
           jApp.tbl().find('.table-body .table-row').remove();
         } else {
-          jApp.aG().DOM.$rowMenu.detach();
+          //--jApp.aG().DOM.$rowMenu.detach();
 
           jApp.tbl().find('.table-row[data-identifier]')
              .filter( function(i, row) {
@@ -2791,12 +2882,15 @@
       applyHeaderFilters : function() {
         var matchedRows = [];
 
+        jApp.log('Applying Header Filters');
+
         if ( !jUtility.areHeaderFiltersNonempty() ) {
           return jUtility.DOM.removeHeaderFilters();
         }
 
         jUtility.DOM.hidePaginationControls();
 
+        jApp.log('Getting matched rows');
         matchedRows = jUtility.getHeaderFilterMatchedRows();
 
         jUtility.setVisibleRows( matchedRows );
@@ -2862,12 +2956,17 @@
        * @return {[type]} [description]
        */
       headerFilterDeleteIcons : function() {
-        $('.header-filter').after(
-          $('<span/>', {'class':'deleteicon','style':'display:none'})
-          .html(
-            jUtility.render( jApp.aG().html.tmpClearHeaderFilterBtn )
+        if ( !$('.table-header .deleteicon').length ) {
+          jApp.log('Adding header filter delete icons');
+          $('.header-filter').after(
+            $('<span/>', {'class':'deleteicon','style':'display:none'})
+            .html(
+              jUtility.render( jApp.aG().html.tmpClearHeaderFilterBtn )
+            )
           )
-        )
+        } else {
+          jApp.log('Delete icons already added');
+        }
       }, // end fn
 
       /**  **  **  **  **  **  **  **  **  **
@@ -3027,7 +3126,7 @@
        * @return {[type]} [description]
        */
       updateColWidths : function() {
-        var headerRowIndex = 2,
+        var headerRowIndex = 3,
             bottomOffset = 0;
 
         jUtility.DOM.updateGridPosition();
@@ -3042,11 +3141,8 @@
 
         jApp.opts().maxColWidth =  +350/1920 * +$(window).innerWidth();
 
-
-
-
         //visible columns
-        var visCols = +$('.table-head .table-row').eq( headerRowIndex ).find('.table-header:visible').length-1;
+        var visCols = +$('.table-head .table-row.colHeaders').find('.table-header:visible').length-1;
 
         for(var ii=1; ii <= visCols; ii++ ) {
 
@@ -3081,32 +3177,73 @@
        *  Moves the row menu to the target
        **  **  **  **  **  **  **  **  **  **/
       moveRowMenu : function($tr) {
-        jApp.aG().DOM.$rowMenu.detach().appendTo( $tr.find('.table-cell .rowMenu-container').eq(0) );
+        // jApp.aG().DOM.$rowMenu.detach().appendTo( $tr.find('.table-cell .rowMenu-container').eq(0) );
       }, // end fn
+
+      /**
+       * Attach Row Menu To The DOM
+       * @method function
+       * @return {[type]} [description]
+       */
+      attachRowMenu : function() {
+        $('.table-rowMenu-row').empty().append( jApp.aG().DOM.$rowMenu.wrap('<div class="table-header"></div>').parent() );
+      }, //end fn
+
+      /**
+       * Update the row menu
+       * @method function
+       * @return {[type]} [description]
+       */
+      updateRowMenu : function(num_checked) {
+        switch( num_checked ) {
+          case 0 :
+            jUtility.DOM.toggleRowMenu(false);
+
+          break;
+
+          case 1 :
+            jUtility.DOM.toggleRowMenu(true);
+            jUtility.DOM.toggleRowMenuItems( false );
+          break;
+
+          default :
+            jUtility.DOM.toggleRowMenu(true);
+            jUtility.DOM.toggleRowMenuItems( true );
+          break;
+        }
+      }, // end fn
+
+      /**
+       * Toggle Row Menu Items
+       * @method function
+       * @param  {[type]} hideNonMultiple [description]
+       * @return {[type]}                 [description]
+       */
+      toggleRowMenuItems : function( disableNonMultiple ) {
+        if (disableNonMultiple) {
+          $( '.table-row.table-rowMenu-row .btn[data-multiple=false]').addClass('disabled').prop('disabled',true);
+        } else {
+          var p = jApp.aG().permissions;
+          $( '.table-row.table-rowMenu-row .btn').each( function() {
+            if ( $(this).attr('data-permission') == null ||  !!p[ $(this).attr('data-permission')  ] ) {
+                $(this).removeClass('disabled').prop('disabled',false);
+            }
+          });
+        }
+      }, //end fn
 
       /**
        * Toggle Row Menu visibility
        * @method function
        * @return {[type]} [description]
        */
-      toggleRowMenu : function() {
-        var $btn = $(this),
-            $tr = $(this).closest('.table-row'),
-            $rowMenu = jApp.aG().DOM.$rowMenu;
-
-        $rowMenu.removeClass('expand');
-
-        jUtility.DOM.moveRowMenu($tr);
-
-        $btn.toggleClass('active rotate');
-
-        if ( $btn.hasClass('rotate') ) {
-          $rowMenu.addClass('expand');
+      toggleRowMenu : function( on ) {
+        if (on != null) {
+          $('#btn_row_menu_heading,.table-row.table-rowMenu-row').toggle(on);
+        } else {
+          $('#btn_row_menu_heading,.table-row.table-rowMenu-row').toggle();
         }
-        else {
-          $rowMenu.removeClass('expand');
-        }
-        jApp.tbl().find('.btn-showMenu').not(this).removeClass('rotate active');
+        jUtility.DOM.updateColWidths();
       }, // end fn
 
 
@@ -3116,8 +3253,8 @@
        * @return {[type]} [description]
        */
       resetRowMenu : function() {
-        $('.btn-showMenu').removeClass('rotate');
-        jApp.aG().DOM.$rowMenu.removeClass('expand');
+        //$('.btn-showMenu').removeClass('rotate');
+        //jApp.aG().DOM.$rowMenu.removeClass('expand');
       }, // end fn
 
       /**
@@ -3192,16 +3329,13 @@
                 });
               }
 
-              var collapseMenu = (!!jApp.opts().toggles.collapseMenu) ?
-                '<button style="padding:0" class="btn btn-success btn-showMenu"> <i class="fa fa-angle-right fa-fw fa-lg"></i> </button>' :
-                '';
+              var collapseMenu = '';
 
               var	tdCheck = (!!oRow[jApp.opts().pkey]) ? '<input type="checkbox" class="chk_cid" name="cid[]" />' : '';
 
               var lblCheck = '<label class="btn btn-default pull-right lbl-td-check" style="margin-left:20px;"> ' + tdCheck + '</label>';
 
-              td_chk.html( 	'<div class="permanent-handle"> ' +
-                        collapseMenu +
+              td_chk.html( 	collapseMenu +
                         lblCheck +
                       '<div class="rowMenu-container"></div> \
                       </div>&nbsp;'
@@ -3308,7 +3442,7 @@
             if ( jUtility.isEditable() && $(elm).find('.lbl-td-check').length === 0 ) {
               $('<label/>', { class : 'btn btn-default pull-right lbl-td-check', style : 'margin-left:20px' })
                 .append( $('<input/>', { type: 'checkbox', class : 'chk_cid', name : 'cid[]' } ))
-                .appendTo ( $(elm).find('.permanent-handle'));
+                .appendTo ( $(elm) );
             }
           });
 
@@ -3338,7 +3472,7 @@
       clearMenus : function() {
         jApp.aG().DOM.$tblMenu.empty();
         jApp.aG().DOM.$rowMenu.empty();
-        jApp.aG().DOM.$withSelectedMenu.empty();
+        //jApp.aG().DOM.$withSelectedMenu.empty();
       }, // end fn
 
       /**
@@ -3358,6 +3492,11 @@
           if ( jUtility.isButtonEnabled(key) ) {
             if (key === 'custom') {
               _.each( o, function( oo, kk ) {
+
+                oo.disabled = !jUtility.isPermission(oo);
+
+                jApp.log(oo)
+
                 if (type == 'buttons') {
                   jUtility.DOM.createMenuButton( oo ).appendTo( target );
                 } else {
@@ -3365,6 +3504,9 @@
                 }
               });
             } else {
+              o.disabled = !jUtility.isPermission(o);
+
+              jApp.log(o);
               if (type == 'buttons') {
                 jUtility.DOM.createMenuButton( o ).clone().appendTo( target );
               } else {
@@ -3400,7 +3542,7 @@
       createMenuLink : function( o ) {
         var $btn, $btn_a, $btn_choice, $ul;
 
-        $btn_choice = $('<a/>', { href : 'javascript:void(0)' });
+        $btn_choice = $('<a/>', { href : 'javascript:void(0)', 'data-permission' : (o['data-permission'] != null) ? o['data-permission'] : '' });
 
         //add the icon
         if (!!o.icon) {
@@ -3410,6 +3552,14 @@
         if (!!o.label) {
           $btn_choice.append( $('<span/>').html(o.label) );
         }
+
+        // disable/enable the button
+        if (o.disabled === true) {
+          $btn_choice.prop('disabled',true).addClass('disabled');
+        } else {
+          $btn_choice.prop('disabled',false).removeClass('disabled');
+        }
+
         // add the click handler
         if (!!o.fn) {
           if (typeof o.fn === 'string') {
@@ -3449,6 +3599,7 @@
       createMenuButton : function( params ) {
         var $btn, $btn_a, $btn_choice, $ul;
 
+
         if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
           $btn = $('<div/>', { class : 'btn-group btn-group-sm'})
           // params[0] will contain the dropdown toggle button
@@ -3482,7 +3633,14 @@
 
             _.each( params, function(o,key) {
               if (key == 0) return false;
-              $btn_choice = $('<a/>', $.extend(true, {}, o, { href : 'javascript:void(0)' }) );
+              $btn_choice = $('<a/>', $.extend(true, { 'data-permission' : '' }, o, { href : 'javascript:void(0)' }) );
+
+              // disable/enable the button
+              if (o.disabled === true) {
+                $btn_choice.prop('disabled',true).addClass('disabled');
+              } else {
+                $btn_choice.prop('disabled',false).removeClass('disabled');
+              }
 
               //add the icon
               if (!!o.icon) {
@@ -3510,8 +3668,9 @@
           }
 
         } else {
+          var signature = 'btn_' + Date.now();
 
-          $btn = $('<button/>', params);
+          $btn = $('<button/>', params).attr('data-signature',signature);
           if (!!params.icon) {
             $btn.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params.icon } ) );
           }
@@ -3520,10 +3679,16 @@
           }
           if (!!params.fn) {
             if (typeof params.fn === 'string') {
-              $btn.off('click.custom').on('click.custom', jApp.aG().fn[params.fn] );
+              $(document).delegate( 'button[data-signature=' + signature + ']', 'click.custom', jApp.aG().fn[params.fn] );
             } else if (typeof params.fn === 'function') {
-              $btn.off('click.custom').on('click.custom', params.fn );
+              $(document).delegate( 'button[data-signature=' + signature + ']', 'click.custom', params.fn );
             }
+          }
+          // disable/enable the button
+          if (params.disabled === true) {
+            $btn.prop('disabled',true).addClass('disabled');
+          } else {
+            $btn.prop('disabled',false).removeClass('disabled');
           }
         }
 
@@ -3568,6 +3733,70 @@
           $($which).fadeOut('fast');
         }
       },
+
+      /**
+       * Setup Grid Headers
+       * @method function
+       * @return {[type]} [description]
+       */
+      setupGridHeaders : function() {
+        // init vars
+				var	appendTH = false,
+					theaders,
+					tfilters,
+					btn,
+					isActive,
+          self = jApp.aG();
+
+        // find the header row
+				theaders = self.DOM.$grid.find('.table-head .table-row.colHeaders');
+
+				// create the header row if needed
+				if (!theaders.length) {
+					tfilters = self.DOM.$grid.find('.table-row.tfilters');
+					theaders = $('<div/>', {'class' : 'table-row colHeaders'});
+					appendTH = true;
+
+					// Append the check all checkbox
+					if (jUtility.isEditable()) {
+						theaders.append( $('<div/>', {'class' : 'table-header table-header-text'}).html( jUtility.render( self.html.tmpCheckAll ) ));
+					}
+
+					// create header for this column if needed
+					$.each( self.options.headers, function(i,v) {
+						// determine if the current column is the active sortBy column
+						isActive = (self.options.columns[i] === self.options.sortBy) ? true : false;
+
+						// render the button
+						btn = jUtility.render( self.html.tmpSortBtn, {
+							'ColumnName' : self.options.columns[i],
+							'BtnClass' : (isActive) ? 'btn-primary' : '',
+							'faClass' : (isActive) ? 'amount-desc' : 'amount-asc',
+							'BtnTitle' : (isActive) ? 'Sort Descending' : 'Sort Ascending'
+							} );
+
+						// append the header
+						theaders.append( $('<div/>', { 'class' : 'table-header table-header-text' }).html( btn + v ) );
+
+						if ( i > 0 ) { // skip the id column
+							tfilters.append( $('<div/>', { 'class' : 'table-header', 'style' : 'position:relative'}).append( $('<input/>',
+							//tfilters.append( $('<div/>', { 'class' : 'table-header'}).append( $('<input/>',
+								{
+									'rel' : self.options.columns[i],
+									'id'  :	'filter_' + self.options.columns[i],
+									'name' : 'filter_' + self.options.columns[i],
+									'class' : 'header-filter form-control',
+									'style' : 'width:100%'
+								}
+							)));
+						}
+					});
+
+					self.DOM.$grid.find('.table-head').append(theaders);
+					self.DOM.$grid.find('.paging').parent().attr('colspan',self.options.headers.length-2);
+					//self.DOM.$grid.find('.with-selected-menu').append( self.DOM.$withSelectedMenu.find('li') );
+				}
+      }
 
     }, // end DOM fns
 
@@ -3614,16 +3843,16 @@
 			update : function(response) {
 				jApp.log('6.6 data received. processing...')
 
+        jUtility.DOM.setupGridHeaders();
+
+        $('.table-cell.no-data').remove();
+
         if ( jUtility.isResponseErrors(response) ) {
-          return jUtility.DOM.dataErrorHandler(true);
-        } else {
-          jUtility.DOM.dataErrorHandler(false);
+          return jUtility.DOM.dataErrorHandler();
         }
 
         if ($.isEmptyObject(response)) {
-          jUtility.DOM.dataEmptyHandler(true);
-        } else {
-          jUtility.DOM.dataEmptyHandler(false);
+          return jUtility.DOM.dataEmptyHandler();
         }
 
 				// init vars
@@ -3654,55 +3883,6 @@
 				// show the preloader, then update the contents
 				jUtility.DOM.togglePreloader();
 
-				// find the header row
-				theaders = self.DOM.$grid.find('.table-head .table-row.colHeaders');
-
-				// create the header row if needed
-				if (!theaders.length) {
-					tfilters = self.DOM.$grid.find('.table-row.tfilters');
-					theaders = $('<div/>', {'class' : 'table-row colHeaders'});
-					appendTH = true;
-
-					// Append the check all checkbox
-					if (jUtility.isEditable()) {
-						theaders.append( $('<div/>', {'class' : 'table-header table-header-text'}).html( jUtility.render( self.html.tmpCheckAll ) ));
-					}
-
-					// create header for this column if needed
-					$.each( self.options.headers, function(i,v) {
-						// determine if the current column is the active sortBy column
-						isActive = (self.options.columns[i] === self.options.sortBy) ? true : false;
-
-						// render the button
-						btn = jUtility.render( self.html.tmpSortBtn, {
-							'ColumnName' : self.options.columns[i],
-							'BtnClass' : (isActive) ? 'btn-primary' : '',
-							'faClass' : (isActive) ? 'amount-desc' : 'amount-asc',
-							'BtnTitle' : (isActive) ? 'Sort Descending' : 'Sort Ascending'
-							} );
-
-						// append the header
-						theaders.append( $('<div/>', { 'class' : 'table-header table-header-text' }).html( btn + v ) );
-
-						if ( i > 0 ) { // skip the id column
-							tfilters.append( $('<div/>', { 'class' : 'table-header', 'style' : 'position:relative'}).append( $('<input/>',
-							//tfilters.append( $('<div/>', { 'class' : 'table-header'}).append( $('<input/>',
-								{
-									'rel' : self.options.columns[i],
-									'id'  :	'filter_' + self.options.columns[i],
-									'name' : 'filter_' + self.options.columns[i],
-									'class' : 'header-filter form-control',
-									'style' : 'width:100%'
-								}
-							)));
-						}
-					});
-
-					self.DOM.$grid.find('.table-head').append(theaders);
-					self.DOM.$grid.find('.paging').parent().attr('colspan',self.options.headers.length-2);
-					self.DOM.$grid.find('.with-selected-menu').append( self.DOM.$withSelectedMenu.find('li') );
-				}
-
 				// update the DOM
 				jUtility.DOM.updateGrid();
 
@@ -3722,6 +3902,9 @@
 
 				// adjust column widths
 				jUtility.DOM.updateColWidths();
+
+        // adjust permissions
+        jUtility.callback.getPermissions( jApp.aG().permissions );
 
 			}, // end fn
 
@@ -3773,6 +3956,7 @@
        */
       displayResponseErrors : function(response) {
         if ( jUtility.isResponseErrors(response) ) {
+          jUtility.msg.clear();
           jUtility.msg.error( jUtility.getErrorMessage(response) )
         }
       }, //end fn
@@ -3795,11 +3979,6 @@
 				self.DOM.$grid.find('.chk_cid').parent().removeClass('disabled').show();
 				self.DOM.$grid.find('.rowMenu-container').removeClass('disabled');
 				self.DOM.$grid.find('.checkedOut').remove();
-				self.DOM.$grid.find('.btn-showMenu').removeClass('disabled').prop('disabled',false)
-							.attr('title','')
-							.find('i')
-								.addClass('fa-angle-right')
-								//.removeClass('fa-lock')
 
 				_.each(response, function(o,key) {
 
@@ -3810,10 +3989,6 @@
 							.closest('.table-cell').append( $('<span/>',{class : 'btn btn-default btn-danger pull-right checkedOut'})
               .html($i.prop('outerHTML')).clone().attr('title','Locked By ' + o.user.name));
 						$tr.find('.rowMenu-container').addClass('disabled').find('.rowMenu.expand').removeClass('expand');
-						$tr.find('.btn-showMenu').addClass('disabled').prop('disabled',true)
-							.find('i')
-								.removeClass('fa-angle-right')
-								//.addClass('fa-lock')
 					}
 				});
 
@@ -3852,6 +4027,28 @@
 				}
 
 			}, //end fn
+
+      /**
+       * Show or hide controls based on permissions.
+       * @method function
+       * @param  {[type]} response [description]
+       * @return {[type]}          [description]
+       */
+      getPermissions : function(response) {
+        var storeKey = jApp.opts().model + '_permissions';
+
+        $.jStorage.setTTL(storeKey, 60000 * 60 * 24 );
+        $.jStorage.set(storeKey, response);
+
+        jApp.aG().permissions = response;
+
+        _.each(response, function(value, key) {
+          jApp.log( '12.1 Setting Permission For ' + key + ' to ' + value )
+          if (value !== 1) {
+            $('[data-permission=' + key + ']').remove();
+          }
+        })
+      }, // end fn
 
 		} // end callback defs
 

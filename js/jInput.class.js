@@ -271,6 +271,10 @@
 
 					break;
 
+					case 'button' :
+						self.DOM.$inpt = $('<button/>', self.fn.getAtts() ).html(oAtts.value).wrap(self.options.wrap );
+					break;
+
 					default :
 						self.DOM.$inpt = $('<input/>', self.fn.getAtts() ).wrap( self.options.wrap );
 					break;

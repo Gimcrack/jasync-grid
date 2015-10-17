@@ -64,7 +64,8 @@
         'action' : '',
 				'role' : 'form',
 				'onSubmit' : 'return false',
-				'name' : false
+				'name' : false,
+        'enctype' : 'multipart/form-data'
 			},
 			hiddenElms : false,
 			wrap : '',
@@ -200,6 +201,35 @@
 				}
 			}, // end fn
 
+      /**
+       * Get the form data as a FormData object
+       * @method function
+       * @return {[type]} [description]
+       */
+      getFormData : function() {
+        var data = new FormData;
+
+        _.each( self.$().serializeObject(), function(value,name) {
+          data.append(name, value);
+        });
+
+        self.$().find('input[type=file]').each( function(i, elm) {
+            jApp.log('adding files to the FormData object');
+
+            jApp.log( elm.files );
+
+            _.each( elm.files, function( o ) {
+              jApp.log( 'Adding ' + elm.name );
+              jApp.log( o );
+
+              data.append( elm.name, o );
+            });
+        })
+
+        return data;
+
+      }, // end fn
+
 			handle : function() {
 				return self.DOM.$prnt;
 			}, // end fn
@@ -245,7 +275,11 @@
 				).fail( function() {
 					console.error('There was a problem getting the column parameters');
 				}).always( function() {
-					self.store.setTTL( self.options.table + '_colparams', 1000*60*self.options.ttl  ); // expire after 1 hours
+          if (!!jApp.debug) {
+            self.store.setTTL( self.options.table + '_colparams', 1000  ); // expire after 1s
+          } else {
+            self.store.setTTL( self.options.table + '_colparams', 1000*60*self.options.ttl  ); // expire after 1 hours
+          }
 					//console.log('Got the colParams');
 				});
 
@@ -371,7 +405,12 @@
 				var btnPanel = $('<div/>', { 'class' : 'panel-heading' } ).appendTo( self.DOM.$Inpts )
 
 				_.each( self.options.btns, function( o, key ) {
-					var inpt = $('<input/>', o);
+          if (o.type === 'button') {
+            var inpt = $('<button/>',o).html(o.value);
+          } else {
+            var inpt = $('<input/>', o);
+          }
+
 					btnPanel.append(inpt);
 				});
 			}, //end fn
