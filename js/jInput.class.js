@@ -209,10 +209,11 @@
 
 					case 'select' :
 						self.DOM.$inpt = $('<select/>', self.fn.getAtts() ).wrap( self.options.wrap );
-
-
 						self.fn.initSelectOptions();
+					break;
 
+					case 'tokens' :
+						self.DOM.$inpt = $('<input/>', $.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ) );//.tokenInput( self.fn.getExtUrl('tokens') )
 					break;
 
 					case 'radio' :
@@ -392,6 +393,31 @@
 				}
 			},
 
+			/**
+			 * Get the external url of the options
+			 * @return {[type]} [description]
+			 */
+			getExtUrl : function( type ) {
+				var model, lbl, opt, tmp;
+
+				tmp = oAtts._labelssource.split('.');
+				model = tmp[0]; // db table that contains option/label pairs
+				lbl = tmp[1]; // db column that contains labels
+				opt = oAtts._optionssource.split('.')[1];
+				//where = ( !!oAtts._optionsFilter && !!oAtts._optionsFilter.length ) ? oAtts._optionsFilter : '1=1';
+
+				switch (type) {
+					case 'tokens' :
+						return "/tokenopts/_" + model + "_" + opt + "_" + lbl;
+					break;
+
+					default :
+						return "/selopts/_" + model + "_" + opt + "_" + lbl;
+					break;
+				}
+
+			}, // end fn
+
 			getExtOptions : function() {
 				// use the copy in storage if available;
 				if (self.options.cache && !!self.store.get( 'selectOptions_' + self.options.atts.name, false )) {
@@ -399,16 +425,9 @@
 					return self.fn.buildOptions( JSON.parse( self.store.get( 'selectOptions_' + self.options.atts.name ) ) );
 				}
 
+				var url, data;
 
-				var model, lbl, opt, where, tmp, url, data;
-
-				tmp = oAtts._labelssource.split('.');
-				model = tmp[0]; // db table that contains option/label pairs
-				lbl = tmp[1]; // db column that contains labels
-				opt = oAtts._optionssource.split('.')[1];
-				where = ( !!oAtts._optionsFilter && !!oAtts._optionsFilter.length ) ? oAtts._optionsFilter : '1=1';
-
-				url = "/selopts/_" + model + "_" + opt + "_" + lbl;
+				url = self.fn.getExtUrl();
 				data = {};
 
 				//console.log('executing request for external options');

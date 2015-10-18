@@ -19,6 +19,7 @@
 
 		if (this.debug) {
 			console.warn( 'DEBUG MODE ON ')
+			$.jStorage.flush();
 		}
 
 		this.oG = {

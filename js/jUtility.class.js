@@ -320,6 +320,15 @@
          */
         tableBtns : {
 
+
+          tableMenu : {
+            type : 'button',
+            class : 'btn btn-success btn-tblMenu',
+            id : 'btn_table_menu_heading',
+            icon : 'fa-table',
+            label : '&nbsp;',
+          },
+
           /**
            * Refresh Button
            * @type {Object}
@@ -329,7 +338,7 @@
             name : 'btn_refresh_grid',
             class : 'btn btn-success btn-refresh',
             icon : 'fa-refresh',
-            label : '&nbsp;'
+            label : 'Refresh'
           },
 
           /**
@@ -354,7 +363,7 @@
             class : 'btn btn-success btn-headerFilters',
             id : 'btn_toggle_header_filters',
             icon : 'fa-filter',
-            label : '',
+            label : 'Filter Rows',
           },
 
           /**
@@ -362,22 +371,22 @@
            * @type {Object}
            */
           custom : {
-            visColumns : [
-              { icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
-            ],
+            // visColumns : [
+            //   { icon : 'fa-bars fa-rotate-90', label : ' Visible Columns' },
+            // ],
 
           },
 
           /**
-           * The row menu heading. Displayed when an item is checked.
+           * Table status
            * @type {Object}
            */
-          rowMenu : {
+          tableStatus : {
             type : 'button',
-            class : 'btn btn-success btn-rowMenu',
-            id : 'btn_row_menu_heading',
-            label : 'Row Menu',
-            style : 'display:none'
+            class : 'btn btn-tableStatus',
+            id : 'btn_table_status',
+            icon : '',
+            label : '',
           }
         },
 
@@ -389,6 +398,18 @@
         rowBtns : {
 
           /**
+           * The row menu heading. Displayed when an item is checked.
+           * @type {Object}
+           */
+          rowMenu : {
+            type : 'button',
+            class : 'btn btn-primary btn-rowMenu',
+            id : 'btn_row_menu_heading',
+            icon : 'fa-check-square-o',
+            label : '&nbsp;',
+          },
+
+          /**
            * Edit Button
            * @type {Object}
            */
@@ -397,7 +418,7 @@
             class : 'btn btn-primary btn-edit',
             id : 'btn_edit',
             icon : 'fa-pencil',
-            label : 'Edit Record',
+            label : 'Edit ...',
             'data-permission' : 'update_enabled',
             'data-multiple' : false
           },
@@ -408,10 +429,10 @@
            */
           del : {
             type : 'button',
-            class : 'btn btn-danger btn-delete',
+            class : 'btn btn-primary btn-delete',
             id : 'btn_delete',
             icon : 'fa-trash-o',
-            label : 'Delete Selected',
+            label : 'Delete ...',
             //title : 'Delete Record ...',
             'data-permission' : 'delete_enabled'
           },
@@ -470,15 +491,25 @@
      * @return {[type]} [description]
      */
     getPermissions : function( model ) {
-      var storeKey = jApp.opts().model + '_permissions';
+      model = (model != null) ? model : jApp.opts().model;
+
+      var storeKey = model + '_permissions';
 
       if (!!$.jStorage.get(storeKey,false)) {
         return jUtility.callback.getPermissions( $.jStorage.get(storeKey)  )
       }
 
+      jApp.log('0.1 - Getting Permissions from server')
+
       var requestOptions = {
-        url : ( model != null ) ? '/getPermissions/' + model : '/getPermissions/' + jApp.opts().model,
-        success : jUtility.callback.getPermissions,
+        url : '/getPermissions/' + model,
+        success : function(response) {
+          $.jStorage.set(storeKey, response, { TTL : 60000*60*24 });
+          jApp.log( $.jStorage.getTTL( storeKey ) );
+
+          jUtility.callback.getPermissions(response);
+          jUtility.buildMenus();
+        }
       }
 
       jApp.log(requestOptions.url);
@@ -493,10 +524,8 @@
      * @return {[type]}        [description]
      */
     isPermission : function( params ) {
-      jApp.log('Checking permissions')
-      jApp.log(params);
       if (params['data-permission'] == null) return true;
-      return !!jApp.aG().permissions[ params['data-permission'] ];
+      return !!jApp.activeGrid.permissions[ params['data-permission'] ];
     }, // end fn
 
     /**
@@ -1398,8 +1427,12 @@
         //multiselects
         .find('select').addClass('bsms').end()
         .find('.bsms').multiselect(jApp.opts().bsmsDefaults).multiselect('refresh').end()
+        .find('[data-tokens]').each( function(){
+          $(this).tokenInput( $(this).attr('data-url') );
+        }).end()
 
         .find('[_linkedElmID]').change();
+
     }, //end fn
 
     /**
@@ -1911,7 +1944,11 @@
     updateCountdown : function() {
       if (jUtility.isFormOpen()) { return false; }
 
-      jApp.tbl().find('button[name=btn_refresh_grid]').find('span').text( (jApp.aG().dataGrid.intervals.countdownTimer > 0) ? Math.floor( jApp.aG().dataGrid.intervals.countdownTimer / 1000) : 0 );
+      var txt = 'Refreshing in ';
+      txt += (jApp.aG().dataGrid.intervals.countdownTimer > 0) ? Math.floor( jApp.aG().dataGrid.intervals.countdownTimer / 1000) : 0;
+      txt += 's';
+
+      jApp.tbl().find('button#btn_table_status').text( txt );
       jApp.aG().dataGrid.intervals.countdownTimer -= 1000;
 
       if ( jApp.aG().dataGrid.intervals.countdownTimer <= -1000) {
@@ -2011,7 +2048,7 @@
         tmpMainGridBody : '<div class="row"> <div class="col-lg-12"> <div class="panel panel-info panel-grid panel-grid1"> <div class="panel-heading"> <h1 class="page-header"><i class="fa {@icon} fa-fw"></i><span class="header-title"> {@headerTitle} </span></h1> <div class="alert alert-warning alert-dismissible helpText" role="alert"> <button type="button" class="close" data-dismiss="alert"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button> {@helpText} </div> </div> <div class="panel-body grid-panel-body"> <div class="table-responsive"> <div class="table table-bordered table-grid"> <div class="table-head"> <div class="table-row table-menu-row"> <div class="table-header table-menu-header" style="width:100%"> <div class="btn-group btn-group-sm table-btn-group">  </div> </div> </div> <div style="display:none" class="table-row table-rowMenu-row"></div>  <div class="table-row tfilters" style="display:none"> <div style="width:10px;" class="table-header">&nbsp;</div> <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> </div> </div> </div> <div class="table-body" id="tbl_grid_body"> <!--{$tbody}--> </div> <div class="table-foot"> <div class="row"> <div class="col-md-3"> <div style="display:none" class="ajax-activity-preloader pull-left"></div> <div class="divRowsPerPage pull-right"> <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control"> <option value="10">10</option> <option value="15">15</option> <option value="25">25</option> <option value="50">50</option> <option value="100">100</option> <option value="10000">All</option> </select> </div> </div> <div class="col-md-9"> <div class="paging"></div> </div> </div> </div> <!-- /. table-foot --> </div> </div> <!-- /.table-responsive --> </div> <!-- /.panel-body --> </div> <!-- /.panel --> </div> <!-- /.col-lg-12 --> </div> <!-- /.row -->',
 
         // check all checkbox template
-        tmpCheckAll	: '<label for="chk_all" class="btn btn-default pull-right"> <input type="checkbox" class="chk_all" name="chk_all"> </label>',
+        tmpCheckAll	: '<label for="chk_all" class="btn btn-default pull-right"> <input id="chk_all" type="checkbox" class="chk_all" name="chk_all"> </label>',
 
         // header filter clear text button
         tmpClearHeaderFilterBtn : '<span class="fa-stack fa-lg"><i class="fa fa-circle-thin fa-stack-2x"></i><i class="fa fa-remove fa-stack-1x"></i></span>',
@@ -2437,7 +2474,7 @@
     buildMenus : function() {
       jUtility.DOM.clearMenus();
 
-      jUtility.setupVisibleColumnsMenu();
+      //jUtility.setupVisibleColumnsMenu();
       jUtility.DOM.buildBtnMenu( jApp.opts().tableBtns, jApp.aG().DOM.$tblMenu );
       jUtility.DOM.buildBtnMenu( jApp.opts().rowBtns, jApp.aG().DOM.$rowMenu);
       //jUtility.DOM.buildLnkMenu( jApp.opts().withSelectedBtns, jApp.aG().DOM.$withSelectedMenu );
@@ -3239,9 +3276,11 @@
        */
       toggleRowMenu : function( on ) {
         if (on != null) {
-          $('#btn_row_menu_heading,.table-row.table-rowMenu-row').toggle(on);
+          $('.table-row.table-rowMenu-row').toggle(on);
+          $('.table-row.table-menu-row').toggle(!on);
         } else {
-          $('#btn_row_menu_heading,.table-row.table-rowMenu-row').toggle();
+          $('.table-row.table-rowMenu-row').toggle();
+          $('.table-row.table-menu-row').toggle();
         }
         jUtility.DOM.updateColWidths();
       }, // end fn
@@ -3493,9 +3532,15 @@
             if (key === 'custom') {
               _.each( o, function( oo, kk ) {
 
-                oo.disabled = !jUtility.isPermission(oo);
+                if ( jUtility.isPermission(oo) ) {
+                  jApp.log('Button enabled : ' + kk);
+                  delete oo.disabled;
+                } else {
+                  jApp.log('Button disabled : ' + kk);
+                  oo.disabled = true;
+                }
 
-                jApp.log(oo)
+                //jApp.log(oo)
 
                 if (type == 'buttons') {
                   jUtility.DOM.createMenuButton( oo ).appendTo( target );
@@ -3504,9 +3549,16 @@
                 }
               });
             } else {
-              o.disabled = !jUtility.isPermission(o);
 
-              jApp.log(o);
+              if ( jUtility.isPermission(o) ) {
+                jApp.log('Button enabled : ' + key);
+                delete o.disabled;
+              } else {
+                jApp.log('Button disabled : ' + key);
+                o.disabled = true;
+              }
+
+              //jApp.log(o);
               if (type == 'buttons') {
                 jUtility.DOM.createMenuButton( o ).clone().appendTo( target );
               } else {
@@ -3786,7 +3838,8 @@
 									'id'  :	'filter_' + self.options.columns[i],
 									'name' : 'filter_' + self.options.columns[i],
 									'class' : 'header-filter form-control',
-									'style' : 'width:100%'
+									'style' : 'width:100%',
+                  'placeholder' : self.options.headers[i]
 								}
 							)));
 						}
@@ -3987,7 +4040,7 @@
 
 						$tr.find('.chk_cid').parent().addClass('disabled').hide()
 							.closest('.table-cell').append( $('<span/>',{class : 'btn btn-default btn-danger pull-right checkedOut'})
-              .html($i.prop('outerHTML')).clone().attr('title','Locked By ' + o.user.name));
+              .html($i.prop('outerHTML')).clone().attr('title','Locked By ' + o.user.person.name));
 						$tr.find('.rowMenu-container').addClass('disabled').find('.rowMenu.expand').removeClass('expand');
 					}
 				});
@@ -4035,12 +4088,11 @@
        * @return {[type]}          [description]
        */
       getPermissions : function(response) {
-        var storeKey = jApp.opts().model + '_permissions';
 
-        $.jStorage.setTTL(storeKey, 60000 * 60 * 24 );
-        $.jStorage.set(storeKey, response);
+        jApp.log( 'Setting activeGrid permissions');
+        jApp.activeGrid.permissions = response;
 
-        jApp.aG().permissions = response;
+        jApp.log( jApp.aG().permissions );
 
         _.each(response, function(value, key) {
           jApp.log( '12.1 Setting Permission For ' + key + ' to ' + value )

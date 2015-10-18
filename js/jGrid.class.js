@@ -80,9 +80,6 @@
 			 */
 			_init : function() {
 
-				jApp.log('0. Get User Permissions');
-				jUtility.getPermissions( options.model );
-
 				jApp.log('1. Setting Options');
 				jUtility.setOptions( $.extend(true, {}, jUtility.getDefaultOptions(), { tableBtns : { new : { label : 'New ' + options.model }} }, options) );
 
@@ -91,6 +88,9 @@
 
 				jApp.log('3. Setting up initial parameters');
 				jUtility.setInitParams();
+
+				jApp.log('0. Get User Permissions');
+				jUtility.getPermissions( options.model );
 
 				jApp.log('4. Setting Ajax Defaults');
 				jUtility.setAjaxDefaults();
