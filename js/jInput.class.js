@@ -105,6 +105,7 @@
 
 			url : 				['autocomplete','autofocus','defaultValue','disabled','form','list','maxLength','name','pattern','placeholder','readOnly','required','size','type','value'],
 			text : 				['autocomplete','autofocus','defaultValue','disabled','form','list','maxLength','name','pattern','placeholder','readOnly','required','size','type','value'],
+			tokens :			['autocomplete','autofocus','defaultValue','disabled','form','list','maxLength','name','pattern','placeholder','readOnly','required','size','type','value'],
 			search : 			['autocomplete','autofocus','defaultValue','disabled','form','list','maxLength','name','pattern','placeholder','readOnly','required','size','type','value'],
 
 			number : 			['autocomplete','autofocus','defaultValue','disabled','form','list','max','min','name','placeholder','readOnly','required','step','type','value'],
@@ -213,6 +214,8 @@
 					break;
 
 					case 'tokens' :
+						jApp.log('Tokens Attributes')
+						jApp.log($.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ));
 						self.DOM.$inpt = $('<input/>', $.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ) );//.tokenInput( self.fn.getExtUrl('tokens') )
 					break;
 

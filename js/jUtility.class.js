@@ -19,6 +19,11 @@
       $.each(a, function() {
           if ($(this).prop('disabled')) return false;
 
+          if ( !!$(this).attr('data-tokens') ) {
+            jApp.log($(this).tokenInput("get"));
+            return o[this.name] = _.pluck( $(this).tokenInput("get"), 'name');
+          }
+
           if (o[this.name]) {
               if (!o[this.name].push) {
                   o[this.name] = [o[this.name]];
@@ -1428,7 +1433,9 @@
         .find('select').addClass('bsms').end()
         .find('.bsms').multiselect(jApp.opts().bsmsDefaults).multiselect('refresh').end()
         .find('[data-tokens]').each( function(){
-          $(this).tokenInput( $(this).attr('data-url') );
+          if ( typeof $(this).tokenInput === 'undefined' ) {
+              $(this).tokenInput( $(this).attr('data-url') );
+          }
         }).end()
 
         .find('[_linkedElmID]').change();
@@ -2765,6 +2772,7 @@
       dataEmptyHandler : function() {
         $('.table-cell.no-data').remove();
         $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
+        jUtility.DOM.updateColWidths();
       }, // end fn
 
       /**
@@ -2777,6 +2785,7 @@
       dataErrorHandler : function() {
         $('.table-cell.no-data').remove();
         $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-danger"> <i class="fa fa-fw fa-warning"></i> There was an error retrieving the data.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
+        jUtility.DOM.updateColWidths();
       }, // end fn
 
 
@@ -3174,8 +3183,6 @@
         // perfect scrollbar
         $('.table-grid').perfectScrollbar('update');
 
-
-
         jApp.opts().maxColWidth =  +350/1920 * +$(window).innerWidth();
 
         //visible columns
@@ -3192,7 +3199,8 @@
           }
 
           if ( ii == visCols ) {
-            colWidth = +$(window).innerWidth()-$('.table-head .table-row').eq(headerRowIndex).find('.table-header:visible').slice(0,-1).map( function(i) { return $(this).innerWidth() } ).get().reduce( function(p,c) { return p+c } )-40;
+            colWidth = +$(window).innerWidth()-$('.table-head .table-row.colHeaders').find('.table-header:visible').slice(0,-1)
+                            .map( function(i) { return $(this).innerWidth() } ).get().reduce( function(p,c) { return p+c } )-40;
           }
 
           var nindex = +ii+1;
