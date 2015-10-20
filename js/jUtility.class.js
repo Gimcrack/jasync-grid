@@ -1433,9 +1433,20 @@
         .find('select').addClass('bsms').end()
         .find('.bsms').multiselect(jApp.opts().bsmsDefaults).multiselect('refresh').end()
         .find('[data-tokens]').each( function(){
-          if ( typeof $(this).tokenInput === 'undefined' ) {
-              $(this).tokenInput( $(this).attr('data-url') );
+          if ( typeof $(this).data('tokenFieldSource') != 'null' ) {
+              $(this).tokenfield({
+                autocomplete : {
+                  source : $(this).data('tokenFieldSource'),
+                  delay : 300
+                },
+                showAutoCompleteOnFocus : false,
+                tokens : $(this).val() || []
+              })
+              $(this).data('tokenFieldSource',null);
           }
+          // var val = $(this).data('value').split('|') || []
+          // $(this).tokenfield( 'setTokens', val );
+
         }).end()
 
         .find('[_linkedElmID]').change();

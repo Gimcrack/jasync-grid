@@ -447,27 +447,45 @@
 		this.callback = {
 
 			getRowData : function(response) {
+        var oInpt, $inpt;
 
         if (typeof response[0] !== 'undefined') {
           response = response[0];
         }
 
+        self.rowData = response;
+
 				self.DOM.$frm.clearForm();
 
 				_.each( response, function( value, key ) {
-          if (typeof self.oInpts[key] !== 'undefined') {
-						if (!!value && value.indexOf('|') !== -1 && key !== '_labelsSource' && key !== '_optionsSource') {
-							value = value.split('|');
-						}
-						self.oInpts[key].fn.enable();
-            if (typeof value === 'object' && !!_.pluck(value,'id').length) {
-              self.oInpts[key].fn.val(_.pluck(value,'id'));
-            } else {
-              self.oInpts[key].fn.val(value);
-            }
-						if (self.oInpts[key].options.atts.type === 'select') {
-							self.oInpts[key].DOM.$inpt.multiselect('refresh').change();
-						}
+          jApp.log('Setting up input ' + key);
+          jApp.log(value);
+
+          if ( typeof self.oInpts[key] === 'undefined' || typeof self.oInpts[key].$ !== 'function' ) {
+            jApp.log('No input associated with this key.');
+            return false;
+          }
+
+          oInpt = self.oInpts[key];
+          $inpt = oInpt.$();
+
+          // enable the input
+          oInpt.fn.enable();
+
+					if (value != null && value.indexOf('|') !== -1 && key !== '_labelssource' && key !== '_optionssource') {
+						value = value.split('|');
+					}
+
+          if (typeof value === 'object' && !!_.pluck(value,'name').length && typeof $inpt.attr('data-tokens') !== 'undefined' ) {
+            $inpt.tokenfield('setTokens', _.pluck(value,'name'));
+          }
+          else if (typeof value === 'object' && !!_.pluck(value,'id').length) {
+            oInpt.fn.val(_.pluck(value,'id'));
+          } else {
+            oInpt.fn.val(value);
+          }
+					if (oInpt.options.atts.type === 'select') {
+						$inpt.multiselect('refresh').change();
 					}
 
 				});

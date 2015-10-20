@@ -216,7 +216,8 @@
 					case 'tokens' :
 						jApp.log('Tokens Attributes')
 						jApp.log($.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ));
-						self.DOM.$inpt = $('<input/>', $.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ) );//.tokenInput( self.fn.getExtUrl('tokens') )
+						self.DOM.$inpt = $('<input/>', $.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ) );
+						self.fn.getExtOptions();
 					break;
 
 					case 'radio' :
@@ -403,6 +404,8 @@
 			getExtUrl : function( type ) {
 				var model, lbl, opt, tmp;
 
+				type = (type != null) ? type : oAtts.type;
+
 				tmp = oAtts._labelssource.split('.');
 				model = tmp[0]; // db table that contains option/label pairs
 				lbl = tmp[1]; // db column that contains labels
@@ -410,12 +413,12 @@
 				//where = ( !!oAtts._optionsFilter && !!oAtts._optionsFilter.length ) ? oAtts._optionsFilter : '1=1';
 
 				switch (type) {
-					case 'tokens' :
-						return "/tokenopts/_" + model + "_" + opt + "_" + lbl;
+					case 'select' :
+						return "/selopts/_" + model + "_" + opt + "_" + lbl;
 					break;
 
 					default :
-						return "/selopts/_" + model + "_" + opt + "_" + lbl;
+						return "/tokenopts/_" + model + "_" + opt + "_" + lbl;
 					break;
 				}
 
@@ -444,13 +447,30 @@
 
 			buildOptions : function( data ) {
 				// load JSON data if applicable
-				if (!!data) {
+				if (data != null) {
 					self.JSON = data;
-					oAtts._labels = _.pluck(data,'label');
-					oAtts._options = _.pluck(data,'option');
-					if (self.options.cache) {
-						self.store.set( 'selectOptions_' + self.options.atts.name, JSON.stringify(data) );
-					}
+				}
+
+				if (oAtts.type === 'select') {
+					self.fn.populateSelectOptions()
+				} else {
+					self.fn.populateTokensOptions();
+				}
+
+			},
+
+			populateTokensOptions : function() {
+				jApp.log('--- Building TokenField Input ---');
+				jApp.log(self.JSON);
+
+				self.DOM.$inpt.data( 'tokenFieldSource', _.pluck( self.JSON, 'name' ) );
+			}, //end fn
+
+			populateSelectOptions : function() {
+				oAtts._labels = _.pluck(self.JSON,'label');
+				oAtts._options = _.pluck(self.JSON,'option');
+				if (self.options.cache) {
+					self.store.set( 'selectOptions_' + self.options.atts.name, JSON.stringify(self.JSON) );
 				}
 
 				// hide if empty options
@@ -494,7 +514,7 @@
 						.multiselect('refresh');
 					self.refreshAfterLoadingOptions = false;
 				}
-			},
+			}, // end fn
 
 			attr : function( key, value ) {
 				if (typeof key === 'object') {
