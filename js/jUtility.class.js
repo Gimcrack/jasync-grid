@@ -1244,12 +1244,32 @@
     }, // end fn
 
     /**
+     * Prepare form data
+     * @param  {[type]} data [description]
+     * @return {[type]}      [description]
+     */
+    prepareFormData : function( data ) {
+      var fd = new FormData;
+
+      _.each( data, function(value, key) {
+        fd.append(key, value);
+      })
+
+      return fd;
+
+    }, // end fn
+
+    /**
      * post JSON
      * @method function
      * @param  {[type]} requestOptions [description]
      * @return {[type]}                [description]
      */
     postJSON : function( requestOptions ) {
+
+        if ( typeof requestOptions.data.append !== 'function' ) {
+          data = jUtility.prepareFormData( data );
+        }
 
         var opts = $.extend(true,
           {
@@ -3042,7 +3062,7 @@
         var $col;
 
         if (typeof colNum === 'undefined' && typeof jApp.aG().temp.sortOptions === 'undefined') {
-          return false; 
+          return false;
         }
 
         if (typeof colNum === 'undefined') {
