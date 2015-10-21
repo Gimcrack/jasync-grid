@@ -3041,6 +3041,18 @@
       sortByCol : function( colNum, desc ) {
         var $col;
 
+        if (typeof colNum === 'undefined' && typeof jApp.aG().temp.sortOptions === 'undefined') {
+          return false; 
+        }
+
+        if (typeof colNum === 'undefined') {
+          colNum = jApp.aG().temp.sortOptions.colNum;
+          desc = jApp.aG().temp.sortOptions.desc;
+        } else {
+            jApp.aG().temp.sortOptions = { colNum : colNum, desc : desc };
+        }
+
+
         //col
         $col = jApp.tbl().find('.table-body .table-row .table-cell:nth-child(' + colNum + ')')
           .map( function(i,elm) {
@@ -3977,6 +3989,9 @@
 
         // adjust permissions
         jUtility.callback.getPermissions( jApp.aG().permissions );
+
+        // perform sort if needed
+        jUtility.DOM.sortByCol();
 
 			}, // end fn
 
