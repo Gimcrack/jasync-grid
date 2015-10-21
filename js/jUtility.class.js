@@ -1268,7 +1268,7 @@
     postJSON : function( requestOptions ) {
 
         if ( typeof requestOptions.data.append !== 'function' ) {
-          data = jUtility.prepareFormData( data );
+          requestOptions.data = jUtility.prepareFormData( requestOptions.data || {} );
         }
 
         var opts = $.extend(true,
