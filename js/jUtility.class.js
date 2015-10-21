@@ -1712,7 +1712,7 @@
 
           ".chk_all" : {
             change : function() {
-              jApp.aG().$().find(':checkbox:visible').prop('checked',$(this).prop('checked'));
+              jApp.aG().$().find('.chk_cid').prop('checked',$(this).prop('checked'));
               $('.chk_cid').eq(0).change();
             }
           },
