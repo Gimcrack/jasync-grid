@@ -2471,7 +2471,7 @@
           buttons: {
             yes: { label: "Include Hidden Items", className: "btn-primary", callback: function() { return jUtility.withSelectedAction(action,callback,true); } },
             no:  { label: "Do Not Include Hidden Items", className: "btn-warning", callback: function() { return jUtility.withSelectedAction(action,callback,false); } },
-            cancel : { label : "Cancel Operation", className : "btn-danger", callback: function() { return false } }
+            cancel : { label : "Cancel Operation", className : "btn-danger", callback: function() { dialog.modal('hide') } }
           }
         });
 
