@@ -15,7 +15,7 @@
 
 		var self = this;
 
-		this.debug = false;
+		this.debug = true;
 
 		if (this.debug) {
 			console.warn( 'DEBUG MODE ON ')
@@ -44,6 +44,8 @@
 
 		this.activeGrid = {};
 
+		this.openForms = [];
+
 		/**
 		 * Convenience function to access the active grid object
 		 * @method function
@@ -53,6 +55,21 @@
 			return this.activeGrid;
 		}
 
+		/**
+		 * Get the table from the corresponding model
+		 * @param  {[type]} model [description]
+		 * @return {[type]}       [description]
+		 */
+		this.model2table = function( model ) {
+
+			var RuleExceptions = {
+				Person : 'people'
+			}
+
+			return ( RuleExceptions[model] == null ) ?
+				(model + 's').toLowerCase() :
+				RuleExceptions[model]
+		}
 
 		/**
 		 * Convenience function to access the $grid object

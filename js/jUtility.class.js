@@ -9,6 +9,13 @@
  *  Prereqs: 	jQuery, jApp
  *
  */
+
+ if (!Array.prototype.last){
+     Array.prototype.last = function(){
+         return this[this.length - 1];
+     };
+ };
+
 ;(function(window, $, jApp) {
 
   'use strict';
@@ -297,10 +304,12 @@
          * @type {Object}
          */
         bsmsDefaults : {
-          buttonContainer : '<div class="btn-group" />',
-          enableFiltering: true,
+          //buttonContainer : '<div class="btn-group" />',
+          enableCaseInsensitiveFiltering: true,
           includeSelectAllOption: true,
-          maxHeight: 185
+          maxHeight: 185,
+          numberDisplayed: 1,
+          dropUp: true,
         },
 
         /**
@@ -618,7 +627,7 @@
         break;
 
         default :
-          return jApp.opts().table;
+          return jUtility.oCurrentForm().options.table //jApp.opts().table;
         break;
       }
     }, // end fn
@@ -653,7 +662,8 @@
           //$(elm).data("DateTimePicker").remove();
           $(elm).val('');
           if ( $(elm).hasClass('bsms') ) {
-            $(elm).multiselect(jApp.opts().bsmsDefaults).multiselect('refresh');
+            $(elm).data('jInput').fn.multiselect();
+            $(elm).multiselect('refresh');
           }
         });
       } catch(e) {
@@ -679,7 +689,18 @@
      */
     maximizeCurrentForm : function() {
       try {
-        jUtility.$currentFormWrapper().addClass('max');
+
+        if ( jApp.openForms.length ) {
+          jApp.openForms.last().wrapper.find('button').prop('disabled',true);
+        }
+
+        jApp.openForms.push({
+          wrapper : jUtility.$currentFormWrapper().addClass('max'),
+          obj : jUtility.oCurrentForm(),
+          $ : jUtility.$currentForm(),
+          action : jApp.aG().action,
+          model : jUtility.oCurrentForm().model
+        });
       } catch(e) {
         console.warn(e);
         return false;
@@ -693,11 +714,26 @@
      */
     closeCurrentForm : function() {
       try {
+        var oTgt = jApp.openForms.pop();
+
+        jApp.aG().action = ( jApp.openForms.length ) ?
+          jApp.openForms.last().action : '';
+
         jUtility.msg.clear()
-        jUtility.$currentFormWrapper().removeClass('max')
+
+        oTgt.wrapper.removeClass('max')
           .find('.formContainer').css('height','');
-        jUtility.$currentForm().clearForm();
-        jUtility.turnOffOverlays();
+        oTgt.$.clearForm();
+
+        if (!jApp.openForms.length) {
+          jUtility.turnOffOverlays();
+        } else {
+
+          jApp.openForms.last().wrapper
+            .find('button').prop('disabled',false).end()
+            .find('.btn-refresh').trigger('click');
+        }
+
       } catch(ignore) {}
     }, // end fn
 
@@ -1008,6 +1044,17 @@
     isResponseErrors : function(response) {
        return (typeof response.errors !== 'undefined' &&
                       !!response.errors);
+    }, // end fn
+
+    /**
+     * Does the form exist
+     * @param  {[type]} key [description]
+     * @return {[type]}          [description]
+     */
+    isFormExists : function( key ) {
+      return ( typeof jApp.aG().forms[ '$' + key ] !== 'undefined' ||
+               typeof jApp.aG().forms[ 'o' + key.ucfirst() ] !== 'undefined' ||
+               typeof jApp.aG().forms[ key ] !== 'undefined'  );
     }, // end fn
 
     /**
@@ -1375,9 +1422,9 @@
 
       _.each( jApp.opts().events.form, function( events, target ) {
         _.each( events, function(fn, event) {
-            jUtility.setCustomBinding( target, fn, event, '.div-form-panel-wrapper' )
+            jUtility.setCustomBinding( target, fn, event, '.div-form-panel-wrapper', 'force' )
         });
-      })
+      });
     }, //end fn
 
     /**
@@ -1387,10 +1434,11 @@
      * @param  {Function} fn    [description]
      * @return {[type]}         [description]
      */
-    setCustomBinding : function( target, fn, event, scope ) {
+    setCustomBinding : function( target, fn, event, scope, force ) {
       var eventKey = event + '.custom-' + $.md5( fn.toString() ),
           $scope = (typeof scope === 'undefined') ? $(document) : $(scope),
           scope = (typeof scope === 'undefined') ? 'document' : scope;
+          force = (typeof force === 'undefined') ? false : !!force;
 
       if ( event === 'boot' ) {
         return (typeof fn === 'function') ? fn() : false;
@@ -1403,9 +1451,9 @@
           jApp.log('Found target within global scope ' + target);
           jApp.log('Binding event ' + eventKey + ' to target ' + target);
           $(window[target]).off(eventKey).on(eventKey, fn);
-        } else if ( !jUtility.isEventDelegated(target,eventKey,scope) ) {
+        } else if ( !jUtility.isEventDelegated(target,eventKey,scope) || force ) {
           jApp.log('Binding event ' + event + ' to target ' + target + ' within scope ' + scope);
-          $scope.delegate(target, eventKey, fn);
+          $scope.undelegate(target,eventKey).delegate(target, eventKey, fn);
           jUtility.eventIsDelegated(target,eventKey,scope);
         }
       } else {
@@ -1442,6 +1490,7 @@
      * @return {[type]} [description]
      */
     formBootup : function() {
+      console.log('hello')
       jUtility.$currentFormWrapper()
         //reset validation stuff
         .find('.has-error').removeClass('has-error').end()
@@ -1451,7 +1500,9 @@
 
         //multiselects
         .find('select').addClass('bsms').end()
-        .find('.bsms').multiselect(jApp.opts().bsmsDefaults).multiselect('refresh').end()
+        .find('.bsms').each( function(i,elm) {
+          $(elm).data('jInput').fn.multiselect().fn.multiselectRefresh();
+        } ).end()
         .find('[data-tokens]').each( function(){
           if ( typeof $(this).data('tokenFieldSource') != 'null' ) {
               $(this).tokenfield({
@@ -1532,8 +1583,10 @@
           "button.close, .btn-cancel" : {
             click : function() {
               if ( jUtility.needsCheckin() )  {
+                console.log('checking in record');
                 jUtility.checkin( jUtility.getCurrentRowId() );
               } else {
+                console.log('closing current form');
                 jUtility.closeCurrentForm();
               }
             }
@@ -2106,11 +2159,14 @@
           // New Form Template
           newFrm	: '<div id="div_newFrm" class="div-btn-new min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-green"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-plus fa-fw"></i> New: <span class="spn_editFriendlyName">{@tableFriendly}</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side newFormContainer formContainer"> </div> </div> </div> </div> </div> </div> ',
 
+          // New Form Template
+          newOtherFrm	: '<div id="div_newFrm" class="div-btn-new min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-info"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-plus fa-fw"></i> New: <span class="spn_editFriendlyName">{@tableFriendly}</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="side-by-side newOtherFormContainer formContainer"> </div> </div> </div> </div> </div> </div> ',
+
           // Delete Form Template
           deleteFrm	: '<div id="div_deleteFrm" class="div-btn-delete min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-red"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true">×</button> <i class="fa fa-trash-o fa-fw"></i> <span class="spn_editFriendlyName"></span> : {@deleteText} </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body"> <div class="row side-by-side"> <div class="delFormContainer formContainer"></div> </div> </div> </div> </form> </div> </div> ',
 
           // Colparams Form Template
-          colParamFrm	: '<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-lblue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body" style="padding:0 0px !important;"> <div class="row side-by-side"> <div class="col-lg-3 tbl-list"></div> <div class="col-lg-2 col-list"></div> <div class="col-lg-7 param-list"> <div class="side-by-side colParamFormContainer formContainer"> </div> </div> </div> </div> <div class="panel-heading"> <input type="button" class="btn btn-success btn-save" id="btn_save" value="Save"> <input type="button" class="btn btn-warning btn-reset" id="btn_reset" value="Reset"> <input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form"> <input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel"> </div> </div> </div> </div>',
+          colParamFrm	: '<div id="div_colParamFrm" class="div-btn-other min div-form-panel-wrapper"> <div class="frm_wrapper"> <div class="panel panel-lblue"> <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-gear fa-fw"></i> <span class="spn_editFriendlyName">Form Setup</span> </div> <div class="panel-overlay" style="display:none"></div> <div class="panel-body" style="padding:0 0px !important;"> <div class="row side-by-side"> <div class="col-lg-3 tbl-list"></div> <div class="col-lg-2 col-list"></div> <div class="col-lg-7 param-list"> <div class="side-by-side colParamFormContainer formContainer"> </div> </div> </div> </div> <div class="panel-heading"> <input type="button" class="btn btn-success btn-save" id="btn_save" value="Save"> <button type="reset" class="btn btn-warning btn-reset" id="btn_reset">Reset</button> <input type="button" class="btn btn-warning btn-refreshForm" id="btn_refresh" value="Refresh Form"> <input type="button" class="btn btn-danger btn-cancel" id="btn_cancel" value="Cancel"> </div> </div> </div> </div>',
         }
       }, jApp.opts().html);
 
@@ -3805,20 +3861,22 @@
        * @param  {[type]} key    [description]
        * @return {[type]}        [description]
        */
-      buildForm : function( params, key ) {
+      buildForm : function( params, key, htmlKey, tableFriendly ) {
         var $frmHandle = '$' + key,
             oFrmHandle = 'o' + key.ucfirst(),
             oFrm;
 
+        htmlKey = ( htmlKey != null ) ? htmlKey : key;
+
         // make sure the form template exists
-        if ( typeof jApp.aG().html.forms[key] === 'undefined' ) return false;
+        if ( typeof jApp.aG().html.forms[htmlKey] === 'undefined' ) return false;
 
         // create form object
         jApp.aG().forms[oFrmHandle] = oFrm = new jForm( params );
 
         // create form container
         jApp.aG().forms[$frmHandle] = $('<div/>', { 'class' : 'gridFormContainer' })
-          .html( jUtility.render( jApp.aG().html.forms[key] ) )
+          .html( jUtility.render( jApp.aG().html.forms[htmlKey], { tableFriendly : tableFriendly || jApp.opts().model } ) )
           .find( '.formContainer' ).append( oFrm.fn.handle() ).end()
           .appendTo( jApp.aG().$() );
       }, // end fn
@@ -4025,7 +4083,7 @@
 					var data = response,
               self = jApp.aG();
 					self.rowData = response;
-					jUtility.DOM.updatePanelHeader( data[ self.options.columnFriendly ] );
+					//jUtility.DOM.updatePanelHeader( data[ self.options.columnFriendly ] );
 			}, // end fn
 
       /**

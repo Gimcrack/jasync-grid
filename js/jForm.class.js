@@ -112,7 +112,7 @@
 		if (!this.options.btns) {
 			this.options.btns = [
 				{ 'type' : 'button', 'class' : 'btn btn-success btn-go', 	'id' : 'btn_go', 'value' : 'Go' },
-				{ 'type' : 'reset', 'class' : 'btn btn-warning btn-reset', 'id' : 'btn_reset', 'value' : 'Reset' },
+				{ 'type' : 'button', 'class' : 'btn btn-warning btn-reset', 'id' : 'btn_reset', 'value' : 'Reset' },
 				{ 'type' : 'button', 'class' : 'btn btn-danger btn-cancel', 'id' : 'btn_cancel', 'value' : 'Cancel' },
 			];
 		}

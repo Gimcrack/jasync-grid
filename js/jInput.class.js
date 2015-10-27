@@ -73,11 +73,12 @@
 
 			// multiselect defaults
 			bsmsDefaults : {									// bootstrap multiselect default options
-				buttonContainer : '<div class="btn-group" />',
-				enableFiltering: true,
+				//buttonContainer : '<div class="btn-group" />',
+				enableCaseInsensitiveFiltering: true,
 				includeSelectAllOption: true,
 				maxHeight: 185,
 				numberDisplayed: 1,
+				dropUp: true
 			},
 
 		}; // end options
@@ -285,6 +286,9 @@
 					break;
 				}
 
+				// assign a reference to the jInput object to the DOM element
+				self.DOM.$inpt.data('jInput',self);
+
 				//bind change handler to keep this object updated
 				self.DOM.$inpt.off('change.jInput').on('change.jInput', function() {
 					oAtts.value = $(this).val();
@@ -374,6 +378,11 @@
 				self.store.setTTL( ttl );
 			}, //end fn
 
+			/**
+			 * Initialize the select options
+			 * @param  {[type]} refresh [description]
+			 * @return {[type]}         [description]
+			 */
 			initSelectOptions : function(refresh) {
 
 				//console.log('Initializing Select Options');
@@ -381,21 +390,25 @@
 
 				self.refreshAfterLoadingOptions = (!!refresh) ? true : false;
 
-				// determine if we are loading options from an external source (db)
-				if ( typeof oAtts._labelssource !== 'undefined' && oAtts._labelssource.indexOf('.') !== -1 ) {
+				// local data
+				if ( oAtts._optionssource != null && oAtts._optionssource.indexOf('|') !== -1 ) {
+					jApp.log(' - local options data - ');
+					self.options.extData = false;
+					oAtts._options = oAtts._optionssource.split('|');
+					oAtts._labels = ( !!oAtts._labelssource ) ?
+						oAtts._labelssource.split('|') :
+						oAtts._optionssource.split('|');
+					self.fn.buildOptions();
+				}
+				// external data
+				else if ( oAtts._optionssource != null && oAtts._optionssource.indexOf('.') !== -1 ) {
+					jApp.log(' - external options data -');
 					self.options.extData = true;
 					//console.log('Getting External Options');
 					self.fn.getExtOptions();
-				} else { // options are loaded locally
-					if ( typeof oAtts._labelssource !=='undefined' && typeof oAtts._optionssource !== 'undefined') {
-						oAtts._options = oAtts._optionssource.split('|');
-						oAtts._labels = ( !!oAtts._labelssource ) ?
-							oAtts._labelssource.split('|') :
-							oAtts._optionssource.split('|');
-						self.fn.buildOptions();
-					}
 				}
-			},
+
+			}, // end fn
 
 			/**
 			 * Get the external url of the options
@@ -407,7 +420,7 @@
 				type = (type != null) ? type : oAtts.type;
 
 				tmp = oAtts._labelssource.split('.');
-				model = tmp[0]; // db table that contains option/label pairs
+				self.model = model = tmp[0]; // db table that contains option/label pairs
 				lbl = tmp[1]; // db column that contains labels
 				opt = oAtts._optionssource.split('.')[1];
 				//where = ( !!oAtts._optionsFilter && !!oAtts._optionsFilter.length ) ? oAtts._optionsFilter : '1=1';
@@ -424,9 +437,25 @@
 
 			}, // end fn
 
-			getExtOptions : function() {
+			getModel : function() {
+				var tmp = oAtts._optionssource.split('.');
+				return tmp[0];
+			}, // end fn
+
+			/**
+			 * Retrieve external options
+			 * @param  {[type]}   force    [description]
+			 * @param  {Function} callback [description]
+			 * @return {[type]}            [description]
+			 */
+			getExtOptions : function( force, callback ) {
+				console.log('getting external options');
+				self.options.extData = true;
+
+				force = ( typeof force !== 'undefined' ) ? force : false;
+
 				// use the copy in storage if available;
-				if (self.options.cache && !!self.store.get( 'selectOptions_' + self.options.atts.name, false )) {
+				if (!force && self.options.cache && !!self.store.get( 'selectOptions_' + self.options.atts.name, false )) {
 					//console.log('using local copy of options');
 					return self.fn.buildOptions( JSON.parse( self.store.get( 'selectOptions_' + self.options.atts.name ) ) );
 				}
@@ -436,12 +465,14 @@
 				url = self.fn.getExtUrl();
 				data = {};
 
+				self.buildOptionsCallback = callback;
+
 				//console.log('executing request for external options');
 				$.getJSON( url, data, self.fn.buildOptions )
 				 .always( function() {
-					if (self.options.cache) {
-						self.store.setTTL( 'selectOptions_' + self.options.atts.name, 1000*60*self.options.ttl ); // expire in 10 mins.
-					}
+						if (self.options.cache) {
+							self.store.setTTL( 'selectOptions_' + self.options.atts.name, 1000*60*self.options.ttl ); // expire in 10 mins.
+						}
 				 });
 			},
 
@@ -467,10 +498,15 @@
 			}, //end fn
 
 			populateSelectOptions : function() {
-				oAtts._labels = _.pluck(self.JSON,'label');
-				oAtts._options = _.pluck(self.JSON,'option');
-				if (self.options.cache) {
-					self.store.set( 'selectOptions_' + self.options.atts.name, JSON.stringify(self.JSON) );
+
+				// grab the external data if applicable
+				if (self.options.extData ) {
+					oAtts._labels = _.pluck(self.JSON,'label');
+					oAtts._options = _.pluck(self.JSON,'option');
+
+					if (self.options.cache) {
+						self.store.set( 'selectOptions_' + self.options.atts.name, JSON.stringify(self.JSON) );
+					}
 				}
 
 				// hide if empty options
@@ -505,15 +541,12 @@
 				// remove the unneeded data-value attribute
 				self.$().removeAttr('data-value');
 
-				// refresh the element to update the options
-				if (!!self.refreshAfterLoadingOptions) {
-					//console.log('refreshing options');
-					self.DOM.$inpt
-						.multiselect('destroy')
-						.multiselect(self.options.bsmsDefaults)
-						.multiselect('refresh');
-					self.refreshAfterLoadingOptions = false;
+				// call the callback if applicable
+				if (typeof self.buildOptionsCallback === 'function') {
+					self.buildOptionsCallback();
+					delete self.buildOptionsCallback;
 				}
+
 			}, // end fn
 
 			attr : function( key, value ) {
@@ -580,8 +613,96 @@
 				return self.DOM.$prnt;
 			},
 
+			multiselectDestroy : function() {
+				self.$().multiselect('destroy');
+			}, // end fn
+
+			multiselectRefresh : function() {
+				if ( !self.options.extData ) { return false; }
+
+				$(this).prop('disabled',true).find('i').addClass('fa-spin');
+
+				self.$().attr('data-tmpVal', self.$().val() || '' )
+						.val('')
+						.multiselect('refresh')
+						//.multiselect('disable');
+
+				self.fn.getExtOptions(true, function() {
+					jUtility.$currentForm()
+						 .find('.btn.btn-refresh').prop('disabled',false)
+							 .find('i').removeClass('fa-spin').end()
+						 .end()
+						.find('[data-tmpVal]').each( function(i,elm) {
+							$(elm).val( $(elm).attr('data-tmpVal') )
+								.multiselect('enable')
+								.multiselect('refresh')
+								.multiselect('rebuild')
+								.removeAttr('data-tmpVal')
+
+								//.data('jInput').fn.multiselect();
+							});
+				});
+			}, // end fn
+
+			/**
+			 * Add button and refresh button for multiselect elements
+			 * @return {[type]} [description]
+			 */
+			multiselectExtraButtons : function() {
+				if ( !self.options.extData ) return self;
+
+				// make an add button, if the model is not the same as the current form
+				if ( self.fn.getModel() !== jApp.opts().model ) {
+
+					var frmDef = {
+						table : jApp.model2table( self.fn.getModel() ),
+						pkey : 'id',
+						tableFriendly : self.fn.getModel(),
+						atts : { method : 'POST'}
+					}, key = 'new' + self.fn.getModel() + 'Frm';
+
+					if ( !jUtility.isFormExists( key ) ) {
+						console.log('building the form: ' + key);
+						jUtility.DOM.buildForm( frmDef, key, 'newOtherFrm', self.fn.getModel() );
+						jUtility.processFormBindings();
+					}
+
+					var $btnAdd = $('<button/>', {
+						type : 'button',
+						class : 'btn btn-primary btn-add',
+						title : 'Add ' + self.fn.getModel()
+					}).html('<i class="fa fa-fw fa-plus"></i>')
+						.off('click.custom').on('click.custom', function() {
+
+							jUtility.actionHelper( 'new' + self.fn.getModel() + 'Frm' );
+
+						});
+
+					self.DOM.$prnt.find('.btn-group .btn-add').remove().end()
+					.find('.btn-group').prepend( $btnAdd );
+				}
+
+				var $btnRefresh = $('<button/>', {
+					type : 'button',
+					class : 'btn btn-primary btn-refresh',
+					title : 'Refresh Options'
+				}).html('<i class="fa fa-fw fa-refresh"></i>')
+					.off('click.custom').on('click.custom', self.fn.multiselectRefresh);
+
+				self.DOM.$prnt.find('.btn-group .btn-refresh').remove().end()
+						.find('.btn-group').prepend( $btnRefresh );
+
+				return self;
+			}, // end fn
+
+			/**
+			 * Multiselect handler
+			 * @return {[type]} [description]
+			 */
 			multiselect : function() {
-				return self.$().multiselect( self.options.bsmsDefaults );
+				self.$().multiselect( self.options.bsmsDefaults ).multiselect('refresh');
+				self.fn.multiselectExtraButtons();
+				return self;
 			}
 		};
 
