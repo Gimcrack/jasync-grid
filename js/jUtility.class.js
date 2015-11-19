@@ -591,7 +591,7 @@
               jUtility.postJSON( {
                 url : jUtility.getCurrentFormAction(),
                 success : jUtility.callback.submitCurrentForm,
-                data : { '_method' : 'delete', 'ids' : $cid }
+                data : { '_method' : 'delete', 'ids[]' : $cid }
               });
             }
           });
@@ -620,6 +620,14 @@
         case 'edit' :
         case 'delete' :
           return jApp.opts().table + '/' + jUtility.getCurrentRowId();
+        break;
+
+        case 'withSelectedDelete' :
+          return jApp.opts().table;
+        break;
+
+        case 'withSelectedUpdate' :
+          return jApp.opts().table + '/massUpdate';
         break;
 
         case 'resetPassword' :
@@ -3725,16 +3733,19 @@
             if (o.fn !== 'delete') {
               $btn_choice.off('click.custom').on('click.custom', function() {
               jApp.aG().withSelectedButton = $(this);
-              jUtility.withSelected( 'custom', jApp.aG().fn[o.fn] ) } );
+              jUtility.withSelected( 'custom', jApp.aG().fn[o.fn] )
+              } );
             } else {
               $btn_choice.off('click.custom').on('click.custom', function() {
               jApp.aG().withSelectedButton = $(this);
-              jUtility.withSelected( 'delete', null ) } );
+              jUtility.withSelected( 'delete', null )
+              } );
             }
           } else if (typeof o.fn === 'function') {
             $btn_choice.off('click.custom').on('click.custom', function() {
             jApp.aG().withSelectedButton = $(this);
-            jUtility.withSelected( 'custom', o.fn ) } );
+            jUtility.withSelected( 'custom', o.fn )
+            } );
           }
         }
 
@@ -3827,9 +3838,10 @@
           }
 
         } else {
-          var signature = 'btn_' + Date.now();
+          // generate a random, unique button signature
+          var signature = 'btn_' + Array(26).join((Math.random().toString(36)+'000000000000000000000').slice(2, 18)).slice(0, 25);
 
-          $btn = $('<button/>', params).attr('data-signature',signature);
+          $btn = $('<button/>', _.omit(params, ['fn']) ).attr('data-signature',signature);
           if (!!params.icon) {
             $btn.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params.icon } ) );
           }
