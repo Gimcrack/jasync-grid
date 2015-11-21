@@ -341,6 +341,7 @@
             id : 'btn_table_menu_heading',
             icon : 'fa-table',
             label : '&nbsp;',
+            'data-order' : 0
           },
 
           /**
@@ -352,7 +353,8 @@
             name : 'btn_refresh_grid',
             class : 'btn btn-success btn-refresh',
             icon : 'fa-refresh',
-            label : 'Refresh'
+            label : 'Refresh',
+            'data-order' : 1
           },
 
           /**
@@ -365,7 +367,8 @@
             id : 'btn_edit',
             icon : 'fa-plus-circle',
             label : 'New',
-            'data-permission' : 'create_enabled'
+            'data-permission' : 'create_enabled',
+            'data-order' : 2
           },
 
           /**
@@ -374,10 +377,11 @@
            */
           headerFilters : {
             type : 'button',
-            class : 'btn btn-success btn-headerFilters',
+            class : 'btn btn-success btn-headerFilters btn-toggle',
             id : 'btn_toggle_header_filters',
             icon : 'fa-filter',
             label : 'Filter Rows',
+            'data-order' : 3
           },
 
           /**
@@ -401,6 +405,7 @@
             id : 'btn_table_status',
             icon : '',
             label : '',
+            'data-order' : 9999
           }
         },
 
@@ -421,6 +426,18 @@
             id : 'btn_row_menu_heading',
             icon : 'fa-check-square-o',
             label : '&nbsp;',
+          },
+
+          /**
+           * Clear Selected Button
+           * @type {Object}
+           */
+          clearSelected : {
+            type : 'button',
+            class : 'btn btn-primary btn-clear',
+            id : 'btn_clear',
+            icon : 'fa-square-o',
+            label : 'Clear Selection',
           },
 
           /**
@@ -1842,6 +1859,13 @@
             }
           },
 
+          ".btn-clear" : {
+            click : function() {
+              jApp.aG().$().find('.chk_cid').prop('checked',false);
+              $('.chk_cid').eq(0).change();
+            }
+          },
+
           ".btn-refresh" : {
             click : function() {
               $(this).addClass('disabled').delay(2000).removeClass('disabled');
@@ -2577,8 +2601,8 @@
       jUtility.DOM.clearMenus();
 
       //jUtility.setupVisibleColumnsMenu();
-      jUtility.DOM.buildBtnMenu( jApp.opts().tableBtns, jApp.aG().DOM.$tblMenu );
-      jUtility.DOM.buildBtnMenu( jApp.opts().rowBtns, jApp.aG().DOM.$rowMenu);
+      jUtility.DOM.buildBtnMenu( jApp.opts().tableBtns, jApp.aG().DOM.$tblMenu, true );
+      jUtility.DOM.buildBtnMenu( jApp.opts().rowBtns, jApp.aG().DOM.$rowMenu, false);
       //jUtility.DOM.buildLnkMenu( jApp.opts().withSelectedBtns, jApp.aG().DOM.$withSelectedMenu );
 
       jUtility.DOM.attachRowMenu();
@@ -3624,7 +3648,7 @@
        * @return {[type]} [description]
        */
       clearMenus : function() {
-        jApp.aG().DOM.$tblMenu.empty();
+        jApp.aG().DOM.$tblMenu.find( '.btn:not(.btn-toggle)' ).remove();
         jApp.aG().DOM.$rowMenu.empty();
         //jApp.aG().DOM.$withSelectedMenu.empty();
       }, // end fn
@@ -3636,16 +3660,18 @@
        * @param  {jQuery} target    DOM target for new buttons/links
        * @param  {string} type 			buttons | links
        */
-      buildMenu : function(collection, target, type) {
-        var o, key, oo, kk;
+      buildMenu : function(collection, target, type, order) {
+        var o, key, oo, kk, btn;
 
         if (typeof type === 'undefined') { type = 'buttons'}
 
         //build menu
         _.each( collection, function(o, key) {
+          if (!!o.ignore) return false;
           if ( jUtility.isButtonEnabled(key) ) {
             if (key === 'custom') {
               _.each( o, function( oo, kk ) {
+                if (!!oo.ignore) return false;
 
                 if ( jUtility.isPermission(oo) ) {
                   jApp.log('Button enabled : ' + kk);
@@ -3655,8 +3681,6 @@
                   oo.disabled = true;
                 }
 
-                //jApp.log(oo)
-
                 if (type == 'buttons') {
                   jUtility.DOM.createMenuButton( oo ).appendTo( target );
                 } else {
@@ -3665,39 +3689,54 @@
               });
             } else {
 
-              if ( jUtility.isPermission(o) ) {
-                jApp.log('Button enabled : ' + key);
-                delete o.disabled;
-              } else {
-                jApp.log('Button disabled : ' + key);
-                o.disabled = true;
-              }
+                if ( jUtility.isPermission(o) ) {
+                  jApp.log('Button enabled : ' + key);
+                  delete o.disabled;
+                } else {
+                  jApp.log('Button disabled : ' + key);
+                  o.disabled = true;
+                }
 
-              //jApp.log(o);
-              if (type == 'buttons') {
-                jUtility.DOM.createMenuButton( o ).clone().appendTo( target );
-              } else {
-                jUtility.DOM.createMenuLink( o ).appendTo( target );
+                //jApp.log(o);
+                if (type == 'buttons') {
+                  jUtility.DOM.createMenuButton( o ).clone().appendTo( target );
+                } else {
+                  jUtility.DOM.createMenuLink( o ).appendTo( target );
+                }
               }
             }
           }
-        });
+        );
+
+        //sort buttons by data-order
+        if (!!order) {
+          var btns = target.find('.btn');
+
+          btns.detach().sort( function(a,b) {
+            var an = +a.getAttribute('data-order'),
+                bn = +b.getAttribute('data-order');
+
+            if (an > bn) return 1;
+            if (an < bn) return -1;
+            return 0;
+          }).appendTo(target);
+        }
       }, //end fn
 
       /**
        * Build a button menu
        * @method function
        */
-      buildBtnMenu : function(collection, target) {
-        jUtility.DOM.buildMenu(collection, target, 'buttons');
+      buildBtnMenu : function(collection, target, order) {
+        jUtility.DOM.buildMenu(collection, target, 'buttons', order);
       }, //end fn
 
       /**
        * Build a link menu
        * @method function
        */
-      buildLnkMenu : function(collection, target) {
-        jUtility.DOM.buildMenu(collection, target, 'links');
+      buildLnkMenu : function(collection, target, order) {
+        jUtility.DOM.buildMenu(collection, target, 'links', order);
       }, // end fn
 
       /**
@@ -3775,10 +3814,13 @@
           // params[0] will contain the dropdown toggle button
           $btn_a = $('<a/>', {
                     type : 'button',
-                    class : 'btn btn-success dropdown-toggle',
+                    class : params[0].class + ' dropdown-toggle',
                     href : '#',
                     'data-toggle' : 'dropdown'
                  });
+
+
+
           // add the icon if applicable
           if (!!params[0].icon) {
             $btn_a.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params[0].icon } ) );
@@ -3803,7 +3845,9 @@
 
             _.each( params, function(o,key) {
               if (key == 0) return false;
-              $btn_choice = $('<a/>', $.extend(true, { 'data-permission' : '' }, o, { href : 'javascript:void(0)' }) );
+              var signature = 'btn_' + Array(26).join((Math.random().toString(36)+'000000000000000000000').slice(2, 18)).slice(0, 25);
+
+              $btn_choice = $('<a/>', $.extend(true, { 'data-permission' : '' }, _.omit(o,'fn') , { href : '#', 'data-signature' : signature }) );
 
               // disable/enable the button
               if (o.disabled === true) {
@@ -3820,12 +3864,13 @@
               if (!!o.label) {
                 $btn_choice.append( $('<span/>').html(o.label) );
               }
+
               // add the click handler
               if (!!o.fn) {
                 if (typeof o.fn === 'string') {
-                  $btn_choice.off('click.custom').on('click.custom', jApp.aG().fn[o.fn] );
+                  $(document).delegate( 'a[data-signature=' + signature + ']', 'click.custom', jApp.aG().fn[o.fn] );
                 } else if (typeof o.fn === 'function') {
-                  $btn_choice.off('click.custom').on('click.custom', o.fn );
+                  $(document).delegate( 'a[data-signature=' + signature + ']', 'click.custom', o.fn );
                 }
               }
 
@@ -3842,6 +3887,11 @@
           var signature = 'btn_' + Array(26).join((Math.random().toString(36)+'000000000000000000000').slice(2, 18)).slice(0, 25);
 
           $btn = $('<button/>', _.omit(params, ['fn']) ).attr('data-signature',signature);
+
+          //add ignore flag for toggle buttons
+          if ( $btn.hasClass('btn-toggle') ) {
+            params.ignore = true;
+          }
           if (!!params.icon) {
             $btn.append( $('<i/>', { 'class' : 'fa fa-fw fa-lg ' + params.icon } ) );
           }
