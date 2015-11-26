@@ -295,13 +295,13 @@
 				});
 
 				//append the label, if applicable
-				if (!!self.DOM.$lbl && self.type !== 'hidden') {
+				if (!!self.DOM.$lbl && self.type !== 'hidden' && oAtts._label != null) {
 					self.DOM.$prnt
 					 .append(  ( !!self.DOM.$lbl.parents().length ) ? self.DOM.$lbl.parents().last() : self.DOM.$lbl );
 				}
 
 				//append the separator, if applicable
-				if (!!self.options.separator && self.type !== 'hidden') {
+				if (!!self.options.separator && self.type !== 'hidden' && oAtts._label != null) {
 					self.DOM.$prnt.append( $br.clone() );
 				}
 
@@ -671,7 +671,7 @@
 						type : 'button',
 						class : 'btn btn-primary btn-add',
 						title : 'Add ' + self.fn.getModel()
-					}).html('<i class="fa fa-fw fa-plus"></i>')
+					}).html('<i class="fa fa-fw fa-plus"></i> ' + self.fn.getModel() + ' <i class="fa fa-fw fa-external-link"></i>')
 						.off('click.custom').on('click.custom', function() {
 
 							jUtility.actionHelper( 'new' + self.fn.getModel() + 'Frm' );
@@ -679,7 +679,7 @@
 						});
 
 					self.DOM.$prnt.find('.btn-group .btn-add').remove().end()
-					.find('.btn-group').prepend( $btnAdd );
+					.find('.btn-group').append( $btnAdd );
 				}
 
 				var $btnRefresh = $('<button/>', {

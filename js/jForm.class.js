@@ -58,6 +58,7 @@
 
 		this.options = {
 			// form setup
+			model : '',
       table : '',
       atts : {						// form html attributes
 				'method' : 'POST',
@@ -111,9 +112,10 @@
 		// set the default buttons, if not present
 		if (!this.options.btns) {
 			this.options.btns = [
-				{ 'type' : 'button', 'class' : 'btn btn-success btn-go', 	'id' : 'btn_go', 'value' : 'Go' },
-				{ 'type' : 'button', 'class' : 'btn btn-warning btn-reset', 'id' : 'btn_reset', 'value' : 'Reset' },
-				{ 'type' : 'button', 'class' : 'btn btn-danger btn-cancel', 'id' : 'btn_cancel', 'value' : 'Cancel' },
+        { type : 'button', class : 'btn btn-primary btn-formMenu',  id : 'btn_form_menu_heading', value : '<i class="fa fa-fw fa-bars"></i>',},
+				{ type : 'button', class : 'btn btn-primary btn-go', 	      id : 'btn_go',                value : '<i class="fa fa-fw fa-floppy-o"></i> Save &amp; Close' },
+				{ type : 'button', class : 'btn btn-primary btn-reset',     id : 'btn_reset',             value : '<i class="fa fa-fw fa-refresh"></i> Reset' },
+				{ type : 'button', class : 'btn btn-primary btn-cancel',    id : 'btn_cancel',            value : '<i class="fa fa-fw fa-times"></i> Cancel' },
 			];
 		}
 
@@ -170,11 +172,19 @@
 
 				// create the form
 				self.DOM.$frm = $('<form/>', oAtts )
-					.wrap(self.options.wrap)
-					.append(  $('<fieldset/>', self.options.fieldset)
-								.append( $('<legend/>').html( self.options.fieldset.legend ) )
-								.append( self.DOM.$Inpts )
-					)
+					.wrap(self.options.wrap);
+
+        // add the fieldset if we are not loading external col params
+        if ( !self.options.loadExternal ) {
+          self.DOM.$frm
+           .append(  $('<fieldset/>', self.options.fieldset)
+					      .append( $('<legend/>').html( self.options.fieldset.legend ) )
+          );
+        }
+
+        // add the inputs to the DOM
+        self.DOM.$frm.append( self.DOM.$Inpts )
+
 
 				// append the form to the parent container
 				self.DOM.$prnt.append( ( !!self.DOM.$frm.parents().length ) ?
@@ -207,26 +217,26 @@
        * @return {[type]} [description]
        */
       getFormData : function() {
-        var data = new FormData;
+        // var data = new FormData;
+        //
+        // _.each( self.$().serializeObject(), function(value,name) {
+        //   data.append(name, value);
+        // });
+        //
+        // self.$().find('input[type=file]').each( function(i, elm) {
+        //     jApp.log('adding files to the FormData object');
+        //
+        //     jApp.log( elm.files );
+        //
+        //     _.each( elm.files, function( o ) {
+        //       jApp.log( 'Adding ' + elm.name );
+        //       jApp.log( o );
+        //
+        //       data.append( elm.name, o );
+        //     });
+        // })
 
-        _.each( self.$().serializeObject(), function(value,name) {
-          data.append(name, value);
-        });
-
-        self.$().find('input[type=file]').each( function(i, elm) {
-            jApp.log('adding files to the FormData object');
-
-            jApp.log( elm.files );
-
-            _.each( elm.files, function( o ) {
-              jApp.log( 'Adding ' + elm.name );
-              jApp.log( o );
-
-              data.append( elm.name, o );
-            });
-        })
-
-        return data;
+        return self.$().serialize();
 
       }, // end fn
 
@@ -261,29 +271,32 @@
 			}, //end fn
 
 			getColParams : function() {
+        jApp.log('A. Getting external colparams');
+        self.options.colParams = jApp.colparams[ self.options.model ];
+        jApp.log(self.options.colParams);
 
-				// use the copy in storage if it exists;
-				if ( !!self.store.get( self.options.table + '_colparams', false ) ) {
-					return self.callback.getColParams( JSON.parse( self.store.get( self.options.table + '_colparams' ) ) );
-				}
+        //process the colParams;
+				self.fn.processExternalColParams();
 
-				var url = '/admin/colparams/json/' + self.options.table;
-
-				$.getJSON( url
-					, {}
-					, self.callback.getColParams
-				).fail( function() {
-					console.error('There was a problem getting the column parameters');
-				}).always( function() {
-          if (!!jApp.debug) {
-            self.store.setTTL( self.options.table + '_colparams', 1000  ); // expire after 1s
-          } else {
-            self.store.setTTL( self.options.table + '_colparams', 1000*60*self.options.ttl  ); // expire after 1 hours
-          }
-					//console.log('Got the colParams');
-				});
+				//add the buttons
+				self.fn.processBtns();
 
 			}, //end fn
+
+      preFilterColParams : function( unfilteredParams ) {
+        return _.filter( unfilteredParams, function(o) {
+          if (o == null) return false;
+          if (typeof o._enabled == 'undefined') return false;
+          if (o._enabled == false) return false;
+          if ( _.indexOf( self.options.disabledElements, o.name ) !== -1 ) return false;
+
+          return _.omit(o, function(value, key, object ) {
+            return ( value == null || value == 'null' || value.toString().toLowerCase() == '__off__' || +value == 0 || value == false  );
+          });
+
+        });
+      }, // end fn
+
 
 			getRowData : function( url, callback ) {
 
@@ -304,6 +317,187 @@
 					//console.log(response);
 				})
 			}, //end fn
+
+      /**
+       * Process externally loaded column parameters
+       * @method function
+       * @return {[type]} [description]
+       */
+      processExternalColParams : function() {
+        _.each( self.options.colParams, function(o, index) {
+          self.fn.processFieldset(o, index);
+        });
+      }, // end fn
+
+      /**
+       * Process fieldset
+       * @method function
+       * @param  {[type]} o     [description]
+       * @param  {[type]} index [description]
+       * @return {[type]}       [description]
+       */
+      processFieldset : function( o, index ) {
+
+        jApp.log('A. Processing the fieldset');
+        jApp.log(o);
+        //create the fieldset
+        var $fs = $('<div/>', {
+          class : o.class
+        });
+
+        // add the label, if necessary
+        if (o.label != null) {
+          $fs.append( $('<legend/>').html(o.label) );
+        }
+
+        // add the helptext if necessary
+        if (o.helpText != null) {
+          $fs.append( $('<div/>', { class : 'alert alert-info' } ).html(o.helpText) )
+        }
+
+        // add the fields
+        _.each( self.fn.preFilterColParams( o.fields ), function(oo) {
+          self.fn.processField(oo, $fs);
+        });
+
+        // add the fieldset to the DOM
+        self.DOM.$Inpts.append( $fs )
+
+      }, // end fn
+
+      /**
+       * Process form field from parameters
+       * @method function
+       * @param  {[type]} params [description]
+       * @param  {[type]} target [description]
+       * @return {[type]}        [description]
+       */
+      processField : function( params, target ) {
+        var inpt;
+
+        jApp.log('B. Processing Field')
+        jApp.log(params);
+
+
+        // check if the type is array
+        if (params.type == 'array') return self.fn.processArrayField(params, target);
+
+
+        inpt = new jInput( { atts : params} );
+        self.oInpts[ params.name ] = inpt;
+        target.append( inpt.fn.handle() );
+        if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
+
+      }, // end fn
+
+      /**
+       * Process array field from parameters
+       * @method function
+       * @param  {[type]} params [description]
+       * @param  {[type]} target [description]
+       * @return {[type]}        [description]
+       */
+      processArrayField : function( params, target ) {
+        var $container = $('<div/>', { class : 'array-field-container alert alert-info' }).data('colparams', params),
+            $table = $('<table/>', { class : 'table' } ),
+            $label = $('<label/>').html( params._label ),
+            $tr, $th, $td, inpt, hidNames = [];
+
+        _.each( params.fields, function(o) {
+          o['data-name'] = o.name;
+          hidNames.push(o.name.replace('[]',''));
+        });
+
+        console.log(hidNames);
+
+        // build up the table
+        $table.append(
+          [
+            // first row - array label
+            $('<tr/>').append([
+              $('<th/>', { colspan : 100 }).append( $label ),
+              $('<th/>').html('&nbsp;')
+            ]),
+
+            // second row - column headers
+            // $('<tr/>').append(
+            //   _.map( params.headers, function( header ) {
+            //       return $('<th/>').html( header );
+            //   })
+            //
+            // ).append(
+            //   [
+            //       $('<th/>'),
+            //   ]
+            // ),
+
+            // third row - inputs
+
+          ]
+        );
+
+        // append the inputs
+        if (params.min != null ) {
+          for ( var ii = +params.min-1; ii >= 0; ii--  ) {
+            $table.append( self.fn.populateFieldRow( params, ii ) );
+          }
+        } else {
+          $table.append( self.fn.populateFieldRow( params ) );
+        }
+
+        // append the table to the container
+        $container.append($table);
+
+        // rename inputs so they all have unique names
+        // $table.find('tr').each( function( i, elm ) {
+        //   $(elm).find(':input').each( function(ii, ee) {
+        //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
+        //   });
+        // });
+
+        // append the container to the target
+        target.append($container);
+
+        var hid = {
+          name : params.name + '_extra_columns',
+          type : 'hidden',
+          value : hidNames.join()
+        }
+
+        var oHid = new jInput({ atts : hid } );
+        self.oInpts[ hid.name ] = oHid;
+        target.append( oHid.fn.handle() );
+
+
+      }, // end fn
+
+      /**
+       * Populate a row with the field inputs
+       * @method function
+       * @param  {[type]} params [description]
+       * @return {[type]}        [description]
+       */
+      populateFieldRow : function(params, index) {
+        var $td,
+            $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
+            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' ),
+            index = (typeof index === 'undefined') ? 0 : index;
+
+        return $('<tr/>').append(
+          _.map( params.fields, function( oo ) {
+              var $td = $('<td/>');
+
+              self.fn.processField( oo, $td );
+
+              return $td;
+          })
+
+        ).append(
+          [
+              $('<td/>').append([$btn_remove, (index === 0) ? $btn_add : null])
+          ]
+        );
+      }, // end fn
 
 			processColParams : function() {
 				self.DOM.$Inpts.find('.fs, .panel-heading').remove();
@@ -401,8 +595,14 @@
 
 			}, //end fn
 
+      /**
+       * Add the form buttons
+       * @method function
+       * @return {[type]} [description]
+       */
 			processBtns : function() {
-				var btnPanel = $('<div/>', { 'class' : 'panel-heading' } ).appendTo( self.DOM.$Inpts )
+				var btnPanel = $('<div/>', { 'class' : 'panel-btns header' } ),
+            btnFooter = $('<div/>', { 'class' : 'panel-btns footer' } );
 
 				_.each( self.options.btns, function( o, key ) {
           if (o.type === 'button') {
@@ -411,8 +611,11 @@
             var inpt = $('<input/>', o);
           }
 
-					btnPanel.append(inpt);
+					btnPanel.append( inpt );
+          btnFooter.append( inpt.clone() );
 				});
+
+        self.DOM.$Inpts.append([btnPanel, btnFooter]);
 			}, //end fn
 
 			submit : function() {
@@ -493,36 +696,6 @@
 				self.DOM.$frm.find('.bsms').multiselect('refresh');
 				$('.panel-overlay').hide();
 			},
-
-			getColParams : function(response) {
-
-				// store the response so it will persist.
-				self.store.set( self.options.table + '_colparams', JSON.stringify(response) );
-
-				var tmp, prop, $frm, $inpt, $lbl, $div, $fs, $br = $('<br/>');
-
-				//console.log('loading colParams')
-				self.options.colParams = $.map( response, function( o ) {
-					if ( !( o && o._enabled && typeof o._enabled !== 'undefined' && Number(o._enabled) && _.indexOf( self.options.disabledElements, o.name ) === -1 ) ) { return false }
-					tmp = {};
-					for(prop in o) {
-						if (o && o[prop] && o[prop].toString().toLowerCase() !== 'null' && o[prop].toString().toLowerCase() !== '__off__' && Number(o[prop]) != 0 ) {
-							tmp[prop] = o[prop];
-						}
-					}
-					return tmp;
-				});
-
-        //console.log(self.options.colParams);
-
-				//process the colParams;
-				self.fn.processColParams();
-
-				//add the buttons
-				self.fn.processBtns();
-
-
-			}, // end fn
 
       // do something with the response
       submit : function(response) {

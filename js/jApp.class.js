@@ -15,7 +15,7 @@
 
 		var self = this;
 
-		this.debug = false;
+		this.debug = true;
 
 		if (this.debug) {
 			console.warn( 'DEBUG MODE ON ')
@@ -45,6 +45,12 @@
 		this.activeGrid = {};
 
 		this.openForms = [];
+
+		/**
+		 * Placeholder for the colparams object
+		 * @type {Object}
+		 */
+		this.colparams = {};
 
 		/**
 		 * Convenience function to access the active grid object
