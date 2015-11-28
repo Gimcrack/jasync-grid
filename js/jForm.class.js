@@ -212,6 +212,48 @@
 			}, // end fn
 
       /**
+       * Is the form field an array input
+       * @param  {[type]} oInpt [description]
+       * @return {[type]}       [description]
+       */
+      isArrayFormField : function( oInpt ) {
+        return ( !!oInpt.arrayField );
+      }, //end fn
+
+      /**
+       * Is the form field a tokens field
+       * @param  {[type]} value [description]
+       * @param  {[type]} oInpt [description]
+       * @return {[type]}       [description]
+       */
+      isTokensFormField : function( oInpt, value ) {
+        return ( typeof value === 'object' && !!_.pluck(value,'name').length && typeof oInpt.$().attr('data-tokens') !== 'undefined'  );
+      }, // end fn
+
+      /**
+       * Populate and array field with the form data
+       * @return {[type]} [description]
+       */
+      populateArrayFormData : function( oInpt, data ) {
+        jUtility.arrayRemoveAllRows( oInpt.$() );
+        jApp.log('------Array Data------' );
+        jApp.log(data);
+
+        // iterate through the data rows and populate the form
+        _.each( data, function( obj ) {
+
+          // create a row in the array field table
+          jApp.log('--------Adding Row To The Array ---------');
+          jApp.log( oInpt.$() )
+          jUtility.arrayAddRowFromContainer( oInpt.$(), obj );
+
+        });
+
+        jUtility.formBootup();
+
+      }, // end fn
+
+      /**
        * Get the form data as a FormData object
        * @method function
        * @return {[type]} [description]
@@ -366,6 +408,44 @@
       }, // end fn
 
       /**
+       * Populate a row with the field inputs
+       * @method function
+       * @param  {[type]} params [description]
+       * @return {[type]}        [description]
+       */
+      populateFieldRow : function(params, index, data) {
+        var $td,
+            $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
+            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' ),
+            index = (typeof index === 'undefined') ? 0 : index;
+
+        jApp.log('---------Array Row Data---------');
+        jApp.log(data);
+
+        return $('<tr/>').append(
+          _.map( params.fields, function( oo ) {
+              var $td = $('<td/>');
+
+              if ( data != null ) {
+                oo.value = ( oo.type === 'select' ) ?
+                   data.id :
+                   data.pivot[ oo.name.replace('[]','') ];
+              } else {
+                delete oo.value;
+              }
+
+              self.fn.processField( oo, $td );
+              return $td;
+          })
+
+        ).append(
+          [
+              $('<td/>').append([$btn_remove, (index === 0) ? $btn_add : null])
+          ]
+        );
+      }, // end fn
+
+      /**
        * Process form field from parameters
        * @method function
        * @param  {[type]} params [description]
@@ -378,125 +458,14 @@
         jApp.log('B. Processing Field')
         jApp.log(params);
 
-
         // check if the type is array
-        if (params.type == 'array') return self.fn.processArrayField(params, target);
-
+        //if (params.type == 'array') return self.fn.processArrayField(params, target);
 
         inpt = new jInput( { atts : params} );
         self.oInpts[ params.name ] = inpt;
         target.append( inpt.fn.handle() );
         if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
 
-      }, // end fn
-
-      /**
-       * Process array field from parameters
-       * @method function
-       * @param  {[type]} params [description]
-       * @param  {[type]} target [description]
-       * @return {[type]}        [description]
-       */
-      processArrayField : function( params, target ) {
-        var $container = $('<div/>', { class : 'array-field-container alert alert-info' }).data('colparams', params),
-            $table = $('<table/>', { class : 'table' } ),
-            $label = $('<label/>').html( params._label ),
-            $tr, $th, $td, inpt, hidNames = [];
-
-        _.each( params.fields, function(o) {
-          o['data-name'] = o.name;
-          hidNames.push(o.name.replace('[]',''));
-        });
-
-        console.log(hidNames);
-
-        // build up the table
-        $table.append(
-          [
-            // first row - array label
-            $('<tr/>').append([
-              $('<th/>', { colspan : 100 }).append( $label ),
-              $('<th/>').html('&nbsp;')
-            ]),
-
-            // second row - column headers
-            // $('<tr/>').append(
-            //   _.map( params.headers, function( header ) {
-            //       return $('<th/>').html( header );
-            //   })
-            //
-            // ).append(
-            //   [
-            //       $('<th/>'),
-            //   ]
-            // ),
-
-            // third row - inputs
-
-          ]
-        );
-
-        // append the inputs
-        if (params.min != null ) {
-          for ( var ii = +params.min-1; ii >= 0; ii--  ) {
-            $table.append( self.fn.populateFieldRow( params, ii ) );
-          }
-        } else {
-          $table.append( self.fn.populateFieldRow( params ) );
-        }
-
-        // append the table to the container
-        $container.append($table);
-
-        // rename inputs so they all have unique names
-        // $table.find('tr').each( function( i, elm ) {
-        //   $(elm).find(':input').each( function(ii, ee) {
-        //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
-        //   });
-        // });
-
-        // append the container to the target
-        target.append($container);
-
-        var hid = {
-          name : params.name + '_extra_columns',
-          type : 'hidden',
-          value : hidNames.join()
-        }
-
-        var oHid = new jInput({ atts : hid } );
-        self.oInpts[ hid.name ] = oHid;
-        target.append( oHid.fn.handle() );
-
-
-      }, // end fn
-
-      /**
-       * Populate a row with the field inputs
-       * @method function
-       * @param  {[type]} params [description]
-       * @return {[type]}        [description]
-       */
-      populateFieldRow : function(params, index) {
-        var $td,
-            $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
-            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' ),
-            index = (typeof index === 'undefined') ? 0 : index;
-
-        return $('<tr/>').append(
-          _.map( params.fields, function( oo ) {
-              var $td = $('<td/>');
-
-              self.fn.processField( oo, $td );
-
-              return $td;
-          })
-
-        ).append(
-          [
-              $('<td/>').append([$btn_remove, (index === 0) ? $btn_add : null])
-          ]
-        );
       }, // end fn
 
 			processColParams : function() {
@@ -679,7 +648,10 @@
 						value = value.split('|');
 					}
 
-          if (typeof value === 'object' && !!_.pluck(value,'name').length && typeof $inpt.attr('data-tokens') !== 'undefined' ) {
+          if ( self.fn.isArrayFormField( oInpt )  ) { // handle an array input
+            jApp.log('-----------------Populating Array Form Field-----------------------')
+            self.fn.populateArrayFormData( oInpt, value );
+          } else if ( self.fn.isTokensFormField( oInpt, value ) ) {
             $inpt.tokenfield('setTokens', _.pluck(value,'name'));
           }
           else if (typeof value === 'object' && !!_.pluck(value,'id').length) {
@@ -696,6 +668,8 @@
 				self.DOM.$frm.find('.bsms').multiselect('refresh');
 				$('.panel-overlay').hide();
 			},
+
+
 
       // do something with the response
       submit : function(response) {

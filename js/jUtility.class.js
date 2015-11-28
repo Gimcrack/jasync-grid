@@ -516,8 +516,27 @@
 
     }, // end fn
 
-    arrayAddRow : function() {
-      var $btn = $(this),
+    /**
+     * Add row to array field from container
+     * @param  {[type]} $container [description]
+     * @return {[type]}            [description]
+     */
+    arrayAddRowFromContainer : function( $container, data ) {
+      var $table = $container.find('.table'),
+          params = $container.data('colparams'),
+          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params, null, data ),
+          $btn_add = $table.find('.btn-array-add').detach();
+
+      $table.find('.btn-array-add,.no-row-filler').remove();
+
+      $table.append($tr_new);
+
+      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
+
+    }, // end fn
+
+    arrayAddRow : function( inpt ) {
+      var $btn = $(inpt || this),
           $container = $(this).closest('.array-field-container'),
           $table = $(this).closest('.table'),
           $tr = $(this).closest('tr'),
@@ -528,7 +547,7 @@
         return jUtility.msg.warning('This field requires at most ' + params.max + ' selections.');
       }
 
-      $table.find('.btn-array-add').remove();
+      $table.find('.btn-array-add,.no-row-filler').remove();
 
       $table.append($tr_new);
 
@@ -542,6 +561,10 @@
       jUtility.formBootup();
     }, // end fn
 
+    /**
+     * Remove a row from an array input table
+     * @return {[type]} [description]
+     */
     arrayRemoveRow : function() {
       var $btn = $(this),
           $container = $(this).closest('.array-field-container'),
@@ -549,6 +572,7 @@
           $tr = $(this).closest('tr'),
           params = $container.data('colparams'),
           $btn_add = $table.find('.btn-array-add').detach();
+
 
       if (params.min != null && +$table.find('tr').length-1 === params.min) {
         $table.find('tr:last-child').find('td:last-child').append($btn_add);
@@ -563,7 +587,24 @@
       //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
       //   });
       // });
+      if  ( !$table.find('tr').length ) {
+        $table.append( '<tr class="no-row-filler"><td></td></tr>' );
+      }
 
+      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
+    }, // end fn
+
+    /**
+     * [function description]
+     * @param  {[type]} $inpt [description]
+     * @return {[type]}       [description]
+     */
+    arrayRemoveAllRows : function($container) {
+      var $table = $container.find('table'),
+          $btn_add = $table.find('.btn-array-add').detach();
+
+      $table.empty();
+      $table.append( '<tr class="no-row-filler"><td></td></tr>' );
       $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
     }, // end fn
 

@@ -178,6 +178,18 @@
 			$lbl  : false,
 		};
 
+		/**
+		 * [oInpts description]
+		 * @type {Array}
+		 */
+		this.oInpts = [];
+
+		/**
+		 * Is this an array field
+		 * @type {Boolean}
+		 */
+		this.arrayField = false;
+
 		this.$ = function() {
 			return self.DOM.$inpt;
 		};
@@ -281,6 +293,10 @@
 						self.DOM.$inpt = $('<button/>', self.fn.getAtts() ).html(oAtts.value).wrap(self.options.wrap );
 					break;
 
+					case 'array' :
+						self.DOM.$inpt = self.fn.processArrayField( oAtts );
+					break;
+
 					default :
 						self.DOM.$inpt = $('<input/>', self.fn.getAtts() ).wrap( self.options.wrap );
 					break;
@@ -322,6 +338,104 @@
 
 
 			}, // end fn
+
+			/**
+       * Process form field from parameters
+       * @method function
+       * @param  {[type]} params [description]
+       * @param  {[type]} target [description]
+       * @return {[type]}        [description]
+       */
+      processField : function( params, target ) {
+        var inpt;
+
+        jApp.log('B. Processing Field')
+        jApp.log(params);
+
+        // check if the type is array
+        //if (params.type == 'array') return self.fn.processArrayField(params, target);
+
+        inpt = new jInput( { atts : params} );
+        self.oInpts[ params.name ] = inpt;
+        target.append( inpt.fn.handle() );
+        if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
+
+      }, // end fn
+
+			/**
+       * Process array field from parameters
+       * @method function
+       * @param  {[type]} params [description]
+       * @param  {[type]} target [description]
+       * @return {[type]}        [description]
+       */
+      processArrayField : function( params ) {
+        var $container = $('<div/>', { class : 'array-field-container alert alert-info' }).data('colparams', params),
+            $table = $('<table/>', { class : 'table' } ),
+            //$label = $('<label/>').html( params._label ),
+            $tr, $th, $td, inpt, hidNames = [];
+
+				// Set the arrayField flag
+				self.arrayField = true;
+
+        _.each( params.fields, function(o) {
+          o['data-name'] = o.name;
+          hidNames.push(o.name.replace('[]',''));
+        });
+
+        console.log(hidNames);
+
+        // append the inputs
+        if (params.min != null ) {
+          for ( var ii = +params.min-1; ii >= 0; ii--  ) {
+            $table.append( self.fn.populateFieldRow( params, ii ) );
+          }
+        } else {
+          $table.append( self.fn.populateFieldRow( params ) );
+        }
+
+        // append the table to the container
+        $container.append($table);
+
+        var hid = {
+          name : params.name + '_extra_columns',
+          type : 'hidden',
+          value : hidNames.join()
+        }
+
+        var oHid = new jInput({ atts : hid } );
+        $container.append( oHid.fn.handle() );
+
+				return $container;
+      }, // end fn
+
+      /**
+       * Populate a row with the field inputs
+       * @method function
+       * @param  {[type]} params [description]
+       * @return {[type]}        [description]
+       */
+      populateFieldRow : function(params, index) {
+        var $td,
+            $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
+            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' ),
+            index = (typeof index === 'undefined') ? 0 : index;
+
+        return $('<tr/>').append(
+          _.map( params.fields, function( oo ) {
+              var $td = $('<td/>');
+							oo['data-pivot'] = _.pluck( 'name', params.fields );
+							oo['data-array-input'] = true;
+              self.fn.processField( oo, $td );
+              return $td;
+          })
+
+        ).append(
+          [
+              $('<td/>').append([$btn_remove, (index === 0) ? $btn_add : null])
+          ]
+        );
+      }, // end fn
 
 			getAtts : function( ) {
 				var gblAtts = self.globalAtts;
