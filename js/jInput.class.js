@@ -1,4 +1,3 @@
-/* jshint ignore:start */
 /**  **  **  **  **  **  **  **  **  **  **  **  **  **  **  **  **
  *
  *  jInput.class.js - Custom Form Input JS class
@@ -18,8 +17,7 @@
  *
  *   4-30-15	Added the feedback icon container and help block container
  */
-// javascript closure
-/* jshint ignore:end */
+
 ;(function( window, $) {
 
 	'use strict';
@@ -33,6 +31,7 @@
 		var self = this;
 		this.store = $.jStorage;
 		this.readonly = false;
+		this.form = options.form || options.atts.form || {};
 
 		/**  **  **  **  **  **  **  **  **  **
 		 *   DEFAULT OPTIONS
@@ -90,8 +89,6 @@
 
 		// alias to attributes object
 		var oAtts = self.options.atts;
-
-		oAtts.name = (Number(oAtts.multiple) || oAtts.multiple === true || oAtts.multiple === 'multiple') ? oAtts.name.replace('[]','') + '[]' : oAtts.name;
 
 		/**  **  **  **  **  **  **  **  **  **
  		 *   ALLOWABLE ATTRIBUTES BY INPUT TYPE
@@ -199,10 +196,12 @@
  		 **  **  **  **  **  **  **  **  **  **/
 		this.fn = {
 
-
 			_init : function() {
 				var $br = (!!self.options.separator) ? $('<br/>') : false;
 				self.type = oAtts.type;
+
+				// get the input name
+				self.fn.resolveInputName();
 
 				//set the parent element
 				self.DOM.$prnt = self.options.parent;
@@ -213,7 +212,6 @@
 								  .html( oAtts._label )
 								  .wrap( self.options.wrap );
 				}
-
 
 				//create the input element
 				switch ( self.type ) {
@@ -249,7 +247,6 @@
 									oAtts._optionssource.split('|');
 							}
 						}
-
 
 						// shift off the first elements of the labels and options arrays and create the first radio element
 						var firstOpt = (typeof oAtts._options[0] !== 'undefined') ? oAtts._options[0] : false;
@@ -336,8 +333,25 @@
 				//place in DOM
 				//self.DOM.$prnt.appendTo('body');
 
-
 			}, // end fn
+
+			/**
+			 * Resolve the input name
+			 * @return {[type]} [description]
+			 */
+			resolveInputName : function() {
+				if ( self.fn.isMultiple() ) {
+					oAtts.name = oAtts.name.replace('[]','') + '[]';
+				}
+			}, // end fn
+
+			/**
+			 * Does the input accept multiple values
+			 * @return {[type]} [description]
+			 */
+			isMultiple : function() {
+				return ( oAtts.multiple != null && ( !!oAtts.multiple || oAtts.multiple === 'multiple' ));
+			},
 
 			/**
        * Process form field from parameters
@@ -355,7 +369,7 @@
         // check if the type is array
         //if (params.type == 'array') return self.fn.processArrayField(params, target);
 
-        inpt = new jInput( { atts : params} );
+        inpt = new jInput( { atts : params, form: self.form } );
         self.oInpts[ params.name ] = inpt;
         target.append( inpt.fn.handle() );
         if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
@@ -372,29 +386,53 @@
       processArrayField : function( params ) {
         var $container = $('<div/>', { class : 'array-field-container alert alert-info' }).data('colparams', params),
             $table = $('<table/>', { class : 'table' } ),
-            //$label = $('<label/>').html( params._label ),
+            inpt,
             $tr, $th, $td, inpt, hidNames = [];
 
 				// Set the arrayField flag
 				self.arrayField = true;
 
+				// Grab the first input and put it in the first row
+				inpt = new jInput( { atts : params.fields.shift() } );
+				self.oInpts.push(inpt);
+
+				inpt.fn.handle().off('change.arrayCustom').on('change.arrayCustom', function() {
+					var selected = $(this).find(':selected').map( function(i, elm) { return $(elm).html() } ).get();
+
+					// remove non-matching rows
+					$table.find('[data-array-placeholder]').filter( function(i, elm ) {
+						return ( _.indexOf( selected, $(elm).val() ) === -1 );
+					}).closest('tr').remove();
+
+					// add the extra fields for each of the selected values
+					_.each( selected, function( val ) {
+						// make sure the row hasn't been made yet
+						if ( $table.find('[data-array-placeholder]').filter( function(i, elm ) {
+							return $(elm).val() === val;
+						}).length ) return false;
+
+						var fields = _.clone(params.fields);
+
+						fields.unshift({
+							name : params.name,
+							disabled : true,
+							'data-array-placeholder' : true,
+							value : val
+						});
+
+						$table.append( self.fn.populateFieldRow( fields ) );
+					})
+				});
+
+				$container.append( inpt.fn.handle() );
+
         _.each( params.fields, function(o) {
-          o['data-name'] = o.name;
-          hidNames.push(o.name.replace('[]',''));
+					if (o.name != null) {
+						o['data-name'] = o.name;
+						hidNames.push(o.name.replace('[]',''));
+					}
         });
 
-        console.log(hidNames);
-
-        // append the inputs
-        if (params.min != null ) {
-          for ( var ii = +params.min-1; ii >= 0; ii--  ) {
-            $table.append( self.fn.populateFieldRow( params, ii ) );
-          }
-        } else {
-          $table.append( self.fn.populateFieldRow( params ) );
-        }
-
-        // append the table to the container
         $container.append($table);
 
         var hid = {
@@ -415,26 +453,19 @@
        * @param  {[type]} params [description]
        * @return {[type]}        [description]
        */
-      populateFieldRow : function(params, index) {
-        var $td,
-            $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
-            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' ),
-            index = (typeof index === 'undefined') ? 0 : index;
+      populateFieldRow : function(fields) {
+        var $td;
 
         return $('<tr/>').append(
-          _.map( params.fields, function( oo ) {
+          _.map( fields, function( oo ) {
               var $td = $('<td/>');
-							oo['data-pivot'] = _.pluck( 'name', params.fields );
+							oo['data-pivot'] = _.pluck( 'name', fields );
 							oo['data-array-input'] = true;
               self.fn.processField( oo, $td );
               return $td;
           })
 
-        ).append(
-          [
-              $('<td/>').append([$btn_remove, (index === 0) ? $btn_add : null])
-          ]
-        );
+        )
       }, // end fn
 
 			getAtts : function( ) {
@@ -768,27 +799,31 @@
 				// make an add button, if the model is not the same as the current form
 				if ( self.fn.getModel() !== jApp.opts().model ) {
 
-					var frmDef = {
-						table : jApp.model2table( self.fn.getModel() ),
+					jApp.log('----------------------INPUT-------------------');
+					jApp.log(self);
+
+					var model = self.fn.getModel(), frmDef = {
+						table : jApp.model2table( model ),
+						model : model,
 						pkey : 'id',
-						tableFriendly : self.fn.getModel(),
+						tableFriendly : model,
 						atts : { method : 'POST'}
-					}, key = 'new' + self.fn.getModel() + 'Frm';
+					}, key = 'new' + model + 'Frm';
 
 					if ( !jUtility.isFormExists( key ) ) {
 						console.log('building the form: ' + key);
-						jUtility.DOM.buildForm( frmDef, key, 'newOtherFrm', self.fn.getModel() );
+						jUtility.DOM.buildForm( frmDef, key, 'newOtherFrm', model );
 						jUtility.processFormBindings();
 					}
 
 					var $btnAdd = $('<button/>', {
 						type : 'button',
 						class : 'btn btn-primary btn-add',
-						title : 'Add ' + self.fn.getModel()
-					}).html('<i class="fa fa-fw fa-plus"></i> ' + self.fn.getModel() + ' <i class="fa fa-fw fa-external-link"></i>')
+						title : 'Add ' + model
+					}).html('<i class="fa fa-fw fa-plus"></i> ' + model + ' <i class="fa fa-fw fa-external-link"></i>')
 						.off('click.custom').on('click.custom', function() {
 
-							jUtility.actionHelper( 'new' + self.fn.getModel() + 'Frm' );
+							jUtility.actionHelper( 'new' + model + 'Frm' );
 
 						});
 

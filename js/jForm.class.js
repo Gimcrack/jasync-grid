@@ -194,7 +194,8 @@
 
 				// create and append the hidden elements
 				_.each( self.options.hiddenElms, function( o, key )  {
-					inpt = new jInput( o );
+          o.form = self;
+          inpt = new jInput( o );
 					self.oInpts[ o.atts.name ] = inpt ;
 					self.DOM.$Inpts.append( inpt.fn.handle() );
 					if (o.atts.readonly === 'readonly') {
@@ -249,6 +250,7 @@
 
         });
 
+        // boot the form
         jUtility.formBootup();
 
       }, // end fn
@@ -282,20 +284,38 @@
 
       }, // end fn
 
+      /**
+       * Get the DOM handle of the form
+       * @return {[type]} [description]
+       */
 			handle : function() {
 				return self.DOM.$prnt;
 			}, // end fn
 
+      /**
+       * Get the form fieldset
+       * @return {[type]} [description]
+       */
 			$fieldset : function() {
 				return self.DOM.$frm.find('fieldset');
 			}, //end fn
 
+      /**
+       * Get form input by id
+       * @param  {[type]} id [description]
+       * @return {[type]}    [description]
+       */
 			getElmById : function(id) {
 				id = id.replace('#','');
 
 				return self.oInpts[id];
 			},
 
+      /**
+       * Render the form html
+       * @param  {[type]} params [description]
+       * @return {[type]}        [description]
+       */
 			render : function(params) {
 				var tmp = self.DOM.$prnt.prop('outerHTML');
 
@@ -308,10 +328,19 @@
 				return tmp;
 			}, //end fn
 
+      /**
+       * Add inputs to the form
+       * @param  {[type]} arr [description]
+       * @return {[type]}     [description]
+       */
 			addElements : function(arr) {
 				self.options.colParamsAdd = _.union( self.options.colParamsAdd, arr );
 			}, //end fn
 
+      /**
+       * Get external column parameters - deprecated
+       * @return {[type]} [description]
+       */
 			getColParams : function() {
         jApp.log('A. Getting external colparams');
         self.options.colParams = jApp.colparams[ self.options.model ];
@@ -325,6 +354,11 @@
 
 			}, //end fn
 
+      /**
+       * Pre-Filter column parameters to remove invalid entries
+       * @param  {[type]} unfilteredParams [description]
+       * @return {[type]}                  [description]
+       */
       preFilterColParams : function( unfilteredParams ) {
         return _.filter( unfilteredParams, function(o) {
           if (o == null) return false;
@@ -339,7 +373,12 @@
         });
       }, // end fn
 
-
+      /**
+       * Get row data for the form
+       * @param  {[type]}   url      [description]
+       * @param  {Function} callback [description]
+       * @return {[type]}            [description]
+       */
 			getRowData : function( url, callback ) {
 
         $('.panel-overlay').show();
@@ -423,18 +462,13 @@
         jApp.log(data);
 
         return $('<tr/>').append(
-          _.map( params.fields, function( oo ) {
-              var $td = $('<td/>');
+          _.map( params.fields, function( oo, ii ) {
+              var $td = $('<td/>'),
+                  value = ( ii == 0 ) ?
+                    data.id :
+                    data.pivot[ oo.name.replace('[]','') ] || null  ;
 
-              if ( data != null ) {
-                oo.value = ( oo.type === 'select' ) ?
-                   data.id :
-                   data.pivot[ oo.name.replace('[]','') ];
-              } else {
-                delete oo.value;
-              }
-
-              self.fn.processField( oo, $td );
+              self.fn.processField( oo, $td, value );
               return $td;
           })
 
@@ -452,7 +486,7 @@
        * @param  {[type]} target [description]
        * @return {[type]}        [description]
        */
-      processField : function( params, target ) {
+      processField : function( params, target, value ) {
         var inpt;
 
         jApp.log('B. Processing Field')
@@ -461,13 +495,18 @@
         // check if the type is array
         //if (params.type == 'array') return self.fn.processArrayField(params, target);
 
-        inpt = new jInput( { atts : params} );
+        inpt = new jInput( { atts : params, form : self} );
         self.oInpts[ params.name ] = inpt;
+        inpt.fn.val( value );
         target.append( inpt.fn.handle() );
         if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
 
       }, // end fn
 
+      /**
+       * Process externally loaded column parameters - deprecated
+       * @return {[type]} [description]
+       */
 			processColParams : function() {
 				self.DOM.$Inpts.find('.fs, .panel-heading').remove();
 
@@ -486,7 +525,7 @@
 					if (!!o && !!o.name && _.indexOf( self.options.disabledElements, o.name ) === -1 ) {
 
 						eq = ( !!o['data-fieldset'] ) ? Number( o['data-fieldset'] )-1 : 0;
-						inpt = new jInput( { atts : o } );
+            inpt = new jInput( { atts : o, form : self } );
 						self.oInpts[ o.name ] = inpt ;
 						self.DOM.$Inpts.find('.fs').eq( (self.options.layout === 'standard') ? eq : 0 ).append( inpt.fn.handle() );
 						if (o.readonly === 'readonly') {
@@ -502,7 +541,7 @@
 					if (!!o && !!o.name && _.indexOf( self.options.disabledElements, o.name ) === -1 ) {
 
 						eq = ( !!o['data-fieldset'] ) ? Number( o['data-fieldset'] )-1 : 0;
-						inpt = new jInput( { atts : o } );
+            inpt = new jInput( { atts : o, form : self } );
 						self.oInpts[ o.name ] = inpt ;
 						self.DOM.$Inpts.find('.fs').eq( (self.options.layout === 'standard') ? eq : 0 ).append( inpt.fn.handle() );
 						if (o.readonly === 'readonly') {
@@ -587,6 +626,10 @@
         self.DOM.$Inpts.append([btnPanel, btnFooter]);
 			}, //end fn
 
+      /**
+       * Submit the form
+       * @return {[type]} [description]
+       */
 			submit : function() {
 
         self.fn.toggleSubmitted();
@@ -601,6 +644,10 @@
 
       }, //end fn
 
+      /**
+       * Toggle the submited flag of the form
+       * @return {[type]} [description]
+       */
       toggleSubmitted : function() {
         if (!self.submitted) {
           self.submitted = true;
@@ -618,6 +665,11 @@
 
 		this.callback = {
 
+      /**
+       * Get row data callback
+       * @param  {[type]} response [description]
+       * @return {[type]}          [description]
+       */
 			getRowData : function(response) {
         var oInpt, $inpt;
 
@@ -669,15 +721,11 @@
 				$('.panel-overlay').hide();
 			},
 
-
-
       // do something with the response
       submit : function(response) {
         console.log(response);
       }
 		}; // end fns
-
-
 
 		// initialize
 		this.fn._init();

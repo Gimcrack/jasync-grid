@@ -15,7 +15,7 @@
 
 		var self = this;
 
-		this.debug = true;
+		this.debug = false;
 
 		if (this.debug) {
 			console.warn( 'DEBUG MODE ON ')
@@ -101,6 +101,12 @@
 		this.log = function(msg,force) {
 			if (!!self.debug || !!self.force) {
 				console.log(msg);
+			}
+		}
+
+		this.warn = function(msg,force) {
+			if (!!self.debug || !!self.force) {
+				console.warn(msg);
 			}
 		}
 
