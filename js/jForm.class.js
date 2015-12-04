@@ -30,7 +30,7 @@
 };
 
 // javascript closure
-;(function( window, $, jQuery ) {
+;(function( window, $ ) {
 
 	'use strict';
 
@@ -128,7 +128,7 @@
 		if (!this.options.hiddenElms) {
 			// setup the hidden elements
 			this.options.hiddenElms = [
-				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : '_method', 'value' : options.atts.method, 'data-static' : true } },
+				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : '_method', 'value' : oAtts.method || 'POST', 'data-static' : true } },
 			];
 		}
 
@@ -161,14 +161,14 @@
 		// create shortcut to the form
 		this.$ = function() {
 			return this.DOM.$frm;
-		}
+		};
 
 		/**  **  **  **  **  **  **  **  **  **
  		 *   FUNCTION DEFS
  		 **  **  **  **  **  **  **  **  **  **/
 		this.fn = {
 			_init : function() {
-				var inpt, hdn;
+				var inpt;
 
 				// create the form
 				self.DOM.$frm = $('<form/>', oAtts )
@@ -183,7 +183,7 @@
         }
 
         // add the inputs to the DOM
-        self.DOM.$frm.append( self.DOM.$Inpts )
+        self.DOM.$frm.append( self.DOM.$Inpts );
 
 
 				// append the form to the parent container
@@ -193,7 +193,7 @@
 				);
 
 				// create and append the hidden elements
-				_.each( self.options.hiddenElms, function( o, key )  {
+				_.each( self.options.hiddenElms, function( o )  {
           o.form = self;
           inpt = new jInput( o );
 					self.oInpts[ o.atts.name ] = inpt ;
@@ -229,30 +229,6 @@
        */
       isTokensFormField : function( oInpt, value ) {
         return ( typeof value === 'object' && !!_.pluck(value,'name').length && typeof oInpt.$().attr('data-tokens') !== 'undefined'  );
-      }, // end fn
-
-      /**
-       * Populate and array field with the form data
-       * @return {[type]} [description]
-       */
-      populateArrayFormData : function( oInpt, data ) {
-        jUtility.arrayRemoveAllRows( oInpt.$() );
-        jApp.log('------Array Data------' );
-        jApp.log(data);
-
-        // iterate through the data rows and populate the form
-        _.each( data, function( obj ) {
-
-          // create a row in the array field table
-          jApp.log('--------Adding Row To The Array ---------');
-          jApp.log( oInpt.$() )
-          jUtility.arrayAddRowFromContainer( oInpt.$(), obj );
-
-        });
-
-        // boot the form
-        jUtility.formBootup();
-
       }, // end fn
 
       /**
@@ -317,13 +293,13 @@
        * @return {[type]}        [description]
        */
 			render : function(params) {
-				var tmp = self.DOM.$prnt.prop('outerHTML');
+				var tmp = self.DOM.$prnt.prop('outerHTML'), ptrn;
 
 				if (!!params && !$.isEmptyObject(params)) {
-					for (key in params ) {
-						ptrn = new RegExp( '\{@' + key + '\}', 'gi' );
-						tmp = tmp.replace(ptrn, params[key] );
-					}
+          _.each( params, function( o, key ) {
+            ptrn = new RegExp( '\{@' + key + '\}', 'gi' );
+            tmp = tmp.replace(ptrn, o);
+          });
 				}
 				return tmp;
 			}, //end fn
@@ -361,13 +337,29 @@
        */
       preFilterColParams : function( unfilteredParams ) {
         return _.filter( unfilteredParams, function(o) {
-          if (o == null) return false;
-          if (typeof o._enabled == 'undefined') return false;
-          if (o._enabled == false) return false;
-          if ( _.indexOf( self.options.disabledElements, o.name ) !== -1 ) return false;
+          if (!o) {
+            jApp.warn(o);
+            jApp.warn('Fails because is null');
+            return false;
+          }
+          // if (typeof o._enabled === 'undefined') {
+          //   jApp.warn(o)
+          //   jApp.warn('Fails because ')
+          //   return false;
+          // };
+          if (!o._enabled) {
+            jApp.warn(o);
+            jApp.warn('Fails because is not enabled');
+            return false;
+          }
+          if ( _.indexOf( self.options.disabledElements, o.name ) !== -1 ) {
+            jApp.warn(o);
+            jApp.warn('Fails because is on the disabled elements list');
+            return false;
+          }
 
-          return _.omit(o, function(value, key, object ) {
-            return ( value == null || value == 'null' || value.toString().toLowerCase() == '__off__' || +value == 0 || value == false  );
+          return _.omit(o, function(value) {
+            return ( !value || value === 'null' || value.toString().toLowerCase() === '__off__' );
           });
 
         });
@@ -383,20 +375,15 @@
 
         $('.panel-overlay').show();
 
-				$.getJSON( url
-					, {}
-					, self.callback.getRowData
-				).fail( function() {
-					console.error('There was a problem getting the row data');
+				$.getJSON( url, {}, self.callback.getRowData)
+          .fail( function() { console.error('There was a problem getting the row data');
 				}).always( function(response) {
 					if (typeof callback !== 'undefined' && typeof callback === 'function' ) {
 						callback(response);
 					} else if ( typeof callback !== 'undefined' && typeof callback === 'string' && typeof self.fn[callback] !== 'undefined' && typeof self.fn[callback] === 'function' ) {
 						self.fn[callback](response);
 					}
-					//console.log('Got the row data');
-					//console.log(response);
-				})
+				});
 			}, //end fn
 
       /**
@@ -417,7 +404,7 @@
        * @param  {[type]} index [description]
        * @return {[type]}       [description]
        */
-      processFieldset : function( o, index ) {
+      processFieldset : function( o ) {
 
         jApp.log('A. Processing the fieldset');
         jApp.log(o);
@@ -427,22 +414,29 @@
         });
 
         // add the label, if necessary
-        if (o.label != null) {
+        jApp.log('A.1 Adding the label');
+        if (!!o.label) {
           $fs.append( $('<legend/>').html(o.label) );
         }
 
         // add the helptext if necessary
-        if (o.helpText != null) {
-          $fs.append( $('<div/>', { class : 'alert alert-info' } ).html(o.helpText) )
+        jApp.log('A.2 Adding the helptext');
+        if (!!o.helpText) {
+          $fs.append( $('<div/>', { class : 'alert alert-info' } ).html(o.helpText) );
         }
 
         // add the fields
-        _.each( self.fn.preFilterColParams( o.fields ), function(oo) {
+        jApp.log('A.3 Adding the fields');
+        _.each( self.fn.preFilterColParams( o.fields ), function(oo, kk) {
+          jApp.log('A.3.' + kk + ' Adding Field');
+          jApp.log(oo);
           self.fn.processField(oo, $fs);
         });
 
+
         // add the fieldset to the DOM
-        self.DOM.$Inpts.append( $fs )
+        jApp.log('A.4 Adding to the DOM');
+        self.DOM.$Inpts.append( $fs );
 
       }, // end fn
 
@@ -453,10 +447,8 @@
        * @return {[type]}        [description]
        */
       populateFieldRow : function(params, index, data) {
-        var $td,
-            $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
-            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' ),
-            index = (typeof index === 'undefined') ? 0 : index;
+        var $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
+            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' );
 
         jApp.log('---------Array Row Data---------');
         jApp.log(data);
@@ -464,9 +456,16 @@
         return $('<tr/>').append(
           _.map( params.fields, function( oo, ii ) {
               var $td = $('<td/>'),
-                  value = ( ii == 0 ) ?
-                    data.id :
-                    data.pivot[ oo.name.replace('[]','') ] || null  ;
+                  value = null;
+
+              oo['data-pivot'] = _.pluck( 'name', params.fields );
+							oo['data-array-input'] = true;
+
+              if ( !!data && ( !!data.id || !!data.pivot )  ) {
+                value = ( ii === 0 ) ?
+                  data.id :
+                  data.pivot[ oo.name.replace('[]','') ] || null;
+              }
 
               self.fn.processField( oo, $td, value );
               return $td;
@@ -474,7 +473,7 @@
 
         ).append(
           [
-              $('<td/>').append([$btn_remove, (index === 0) ? $btn_add : null])
+              $('<td/>').append([$btn_remove, (+index || 0 === 0) ? $btn_add : null])
           ]
         );
       }, // end fn
@@ -489,7 +488,7 @@
       processField : function( params, target, value ) {
         var inpt;
 
-        jApp.log('B. Processing Field')
+        jApp.log('B. Processing Field');
         jApp.log(params);
 
         // check if the type is array
@@ -512,11 +511,11 @@
 
 				if (self.options.layout === 'standard') {
 
-					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs col-lg-4' }) )
-					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs col-lg-4' }) )
-					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs col-lg-4' }) )
+					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs col-lg-4' }) );
+					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs col-lg-4' }) );
+					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs col-lg-4' }) );
 				} else {
-					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs' }) )
+					self.DOM.$Inpts.append( $('<div/>', { 'class' : 'fs' }) );
 				}
 
 				// process static or dynamically loaded colParams
@@ -701,8 +700,8 @@
 					}
 
           if ( self.fn.isArrayFormField( oInpt )  ) { // handle an array input
-            jApp.log('-----------------Populating Array Form Field-----------------------')
-            self.fn.populateArrayFormData( oInpt, value );
+            jApp.log('-----------------Populating Array Form Field-----------------------');
+            oInpt.fn.populateArrayFormData( oInpt, value );
           } else if ( self.fn.isTokensFormField( oInpt, value ) ) {
             $inpt.tokenfield('setTokens', _.pluck(value,'name'));
           }

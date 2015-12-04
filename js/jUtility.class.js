@@ -14,7 +14,7 @@
      Array.prototype.last = function(){
          return this[this.length - 1];
      };
- };
+ }
 
 ;(function(window, $, jApp) {
 
@@ -27,8 +27,9 @@
           if ($(this).prop('disabled')) return false;
 
           if ( !!$(this).attr('data-tokens') ) {
-            jApp.log($(this).tokenInput("get"));
-            return o[this.name] = _.pluck( $(this).tokenInput("get"), 'name');
+            jApp.log($(this).tokenInput('get'));
+            o[this.name] = _.pluck( $(this).tokenInput('get'), 'name');
+            return o;
           }
 
           if (o[this.name]) {
@@ -46,6 +47,36 @@
   var jUtility = {
 
     /**
+     * Temp storage object
+     * @type {Object}
+     */
+    temp : {},
+
+    /**
+     * Get the jInput object
+     * @method function
+     * @return {[type]} [description]
+     */
+    jInput : function() {
+      if ( !this.temp.jInput ) {
+        this.temp.jInput = new jInput({});
+      }
+      return this.temp.jInput;
+    }, // end fn
+
+    /**
+     * Get the jForm object
+     * @method function
+     * @return {[type]} [description]
+     */
+    jForm : function() {
+      if (!this.temp.jForm) {
+        this.temp.jForm = new jForm({});
+      }
+      return this.temp.jForm;
+    }, // end fn
+
+    /**
      * Set AJAX Defaults
      * @method function
      * @return {[type]} [description]
@@ -56,7 +87,7 @@
             'X-XSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         }
       });
-      jApp.log('4.1 Ajax Defaults Set')
+      jApp.log('4.1 Ajax Defaults Set');
     }, // end fn
 
     /**
@@ -517,112 +548,20 @@
     }, // end fn
 
     /**
-     * Add row to array field from container
-     * @param  {[type]} $container [description]
-     * @return {[type]}            [description]
-     */
-    arrayAddRowFromContainer : function( $container, data ) {
-      var $table = $container.find('.table'),
-          params = $container.data('colparams'),
-          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params, null, data ),
-          $btn_add = $table.find('.btn-array-add').detach();
-
-      $table.find('.btn-array-add,.no-row-filler').remove();
-
-      $table.append($tr_new);
-
-      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-
-    }, // end fn
-
-    arrayAddRow : function( inpt ) {
-      var $btn = $(inpt || this),
-          $container = $(this).closest('.array-field-container'),
-          $table = $(this).closest('.table'),
-          $tr = $(this).closest('tr'),
-          params = $container.data('colparams'),
-          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params );
-
-      if (params.max != null && +$table.find('tr').length-1 === params.max) {
-        return jUtility.msg.warning('This field requires at most ' + params.max + ' selections.');
-      }
-
-      $table.find('.btn-array-add,.no-row-filler').remove();
-
-      $table.append($tr_new);
-
-      // rename inputs so they all have unique names
-      // $table.find('tr').each( function( i, elm ) {
-      //   $(elm).find(':input').each( function(ii, ee) {
-      //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
-      //   });
-      // });
-
-      jUtility.formBootup();
-    }, // end fn
-
-    /**
-     * Remove a row from an array input table
-     * @return {[type]} [description]
-     */
-    arrayRemoveRow : function() {
-      var $btn = $(this),
-          $container = $(this).closest('.array-field-container'),
-          $table = $(this).closest('.table'),
-          $tr = $(this).closest('tr'),
-          params = $container.data('colparams'),
-          $btn_add = $table.find('.btn-array-add').detach();
-
-
-      if (params.min != null && +$table.find('tr').length-1 === params.min) {
-        $table.find('tr:last-child').find('td:last-child').append($btn_add);
-        return jUtility.msg.warning('This field requires at least ' + params.min + ' selections.');
-      }
-
-      $tr.remove();
-
-      // rename inputs so they all have unique names
-      // $table.find('tr').each( function( i, elm ) {
-      //   $(elm).find(':input').each( function(ii, ee) {
-      //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
-      //   });
-      // });
-      if  ( !$table.find('tr').length ) {
-        $table.append( '<tr class="no-row-filler"><td></td></tr>' );
-      }
-
-      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-    }, // end fn
-
-    /**
-     * [function description]
-     * @param  {[type]} $inpt [description]
-     * @return {[type]}       [description]
-     */
-    arrayRemoveAllRows : function($container) {
-      var $table = $container.find('table'),
-          $btn_add = $table.find('.btn-array-add').detach();
-
-      $table.empty();
-      $table.append( '<tr class="no-row-filler"><td></td></tr>' );
-      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-    }, // end fn
-
-    /**
      * Get users permissions
      * @method function
      * @return {[type]} [description]
      */
     getPermissions : function( model ) {
-      model = (model != null) ? model : jApp.opts().model;
+      model = model || jApp.opts().model;
 
       var storeKey = model + '_permissions';
 
       if (!!$.jStorage.get(storeKey,false)) {
-        return jUtility.callback.getPermissions( $.jStorage.get(storeKey)  )
+        return jUtility.callback.getPermissions( $.jStorage.get(storeKey)  );
       }
 
-      jApp.log('0.1 - Getting Permissions from server')
+      jApp.log('0.1 - Getting Permissions from server');
 
       var requestOptions = {
         url : '/getPermissions/' + model,
@@ -633,7 +572,7 @@
           jUtility.callback.getPermissions(response);
           jUtility.buildMenus();
         }
-      }
+      };
 
       jApp.log(requestOptions.url);
 
@@ -647,7 +586,7 @@
      * @return {[type]}        [description]
      */
     isPermission : function( params ) {
-      if (params['data-permission'] == null) return true;
+      if (!params['data-permission']) return true;
       return !!jApp.activeGrid.permissions[ params['data-permission'] ];
     }, // end fn
 
@@ -656,11 +595,11 @@
      * @return {[type]} [description]
      */
     calculateGridPosition : function() {
-      if ( typeof $('.colHeaders').offset() === 'undefined' ) {return false};
+      if ( typeof $('.colHeaders').offset() === 'undefined' ) {return false;}
       return {
         marginTop : +$('.colHeaders').height()+$('.colHeaders').offset().top,
         height : +$(window).height()-95-$('.colHeaders').offset().top
-      }
+      };
     }, // end fn
 
     /**  **  **  **  **  **  **  **  **  **
@@ -673,10 +612,11 @@
      *  that are performed.
      **  **  **  **  **  **  **  **  **  **/
     withSelected : function(action, callback) {
-      console.log('clicked');
-      ( !!jUtility.numInvisibleItemsChecked() ) ?
-        jUtility.confirmInvisibleCheckedItems(action,callback) :
-        jUtility.withSelectedAction(action,callback, true);
+      if ( !!jUtility.numInvisibleItemsChecked() ) {
+        return jUtility.confirmInvisibleCheckedItems(action,callback);
+      }
+
+      return jUtility.withSelectedAction(action,callback, true);
     }, // end fn
 
     /**
@@ -689,13 +629,13 @@
     withSelectedAction : function(action, callback, includeHidden) {
       var $cid = jUtility.getCheckedItems(includeHidden);
 
-      if (!$cid.length) { return jUtility.msg.warning('Nothing selected.') }
+      if (!$cid.length) { return jUtility.msg.warning('Nothing selected.'); }
 
       switch(action) {
         // DELETE SELECTED
         case 'delete' :
           jApp.aG().action = 'withSelectedDelete';
-          bootbox.confirm("Are you sure you want to delete " + $cid.length + " items?", function(response) {
+          bootbox.confirm('Are you sure you want to delete ' + $cid.length + ' items?', function(response) {
             if (!!response) {
               jUtility.postJSON( {
                 url : jUtility.getCurrentFormAction(),
@@ -710,7 +650,6 @@
           return (typeof callback === 'function') ?
             callback( $cid ) :
             console.warn( 'callback is not a valid function');
-        break;
 
         default :
           console.warn( action + ' is not a valid withSelected action');
@@ -729,23 +668,18 @@
         case 'edit' :
         case 'delete' :
           return jApp.opts().table + '/' + jUtility.getCurrentRowId();
-        break;
 
         case 'withSelectedDelete' :
           return jApp.opts().table;
-        break;
 
         case 'withSelectedUpdate' :
           return jApp.opts().table + '/massUpdate';
-        break;
 
         case 'resetPassword' :
           return 'resetPassword/' + jUtility.getCurrentRowId();
-        break;
 
         default :
-          return jUtility.oCurrentForm().options.table //jApp.opts().table;
-        break;
+          return jUtility.oCurrentForm().options.table; //jApp.opts().table;
       }
     }, // end fn
 
@@ -760,7 +694,7 @@
       if ( jUtility.needsCheckout() ) {
         jUtility.checkout( jUtility.getCurrentRowId() );
       } else {
-        jUtility.setupFormContainer()
+        jUtility.setupFormContainer();
       }
     }, // end fn
 
@@ -836,7 +770,7 @@
         jApp.aG().action = ( jApp.openForms.length ) ?
           jApp.openForms.last().action : '';
 
-        jUtility.msg.clear()
+        jUtility.msg.clear();
 
         oTgt.wrapper.removeClass('max')
           .find('.formContainer').css('height','');
@@ -901,7 +835,7 @@
         $btn.attr('data-original-text', $btn.html() )
             .prop('disabled',true)
             .addClass('disabled')
-            .html('<i class="fa fa-spinner fa-pulse"></i>')
+            .html('<i class="fa fa-spinner fa-pulse"></i>');
       }
     }, // end fn
 
@@ -982,7 +916,7 @@
      */
     setOptions : function(options) {
       jApp.aG().options = $.extend(true, jApp.opts(),options);
-      jApp.log('1.1 Options Set')
+      jApp.log('1.1 Options Set');
       return jApp.aG();
     }, //end fn
 
@@ -1000,7 +934,8 @@
               {
                 icon : 'fa-check-square-o',
                 label : jApp.opts().headers[i],
-                fn : function() { jUtility.DOM.toggleColumnVisibility( $(this) ) }, 'data-column' : o
+                fn : function() { jUtility.DOM.toggleColumnVisibility( $(this) ); },
+                'data-column' : o
               }
             );
           }
@@ -1141,7 +1076,7 @@
      * @return {[type]}     [description]
      */
     isButtonEnabled : function(key) {
-      return typeof jApp.opts().toggles[key] === 'undefined' || !!jApp.opts().toggles[key]
+      return typeof jApp.opts().toggles[key] === 'undefined' || !!jApp.opts().toggles[key];
     }, //end fn
 
     /**
@@ -1183,7 +1118,7 @@
     getErrorMessage : function(response) {
       return (typeof response.message !== 'undefined') ?
         response.message :
-        'There was a problem completing your request.'
+        'There was a problem completing your request.';
     }, //end fn
 
     /**
@@ -1339,7 +1274,7 @@
      */
     timeout : function(o) {
       try{
-        clearTimeout( jApp.aG().dataGrid.timeouts[o.key] )
+        clearTimeout( jApp.aG().dataGrid.timeouts[o.key] );
       } catch(ignore) {}
 
       jApp.aG().dataGrid.timeouts[o.key] = setTimeout(o.fn, o.delay );
@@ -1355,7 +1290,7 @@
      */
     interval : function(o) {
       try{
-        clearInterval( jApp.aG().dataGrid.intervals[o.key] )
+        clearInterval( jApp.aG().dataGrid.intervals[o.key] );
       } catch(ignore) {}
 
       jApp.aG().dataGrid.intervals[o.key] = setInterval(o.fn, o.delay );
@@ -1400,7 +1335,7 @@
             complete : function() {}
           } , requestOptions );
 
-        jApp.log('6.5 ajax options set, executing ajax request')
+        jApp.log('6.5 ajax options set, executing ajax request');
         return $.getJSON(opts.url, opts.data, opts.success )
           .fail( opts.fail )
           .always( opts.always )
@@ -1413,11 +1348,11 @@
      * @return {[type]}      [description]
      */
     prepareFormData : function( data ) {
-      var fd = new FormData;
+      var fd = new FormData();
 
       _.each( data, function(value, key) {
         fd.append(key, value);
-      })
+      });
 
       return fd;
 
@@ -1465,7 +1400,7 @@
      * @return {[type]} [description]
      */
     executeGridDataRequest : function() {
-      jApp.log('6.3 Setting up options for the data request')
+      jApp.log('6.3 Setting up options for the data request');
       var params = $.extend(true,  jApp.aG().dataGrid.requestOptions,
           {
             success : jUtility.callback.update,
@@ -1479,7 +1414,7 @@
       jUtility.DOM.activityPreloader('show');
 
       // execute the request
-      jApp.log('6.4 Executing ajax request')
+      jApp.log('6.4 Executing ajax request');
       r.gridData = jUtility.getJSON( params );
     }, //end fn
 
@@ -1518,15 +1453,13 @@
      * @return {[type]} [description]
      */
     processGridBindings : function() {
-      var events, target, fn, event;
-
       _.each( jApp.opts().events.grid, function( events, target ) {
         _.each( events, function(fn, event) {
             if (typeof fn === 'function') {
-              jUtility.setCustomBinding( target, fn, event )
+              jUtility.setCustomBinding( target, fn, event );
             }
         });
-      })
+      });
     }, //end fn
 
     /**
@@ -1535,11 +1468,10 @@
      * @return {[type]} [description]
      */
     processFormBindings : function() {
-      var events, target, fn, event;
 
       _.each( jApp.opts().events.form, function( events, target ) {
         _.each( events, function(fn, event) {
-            jUtility.setCustomBinding( target, fn, event, '.div-form-panel-wrapper', 'force' )
+            jUtility.setCustomBinding( target, fn, event, '.div-form-panel-wrapper', 'force' );
         });
       });
     }, //end fn
@@ -1553,9 +1485,8 @@
      */
     setCustomBinding : function( target, fn, event, scope, force ) {
       var eventKey = event + '.custom-' + $.md5( fn.toString() ),
-          $scope = (typeof scope === 'undefined') ? $(document) : $(scope),
-          scope = (typeof scope === 'undefined') ? 'document' : scope;
-          force = (typeof force === 'undefined') ? false : !!force;
+          $scope = $(scope || document),
+          scope_text = scope || 'document';
 
       if ( event === 'boot' ) {
         return (typeof fn === 'function') ? fn() : false;
@@ -1565,13 +1496,15 @@
       // events, we must use capturing
       if ( event !== 'scroll' ) {
         if ( !!$(window[target]).length ) {
-          jApp.log('Found target within global scope ' + target);
-          jApp.log('Binding event ' + eventKey + ' to target ' + target);
+          //jApp.log('Found target within global scope ' + target);
+          //jApp.log('Binding event ' + eventKey + ' to target ' + target);
           $(window[target]).off(eventKey).on(eventKey, fn);
-        } else if ( !jUtility.isEventDelegated(target,eventKey,scope) || force ) {
-          jApp.log('Binding event ' + event + ' to target ' + target + ' within scope ' + scope);
+
+        } else if ( !jUtility.isEventDelegated(target,eventKey,scope_text) || force ) {
+
+          //jApp.log('Binding event ' + event + ' to target ' + target + ' within scope ' + scope_text);
           $scope.undelegate(target,eventKey).delegate(target, eventKey, fn);
-          jUtility.eventIsDelegated(target,eventKey,scope);
+          jUtility.eventIsDelegated(target,eventKey,scope_text);
         }
       } else {
         document.addEventListener(event, fn , true);
@@ -1615,12 +1548,12 @@
         .find('.form-control-feedback').hide().end()
 
         //multiselects
-        .find('select').addClass('bsms').end()
+        .find('select:not(.no-bsms)').addClass('bsms').end()
         .find('.bsms').each( function(i,elm) {
           $(elm).data('jInput').fn.multiselect().fn.multiselectRefresh();
         } ).end()
         .find('[data-tokens]').each( function(){
-          if ( typeof $(this).data('tokenFieldSource') != 'null' ) {
+          if ( !!$(this).data('tokenFieldSource') ) {
               $(this).tokenfield({
                 autocomplete : {
                   source : $(this).data('tokenFieldSource'),
@@ -1628,7 +1561,7 @@
                 },
                 showAutoCompleteOnFocus : false,
                 tokens : $(this).val() || []
-              })
+              });
               $(this).data('tokenFieldSource',null);
           }
           // var val = $(this).data('value').split('|') || []
@@ -1653,13 +1586,13 @@
           // boot functions will be automatically called at runtime
           "[data-validType='Phone Number']" : {
             keyup : function() {
-              $(this).val( formatPhone( $(this).val() ) );
+              $(this).val( jUtility.formatPhone( $(this).val() ) );
             }
           },
 
           "[data-validType='Zip Code']" : {
             keyup : function() {
-              $(this).val( formatZip( $(this).val() ) );
+              $(this).val( jUtility.formatZip( $(this).val() ) );
             }
           },
 
@@ -1667,7 +1600,7 @@
             keyup : function() {
               var This = $(this);
               setTimeout( function() {
-                This.val( formatSSN( jApp.aG().val() ) );
+                This.val( jUtility.formatSSN( jApp.aG().val() ) );
               }, 200);
             }
           },
@@ -1680,19 +1613,19 @@
 
           "[data-validType='Number']" : {
             change : function() {
-              $(this).val( formatNumber( $(this).val() ) );
+              $(this).val( jUtility.formatNumber( $(this).val() ) );
             }
           },
 
           "[data-validType='Integer']" : {
             change : function() {
-              $(this).val( formatInteger( $(this).val() ) );
+              $(this).val( jUtility.formatInteger( $(this).val() ) );
             }
           },
 
           "[data-validType='US State']" : {
             change : function() {
-              $(this).val( formatUC( $(this).val() ) );
+              $(this).val( jUtility.formatUC( $(this).val() ) );
             }
           },
 
@@ -1725,11 +1658,11 @@
           },
 
           ".btn-array-add" : {
-            click : jUtility.arrayAddRow
+            click : jUtility.jInput().fn.arrayAddRow
           },
 
           ".btn-array-remove" : {
-            click : jUtility.arrayRemoveRow
+            click : jUtility.jInput().fn.arrayRemoveRow
           },
 
           "input" : {
@@ -1809,7 +1742,7 @@
                 key : 'tableGridScroll',
                 fn : jUtility.DOM.pageWrapperScrollHandler,
                 delay : 300
-              })
+              });
             }
           },
 
@@ -1830,7 +1763,7 @@
 
           ".tbl-sort" : {
             click : function() {
-              var $btn, $btnIndex, $desc
+              var $btn, $btnIndex, $desc;
 
               //button
               $btn = $(this);
@@ -1916,16 +1849,10 @@
 
           ".chk_cid" : {
             change : function() {
-              var $chk_all,	// $checkall checkbox
-                $checks,	// $checkboxes
-                total_num,	// total checkboxes
-                num_checked,// number of checkboxes checked
-
-
-              $chk_all = jApp.tbl().find('.chk_all');
-              $checks = jApp.tbl().find('.chk_cid');
-              total_num = $checks.length;
-              num_checked = jApp.tbl().find('.chk_cid:checked').length
+              var $chk_all = jApp.tbl().find('.chk_all'),	// $checkall checkbox
+                $checks = jApp.tbl().find('.chk_cid'), 	// $checkboxes
+                total_num = $checks.length,	// total checkboxes
+                num_checked = jApp.tbl().find('.chk_cid:checked').length;// number of checkboxes checked
 
               jUtility.DOM.updateRowMenu( num_checked );
 
@@ -1981,35 +1908,6 @@
               $(this).focus();
             }
           },
-
-          // ".table-body .table-row" : {
-          //   mouseover : function() {
-          //     var $tr = $(this);
-          //
-          //     clearTimeout(jApp.aG().dataGrid.intervals.cancelRowMenuUpdate);
-          //     jApp.aG().dataGrid.intervals.moveRowMenu = setTimeout( function() {
-          //       jApp.tbl().find('.btn-showMenu').removeClass('hover');
-          //       if (jApp.tbl().find('.rowMenu').hasClass('expand') === false) {
-          //         jApp.tbl().find('.btn-showMenu').removeClass('active');
-          //       }
-          //       $tr.find('.btn-showMenu').addClass('hover');
-          //
-          //     }, 250 );
-          //   },
-          //
-          //   mouseout : function() {
-          //
-          //     var $tr = $(this);
-          //     clearTimeout(jApp.aG().dataGrid.intervals.moveRowMenu);
-          //     jApp.aG().dataGrid.intervals.cancelRowMenuUpdate = setTimeout( function() {
-          //       jApp.tbl().find('.btn-showMenu').removeClass('hover');
-          //       if (!jApp.tbl().find('.rowMenu').hasClass('expand')) {
-          //         $tr.find('.btn-showMenu').removeClass('active');
-          //       }
-          //       jApp.tbl().find('.rowMenu').removeClass('active');
-          //     }, 100 );
-          //   }
-          // }
 
         }, jApp.opts().events.grid);
     }, //end fn
@@ -2407,7 +2305,7 @@
         }
       }, jApp.opts().html);
 
-      jApp.log('2.1 HTML Templates Done')
+      jApp.log('2.1 HTML Templates Done');
 
     }, // end fn
 
@@ -2425,14 +2323,14 @@
      *  returns the interpolated text
      **  **  **  **  **  **  **  **  **  **/
     render : function(str,params) {
-      var ptrn, key, val;
+      var ptrn;
 
       //if (typeof params !== 'object') return '';
 
       _.each( params, function(val, key) {
         ptrn = new RegExp( '\{@' + key + '\}', 'gi' );
         str = str.replace(ptrn, val );
-      })
+      });
 
       return str.replace(/\{@.+\}/gi,'');
     }, //end fn
@@ -2453,7 +2351,7 @@
      *  e.g. {@ParamName} -> jApp.aG().dataGrid.data[row][ParamName]
      **  **  **  **  **  **  **  **  **  **/
     interpolate : function(value) {
-      return value.replace(/\{@(\w+)\}/gi, jUtility.replacer)
+      return value.replace(/\{@(\w+)\}/gi, jUtility.replacer);
     }, // end fn
 
     /**  **  **  **  **  **  **  **  **  **
@@ -2470,7 +2368,7 @@
      *
      *  @return	(str) the replacement string
      **  **  **  **  **  **  **  **  **  **/
-    replacer : function(match, p1, offset, string) {
+    replacer : function(match, p1) {
       return jApp.aG().currentRow[p1];
     }, // end fn
 
@@ -2480,17 +2378,16 @@
      * @return {[type]} [description]
      */
     getHeaderFilterMatchedRows : function() {
-      var columnOffset = (jUtility.isEditable()) ? 3 : 2,
-          currentColumn,
+      var currentColumn,
           currentMatches,
           matchedRows = [],
-          targetString
+          targetString;
 
 
       //iterate through header filters and apply each
       jApp.tbl().find('.header-filter').filter( function() {
-        return !!$(this).val().toString().trim().length
-      }).each( function(i) {
+        return !!$(this).val().toString().trim().length;
+      }).each( function() {
 
         // calculate the 1-indexed index of the current column
         currentColumn = +1+$(this).parent().index();
@@ -2541,7 +2438,7 @@
     areHeaderFiltersNonempty : function() {
       return !!jApp.tbl().find('.header-filter').filter( function() {
         return !!this.value;
-      }).length
+      }).length;
     }, //end fn
 
     /**  **  **  **  **  **  **  **  **  **
@@ -2601,21 +2498,21 @@
      *  between two objects
      **  **  **  **  **  **  **  **  **  **/
     deltaData : function(prev, now) {
-      var changes = {}, prop, c;
-      $.each(now, function( i, row) {
+      var changes = {};
+      _.each(now, function( row, i) {
         if (typeof prev[i] === 'undefined') {
           changes[i] = row;
         } else {
-          $.each( row, function( prop, value) {
+          _.each( row, function( value, prop) {
             if (prev[i][prop] !== value) {
               if (typeof changes[i] === 'undefined') {
                 changes[i] = {};
               }
               changes[i][prop] = value;
             }
-          })
+          });
         }
-      })
+      });
       if ($.isEmptyObject(changes)) {
         return false;
       }
@@ -2721,7 +2618,7 @@
 
       });
 
-      jApp.log('3.1 Initial Params Set')
+      jApp.log('3.1 Initial Params Set');
     }, // end fn
 
     /**
@@ -2764,7 +2661,7 @@
           buttons: {
             yes: { label: "Include Hidden Items", className: "btn-primary", callback: function() { return jUtility.withSelectedAction(action,callback,true); } },
             no:  { label: "Do Not Include Hidden Items", className: "btn-warning", callback: function() { return jUtility.withSelectedAction(action,callback,false); } },
-            cancel : { label : "Cancel Operation", className : "btn-danger", callback: function() { dialog.modal('hide') } }
+            cancel : { label : "Cancel Operation", className : "btn-danger", callback: function() { dialog.modal('hide'); } }
           }
         });
 
@@ -2777,9 +2674,9 @@
      */
     initializeTemplate : function() {
       jUtility.DOM.emptyPageWrapper();
-      jApp.log('5.1 Page Wrapper Emptied')
+      jApp.log('5.1 Page Wrapper Emptied');
       jUtility.DOM.initGrid();
-      jApp.log('5.2 Grid Initialized')
+      jApp.log('5.2 Grid Initialized');
     },
 
     /**
@@ -2827,22 +2724,6 @@
 
     },
 
-    /**  **  **  **  **  **  **  **  **  **
-     *   linkTables
-     *
-     *  iterates through the linktable
-     *  definitions in the options and
-     *  adds the appropriate elements to the
-     *  forms
-     **  **  **  **  **  **  **  **  **  **/
-    linkTables : function() {
-      var oLT;
-      _.each( jApp.opts().linkTables, function(o,key) {
-        o.callback = jUtility.callback.linkTables;
-        oLT = new jLinkTable( o );
-      });
-    }, // end fn
-
     /**
      * Sets up the countdown that displays
      *  the time remaining until the next
@@ -2880,7 +2761,7 @@
         jUtility.setupIntervals();
       }
 
-      jApp.log('6.1 Starting Countdown timer')
+      jApp.log('6.1 Starting Countdown timer');
       // start the countdown timer
       jUtility.countdown();
 
@@ -2889,10 +2770,10 @@
 
       // use cached copy, if available
       if ( jUtility.isDataCacheAvailable() ) {
-        jApp.log('6.2 Updating grid from cache')
+        jApp.log('6.2 Updating grid from cache');
         setTimeout( jUtility.updateGridFromCache(), 100);
       } else {
-        jApp.log('6.2 Executing data request')
+        jApp.log('6.2 Executing data request');
         jUtility.executeGridDataRequest();
       }
     }, // end fn
@@ -2933,10 +2814,10 @@
      **  **  **  **  **  **  **  **  **  **/
     $currentForm : function() {
       try {
-        return jUtility.oCurrentForm().$()
+        return jUtility.oCurrentForm().$();
       } catch(e) {
         console.warn('No current form object found');
-        return false
+        return false;
       }
     },
 
@@ -2994,6 +2875,112 @@
       jUtility.getCurrentFormRowData();
     }, // end fn
 
+    /**
+     * Format phone number
+     * @method function
+     * @param  {[type]} phonenum [description]
+     * @return {[type]}          [description]
+     */
+    formatPhone : function(phonenum) {
+        var regexObj = /^(?:\+?1[-. ]?)?(?:\(?([0-9]{3})\)?[-. ]?)?([0-9]{3})[-. ]?([0-9]{4})$/;
+        if (regexObj.test(phonenum)) {
+            var parts = phonenum.match(regexObj);
+            var phone = "";
+            if (parts[1]) { phone += "(" + parts[1] + ") "; }
+            phone += parts[2] + "-" + parts[3];
+            return phone;
+        }
+        else {
+            //invalid phone number
+            return phonenum;
+        }
+    }, // emd fn
+
+    /**
+     * Format zip code
+     * @method function
+     * @param  {[type]} z [description]
+     * @return {[type]}   [description]
+     */
+    formatZip : function(z) {
+        z = z.replace(/[^0-9-]/gi, "");
+    	if (/^\d{6,9}$/.test(z)) {
+    		z = z.substring(0,5) + "-" + z.substring(5);
+    		return z;
+    	}
+    	else {
+    		return z.substring(0,10);
+    	}
+    }, // end fn
+
+    /**
+     * Format number
+     * @method function
+     * @param  {[type]} z [description]
+     * @return {[type]}   [description]
+     */
+    formatNumber : function(z) {
+    	if ( isNaN(parseFloat(z)) ) {
+    		if ( !isNaN( z.replace(/[^0-9\.]/gi, "") ) ) {
+    			return z.replace(/[^0-9\.]/gi,"") ;
+    		} else {
+    			return '';
+    		}
+    	}
+    	else {
+    		return parseFloat(z);
+    	}
+    }, // end fn
+
+    /**
+     * Format Integer
+     * @method function
+     * @param  {[type]} z [description]
+     * @return {[type]}   [description]
+     */
+    formatInteger : function(z) {
+    	if (!isNaN(z)) {
+    		return Math.round(z);
+    	}
+    	else {
+    		return z.replace(/[^0-9]/gi, "");
+    	}
+    }, // end fn
+
+    /**
+     * Format SSN
+     * @method formatSSN
+     * @param  {[type]}  z [description]
+     * @return {[type]}    [description]
+     */
+    formatSSN : function(z) {
+    	z = z.replace(/\D/g, '');
+
+    	switch (z.length) {
+    		case 0:
+    		case 1:
+    		case 2:
+    		case 3:
+    			return z;
+
+    		case 4:
+    		case 5:
+    			return z.substr(0,3) + '-' + z.substr(3);
+    	}
+
+    	return z.substr(0,3) + '-' + z.substr(3,2) + '-' + z.substr(5);
+    }, // end fn
+
+    /**
+     * Format UpperCase
+     * @method function
+     * @param  {[type]} z [description]
+     * @return {[type]}   [description]
+     */
+    formatUC : function(z) {
+    	return z.toUpperCase();
+    }, // end fn
+
 
     /**
      * Messaging functions
@@ -3018,13 +3005,13 @@
 			 * @return {[type]}         [description]
 			 */
 			show : function(message, type) {
-				var n = noty({
+				return noty({
 					layout: 'bottomLeft',
 					text : message,
 					type : type || 'info',
 					dismissQueue: true,
 					timeout : 3000
-				})
+				});
 			},
 
 			/**
@@ -3129,8 +3116,7 @@
        * @return {[type]}     [description]
        */
       toggleColumnVisibility : function( elm ) {
-        var col = elm.data('column'),
-          i = +elm.closest('li').index()+2;
+        var i = +elm.closest('li').index()+2;
 
         if (elm.find('i').hasClass('fa-check-square-o')) {
           elm.find('i').removeClass('fa-check-square-o').addClass('fa-square-o');
@@ -3175,12 +3161,12 @@
         if (!hide) {
           jApp.tbl().css('background','url("/images/tbody-preload.gif") no-repeat center 175px rgba(0,0,0,0.15)')
            .find('[name=RowsPerPage],[name=q]').prop('disabled',true).end()
-           .find('.table-body').css('filter','blur(1px) grayscale(100%)').css('-webkit-filter','blur(2px) grayscale(100%)') .css('-moz-filter','blur(2px) grayscale(100%)')
+           .find('.table-body').css('filter','blur(1px) grayscale(100%)').css('-webkit-filter','blur(2px) grayscale(100%)') .css('-moz-filter','blur(2px) grayscale(100%)');
            //.find('.table-cell, .table-header').css('border','1px solid transparent').css('background','none');
         } else {
           jApp.tbl().css('background','')
            .find('[name=RowsPerPage],[name=q]').prop('disabled',false).end()
-           .find('.table-body').css('filter','').css('-webkit-filter','').css('-moz-filter','')
+           .find('.table-body').css('filter','').css('-webkit-filter','').css('-moz-filter','');
            //.find('.table-cell, .table-header').css('border','').css('background','');
         }
       }, // end fn
@@ -3333,7 +3319,7 @@
             .html(
               jUtility.render( jApp.aG().html.tmpClearHeaderFilterBtn )
             )
-          )
+          );
         } else {
           jApp.log('Delete icons already added');
         }
@@ -3376,7 +3362,7 @@
           })
           .sort(function(a,b) {
 
-            if (jQuery.isNumeric(a[0]) && jQuery.isNumeric(b[0])) {
+            if ($.isNumeric(a[0]) && $.isNumeric(b[0])) {
               return a[0]-b[0];
             }
 
@@ -3394,23 +3380,25 @@
         );
 
         // iterate through col
-        $.each($col, function(i,elm){
+        $col.each( function(i,elm){
           var $e = $(elm[1]);
 
           // detach the row from the DOM
           $e.detach();
 
           // attach the row in the correct order
-          (!desc) ?
-            jApp.tbl().find('.table-body').append( $e ) :
+          if (!desc) {
+            jApp.tbl().find('.table-body').append( $e );
+          } else {
             jApp.tbl().find('.table-body').prepend( $e );
+          }
         });
 
         // go to the appropriate page to refresh the view
         jUtility.DOM.page( jApp.opts().pageNum );
 
         // apply header filters
-        jUtility.DOM.applyHeaderFilters()
+        jUtility.DOM.applyHeaderFilters();
       }, // end fn
 
       /**
@@ -3508,8 +3496,6 @@
        * @return {[type]} [description]
        */
       updateColWidths : function() {
-        var headerRowIndex = 3,
-            bottomOffset = 0;
 
         jUtility.DOM.updateGridPosition();
         jUtility.setupSortButtons();
@@ -3548,17 +3534,6 @@
 
         //hide preload mask
         jUtility.DOM.togglePreloader(true);
-      }, // end fn
-
-      /**  **  **  **  **  **  **  **  **  **
-       *   moveRowMenu
-       *
-       *  @tr - target table row element
-       *
-       *  Moves the row menu to the target
-       **  **  **  **  **  **  **  **  **  **/
-      moveRowMenu : function($tr) {
-        // jApp.aG().DOM.$rowMenu.detach().appendTo( $tr.find('.table-cell .rowMenu-container').eq(0) );
       }, // end fn
 
       /**
@@ -3781,7 +3756,7 @@
               // set the cell value
               td
                .html(value)
-               .addClass('changed')
+               .addClass('changed');
             }
 
 
@@ -3808,7 +3783,7 @@
           // .animate({ backgroundColor: 'transparent'}, 1500, function() { $(this).removeAttr('style');  } );
 
 
-        setTimeout( function() { jApp.tbl().find('.table-cell.changed').removeClass('changed') }, 2000 );
+        setTimeout( function() { jApp.tbl().find('.table-cell.changed').removeClass('changed'); }, 2000 );
 
 
         jUtility.countdown();
@@ -3866,9 +3841,7 @@
        * @param  {string} type 			buttons | links
        */
       buildMenu : function(collection, target, type, order) {
-        var o, key, oo, kk, btn;
-
-        if (typeof type === 'undefined') { type = 'buttons'}
+        type = type || 'buttons';
 
         //build menu
         _.each( collection, function(o, key) {
@@ -3951,9 +3924,7 @@
        * @return {jQuery obj}
        */
       createMenuLink : function( o ) {
-        var $btn, $btn_a, $btn_choice, $ul;
-
-        $btn_choice = $('<a/>', { href : 'javascript:void(0)', 'data-permission' : (o['data-permission'] != null) ? o['data-permission'] : '' });
+        var $btn_choice = $('<a/>', { href : 'javascript:void(0)', 'data-permission' : o['data-permission'] || null });
 
         //add the icon
         if (!!o.icon) {
@@ -3977,18 +3948,18 @@
             if (o.fn !== 'delete') {
               $btn_choice.off('click.custom').on('click.custom', function() {
               jApp.aG().withSelectedButton = $(this);
-              jUtility.withSelected( 'custom', jApp.aG().fn[o.fn] )
+              jUtility.withSelected( 'custom', jApp.aG().fn[o.fn] );
               } );
             } else {
               $btn_choice.off('click.custom').on('click.custom', function() {
               jApp.aG().withSelectedButton = $(this);
-              jUtility.withSelected( 'delete', null )
+              jUtility.withSelected( 'delete', null );
               } );
             }
           } else if (typeof o.fn === 'function') {
             $btn_choice.off('click.custom').on('click.custom', function() {
             jApp.aG().withSelectedButton = $(this);
-            jUtility.withSelected( 'custom', o.fn )
+            jUtility.withSelected( 'custom', o.fn );
             } );
           }
         }
@@ -4015,7 +3986,7 @@
 
 
         if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
-          $btn = $('<div/>', { class : 'btn-group btn-group-sm'})
+          $btn = $('<div/>', { class : 'btn-group btn-group-sm'});
           // params[0] will contain the dropdown toggle button
           $btn_a = $('<a/>', {
                     type : 'button',
@@ -4049,7 +4020,7 @@
             $ul = $('<ul/>', { class : 'dropdown-menu'});
 
             _.each( params, function(o,key) {
-              if (key == 0) return false;
+              if (key === 0) return false;
               var signature = 'btn_' + Array(26).join((Math.random().toString(36)+'000000000000000000000').slice(2, 18)).slice(0, 25);
 
               $btn_choice = $('<a/>', $.extend(true, { 'data-permission' : '' }, _.omit(o,'fn') , { href : '#', 'data-signature' : signature }) );
@@ -4245,7 +4216,7 @@
 			 */
 			submitCurrentForm : function(response) {
 				if ( jUtility.isResponseErrors(response) ) {
-					jUtility.msg.error( jUtility.getErrorMessage(response) )
+					jUtility.msg.error( jUtility.getErrorMessage(response) );
 				} else {
 					jUtility.msg.success( 'Operation Completed Successfully!');
 					if (jApp.opts().closeOnSave) {
@@ -4270,7 +4241,7 @@
 			 *  request
 			 **  **  **  **  **  **  **  **  **  **/
 			update : function(response) {
-				jApp.log('6.6 data received. processing...')
+				jApp.log('6.6 data received. processing...');
 
         jUtility.DOM.setupGridHeaders();
 
@@ -4285,12 +4256,7 @@
         }
 
 				// init vars
-				var	appendTH = false,
-					theaders,
-					tfilters,
-					btn,
-					isActive,
-          self = jApp.aG();
+				var	self = jApp.aG();
 
 				// detect changes in data;
 				self.dataGrid.delta = ( !$.isEmptyObject(self.dataGrid.data) ) ?
@@ -4350,7 +4316,7 @@
 					var data = response,
               self = jApp.aG();
 					self.rowData = response;
-					//jUtility.DOM.updatePanelHeader( data[ self.options.columnFriendly ] );
+					jUtility.DOM.updatePanelHeader( data[ self.options.columnFriendly ] );
 			}, // end fn
 
       /**
@@ -4374,7 +4340,7 @@
        */
 			checkin : function(response) {
         if ( jUtility.isResponseErrors(response) ) {
-          jUtility.msg.warning( jUtility.getErrorMessage(response) )
+          jUtility.msg.warning( jUtility.getErrorMessage(response) );
         }
         jUtility.getCheckedOutRecords();
         jUtility.closeCurrentForm();
@@ -4389,7 +4355,7 @@
       displayResponseErrors : function(response) {
         if ( jUtility.isResponseErrors(response) ) {
           jUtility.msg.clear();
-          jUtility.msg.error( jUtility.getErrorMessage(response) )
+          jUtility.msg.error( jUtility.getErrorMessage(response) );
         }
       }, //end fn
 
@@ -4412,7 +4378,7 @@
 				self.DOM.$grid.find('.rowMenu-container').removeClass('disabled');
 				self.DOM.$grid.find('.checkedOut').remove();
 
-				_.each(response, function(o,key) {
+				_.each(response, function(o) {
 
 					if (!!o && !!o.lockable_id) {
 						$tr = $('.table-row[data-identifier="' + o.lockable_id + '"]');
@@ -4474,16 +4440,16 @@
         jApp.log( jApp.aG().permissions );
 
         _.each(response, function(value, key) {
-          jApp.log( '12.1 Setting Permission For ' + key + ' to ' + value )
+          jApp.log( '12.1 Setting Permission For ' + key + ' to ' + value );
           if (value !== 1) {
             $('[data-permission=' + key + ']').remove();
           }
-        })
+        });
       }, // end fn
 
 		} // end callback defs
 
-  }
+  };
 
   // add it to the global scope
   window.jUtility = jUtility;

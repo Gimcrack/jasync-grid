@@ -35,7 +35,7 @@
 		 */
 		this.$ = function() {
 			return self.DOM.$grid;
-		}
+		};
 
 		/**
 		 * Declare Options vars
@@ -59,7 +59,7 @@
 		 * HTML Templates
 		 * @type {Object}
 		 */
-		this.html = {}
+		this.html = {};
 
 		/**
 		 * Container for events once they have been delegated to avoid collisions
@@ -95,26 +95,26 @@
 				jApp.log('4. Setting Ajax Defaults');
 				jUtility.setAjaxDefaults();
 
-				jApp.log('5. Initializing Template')
+				jApp.log('5. Initializing Template');
 				jUtility.initializeTemplate();
 
-				jApp.log('6. Getting grid data')
+				jApp.log('6. Getting grid data');
 				jUtility.getGridData();
 
-				jApp.log('7. Setting up intervals')
+				jApp.log('7. Setting up intervals');
 				jUtility.setupIntervals();
 
-				jApp.log('8. Building Menus')
+				jApp.log('8. Building Menus');
 				jUtility.buildMenus();
 
-				jApp.log('9. Building Forms')
+				jApp.log('9. Building Forms');
 				jUtility.buildForms();
 
-				jApp.log('10. Setting up bindings')
+				jApp.log('10. Setting up bindings');
 				jUtility.bind();
 
-				jApp.log('11. Setting up link tables')
-				jUtility.linkTables();
+				//jApp.log('11. Setting up link tables')
+				//jUtility.linkTables();
 
 
 

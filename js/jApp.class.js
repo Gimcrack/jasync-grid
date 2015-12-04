@@ -15,10 +15,10 @@
 
 		var self = this;
 
-		this.debug = false;
+		this.debug = true;
 
 		if (this.debug) {
-			console.warn( 'DEBUG MODE ON ')
+			console.warn( 'DEBUG MODE ON ');
 			$.jStorage.flush();
 		}
 
@@ -34,13 +34,13 @@
 			admin : {
 
 			}
-		}
+		};
 
 		this.grids = {
 			admin : {
 
 			}
-		}
+		};
 
 		this.activeGrid = {};
 
@@ -59,7 +59,7 @@
 		 */
 		this.aG = function() {
 			return this.activeGrid;
-		}
+		};
 
 		/**
 		 * Get the table from the corresponding model
@@ -70,12 +70,12 @@
 
 			var RuleExceptions = {
 				Person : 'people'
-			}
+			};
 
 			return ( RuleExceptions[model] == null ) ?
 				(model + 's').toLowerCase() :
-				RuleExceptions[model]
-		}
+				RuleExceptions[model];
+		};
 
 		/**
 		 * Convenience function to access the $grid object
@@ -85,7 +85,7 @@
 		 */
 		this.tbl = function() {
 			return this.activeGrid.DOM.$grid;
-		}
+		};
 
 
 		/**
@@ -96,19 +96,19 @@
 		 */
 		this.opts = function() {
 			return this.activeGrid.options;
-		}
+		};
 
 		this.log = function(msg,force) {
-			if (!!self.debug || !!self.force) {
+			if (!!self.debug || !!force) {
 				console.log(msg);
 			}
-		}
+		};
 
 		this.warn = function(msg,force) {
-			if (!!self.debug || !!self.force) {
+			if (!!self.debug || !!force) {
 				console.warn(msg);
 			}
-		}
+		};
 
 	};
 

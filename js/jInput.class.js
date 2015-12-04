@@ -31,7 +31,7 @@
 		var self = this;
 		this.store = $.jStorage;
 		this.readonly = false;
-		this.form = options.form || options.atts.form || {};
+
 
 		/**  **  **  **  **  **  **  **  **  **
 		 *   DEFAULT OPTIONS
@@ -45,8 +45,9 @@
 		this.options = {
 			// html attributes
 			atts : {
-				'type' : 'text',
-				'class' : 'form-control'
+				type : 'text',
+				class : 'form-control',
+				name : 'input'
 			},
 
 			// DOM presentation options
@@ -83,12 +84,11 @@
 		}; // end options
 
 		// set the runtime values for the options
-		$.extend(true,this.options, { atts : { 'id' : this.options.atts.name } }, options);
+		$.extend(true,this.options, { atts : { 'id' : this.options.atts.name || null } }, options || {});
 
-		this.readonly = (this.options.atts.readonly === 'readonly') ? true : false;
 
 		// alias to attributes object
-		var oAtts = self.options.atts;
+		var oAtts = self.options.atts || {};
 
 		/**  **  **  **  **  **  **  **  **  **
  		 *   ALLOWABLE ATTRIBUTES BY INPUT TYPE
@@ -203,6 +203,12 @@
 				// get the input name
 				self.fn.resolveInputName();
 
+				// set readonly flag on the input
+				self.readonly = (oAtts.readonly === 'readonly') ? true : false;
+
+				// set the form
+				self.form = options.form || oAtts.form || {};
+
 				//set the parent element
 				self.DOM.$prnt = self.options.parent;
 
@@ -225,7 +231,7 @@
 					break;
 
 					case 'tokens' :
-						jApp.log('Tokens Attributes')
+						jApp.log('Tokens Attributes');
 						jApp.log($.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ));
 						self.DOM.$inpt = $('<input/>', $.extend(true, self.fn.getAtts(), { type : 'text', 'data-tokens' : true, 'data-url' : self.fn.getExtUrl('tokens')} ) );
 						self.fn.getExtOptions();
@@ -308,13 +314,13 @@
 				});
 
 				//append the label, if applicable
-				if (!!self.DOM.$lbl && self.type !== 'hidden' && oAtts._label != null) {
+				if (!!self.DOM.$lbl && self.type !== 'hidden' && !!oAtts._label) {
 					self.DOM.$prnt
 					 .append(  ( !!self.DOM.$lbl.parents().length ) ? self.DOM.$lbl.parents().last() : self.DOM.$lbl );
 				}
 
 				//append the separator, if applicable
-				if (!!self.options.separator && self.type !== 'hidden' && oAtts._label != null) {
+				if (!!self.options.separator && self.type !== 'hidden' && !!oAtts._label) {
 					self.DOM.$prnt.append( $br.clone() );
 				}
 
@@ -350,7 +356,7 @@
 			 * @return {[type]} [description]
 			 */
 			isMultiple : function() {
-				return ( oAtts.multiple != null && ( !!oAtts.multiple || oAtts.multiple === 'multiple' ));
+				return ( !!oAtts.multiple || oAtts.multiple === 'multiple' );
 			},
 
 			/**
@@ -363,7 +369,7 @@
       processField : function( params, target ) {
         var inpt;
 
-        jApp.log('B. Processing Field')
+        jApp.log('B. Processing Field');
         jApp.log(params);
 
         // check if the type is array
@@ -385,87 +391,52 @@
        */
       processArrayField : function( params ) {
         var $container = $('<div/>', { class : 'array-field-container alert alert-info' }).data('colparams', params),
-            $table = $('<table/>', { class : 'table' } ),
-            inpt,
-            $tr, $th, $td, inpt, hidNames = [];
+            $table = $('<table/>', { class : '' } ),
+            hidNames = [],
+						masterSelect = params.fields.shift(),
+						inpt;
 
-				// Set the arrayField flag
 				self.arrayField = true;
 
-				// Grab the first input and put it in the first row
-				inpt = new jInput( { atts : params.fields.shift() } );
-				self.oInpts.push(inpt);
-
-				inpt.fn.handle().off('change.arrayCustom').on('change.arrayCustom', function() {
-					var selected = $(this).find(':selected').map( function(i, elm) { return $(elm).html() } ).get();
-
-					// remove non-matching rows
-					$table.find('[data-array-placeholder]').filter( function(i, elm ) {
-						return ( _.indexOf( selected, $(elm).val() ) === -1 );
-					}).closest('tr').remove();
-
-					// add the extra fields for each of the selected values
-					_.each( selected, function( val ) {
-						// make sure the row hasn't been made yet
-						if ( $table.find('[data-array-placeholder]').filter( function(i, elm ) {
-							return $(elm).val() === val;
-						}).length ) return false;
-
-						var fields = _.clone(params.fields);
-
-						fields.unshift({
-							name : params.name,
-							disabled : true,
-							'data-array-placeholder' : true,
-							value : val
-						});
-
-						$table.append( self.fn.populateFieldRow( fields ) );
-					})
-				});
-
-				$container.append( inpt.fn.handle() );
-
+				// populate the hidden field with the names of the pivot inputs
         _.each( params.fields, function(o) {
-					if (o.name != null) {
+					if (!!o.name) {
 						o['data-name'] = o.name;
 						hidNames.push(o.name.replace('[]',''));
 					}
         });
 
+				// add a row with the master select
+				inpt = new jInput( { atts : masterSelect, form: self.form } );
+        self.oInpts[ masterSelect.name ] = inpt;
+        $container.append( inpt.fn.handle() );
+
+				// append the inputs
+        // if (!!params.min) {
+        //   for ( var ii = +params.min-1; ii >= 0; ii--  ) {
+        //     $table.append( jUtility.jForm().fn.populateFieldRow( params, ii ) );
+        //   }
+        // } else {
+        //   $table.append( jUtility.jForm().fn.populateFieldRow( params ) );
+        // }
+
+				// add the table to the container
         $container.append($table);
+
+
 
         var hid = {
           name : params.name + '_extra_columns',
           type : 'hidden',
           value : hidNames.join()
-        }
+        };
 
         var oHid = new jInput({ atts : hid } );
         $container.append( oHid.fn.handle() );
 
+				$container.perfectScrollbar();
+
 				return $container;
-      }, // end fn
-
-      /**
-       * Populate a row with the field inputs
-       * @method function
-       * @param  {[type]} params [description]
-       * @return {[type]}        [description]
-       */
-      populateFieldRow : function(fields) {
-        var $td;
-
-        return $('<tr/>').append(
-          _.map( fields, function( oo ) {
-              var $td = $('<td/>');
-							oo['data-pivot'] = _.pluck( 'name', fields );
-							oo['data-array-input'] = true;
-              self.fn.processField( oo, $td );
-              return $td;
-          })
-
-        )
       }, // end fn
 
 			getAtts : function( ) {
@@ -536,7 +507,7 @@
 				self.refreshAfterLoadingOptions = (!!refresh) ? true : false;
 
 				// local data
-				if ( oAtts._optionssource != null && oAtts._optionssource.indexOf('|') !== -1 ) {
+				if ( !!oAtts._optionssource && oAtts._optionssource.indexOf('|') !== -1 ) {
 					jApp.log(' - local options data - ');
 					self.options.extData = false;
 					oAtts._options = oAtts._optionssource.split('|');
@@ -546,7 +517,7 @@
 					self.fn.buildOptions();
 				}
 				// external data
-				else if ( oAtts._optionssource != null && oAtts._optionssource.indexOf('.') !== -1 ) {
+				else if ( !!oAtts._optionssource && oAtts._optionssource.indexOf('.') !== -1 ) {
 					jApp.log(' - external options data -');
 					self.options.extData = true;
 					//console.log('Getting External Options');
@@ -562,7 +533,7 @@
 			getExtUrl : function( type ) {
 				var model, lbl, opt, tmp;
 
-				type = (type != null) ? type : oAtts.type;
+				type = type || oAtts.type;
 
 				tmp = oAtts._labelssource.split('.');
 				self.model = model = tmp[0]; // db table that contains option/label pairs
@@ -572,12 +543,10 @@
 
 				switch (type) {
 					case 'select' :
-						return "/selopts/_" + model + "_" + opt + "_" + lbl;
-					break;
+						return '/selopts/_' + model + '_' + opt + '_' + lbl;
 
 					default :
-						return "/tokenopts/_" + model + "_" + opt + "_" + lbl;
-					break;
+						return '/tokenopts/_' + model + '_' + opt + '_' + lbl;
 				}
 
 			}, // end fn
@@ -623,12 +592,12 @@
 
 			buildOptions : function( data ) {
 				// load JSON data if applicable
-				if (data != null) {
+				if (!!data) {
 					self.JSON = data;
 				}
 
 				if (oAtts.type === 'select') {
-					self.fn.populateSelectOptions()
+					self.fn.populateSelectOptions();
 				} else {
 					self.fn.populateTokensOptions();
 				}
@@ -729,14 +698,12 @@
 				switch( self.type ) {
 					case 'radio' :
 					case 'checkbox' :
-						return $.map( self.DOM.$prnt.find(':checked'), function(elm, i) {
+						return $.map( self.DOM.$prnt.find(':checked'), function(i, elm) {
 							return $(elm).val();
 						});
-					break;
 
 					default :
 						return self.DOM.$inpt.val();
-					break;
 				}
 			},
 
@@ -769,7 +736,7 @@
 
 				self.$().attr('data-tmpVal', self.$().val() || '' )
 						.val('')
-						.multiselect('refresh')
+						.multiselect('refresh');
 						//.multiselect('disable');
 
 				self.fn.getExtOptions(true, function() {
@@ -782,7 +749,7 @@
 								.multiselect('enable')
 								.multiselect('refresh')
 								.multiselect('rebuild')
-								.removeAttr('data-tmpVal')
+								.removeAttr('data-tmpVal');
 
 								//.data('jInput').fn.multiselect();
 							});
@@ -819,8 +786,8 @@
 					var $btnAdd = $('<button/>', {
 						type : 'button',
 						class : 'btn btn-primary btn-add',
-						title : 'Add ' + model
-					}).html('<i class="fa fa-fw fa-plus"></i> ' + model + ' <i class="fa fa-fw fa-external-link"></i>')
+						title : 'Create New ' + model
+					}).html('New ' + model + ' <i class="fa fa-fw fa-external-link"></i>')
 						.off('click.custom').on('click.custom', function() {
 
 							jUtility.actionHelper( 'new' + model + 'Frm' );
@@ -828,7 +795,7 @@
 						});
 
 					self.DOM.$prnt.find('.btn-group .btn-add').remove().end()
-					.find('.btn-group').append( $btnAdd );
+					.find('.btn-group').prepend( $btnAdd );
 				}
 
 				var $btnRefresh = $('<button/>', {
@@ -852,8 +819,128 @@
 				self.$().multiselect( self.options.bsmsDefaults ).multiselect('refresh');
 				self.fn.multiselectExtraButtons();
 				return self;
-			}
-		};
+			}, // end fn
+
+			/**
+       * Populate and array field with the form data
+       * @return {[type]} [description]
+       */
+      populateArrayFormData : function( oInpt, data ) {
+        self.fn.arrayRemoveAllRows( oInpt.$() );
+        jApp.log('------Array Data------' );
+        jApp.log(data);
+
+        // iterate through the data rows and populate the form
+        _.each( data, function( obj ) {
+
+          // create a row in the array field table
+          jApp.log('--------Adding Row To The Array ---------');
+          jApp.log( oInpt.$() );
+          self.fn.arrayAddRowFromContainer( oInpt.$(), obj );
+
+        });
+
+        // boot the form
+        jUtility.formBootup();
+
+      }, // end fn
+
+			/**
+	     * Add row to array field from container
+	     * @param  {[type]} $container [description]
+	     * @return {[type]}            [description]
+	     */
+	    arrayAddRowFromContainer : function( $container, data ) {
+	      var $table = $container.find('table'),
+	          params = $container.data('colparams'),
+	          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params, 1, data || {} ),
+	          $btn_add = $table.find('.btn-array-add').eq(0).detach();
+
+	      $table.find('.btn-array-add,.no-row-filler').remove();
+
+	      $table.append($tr_new);
+
+				if (!$table.find('.btn-array-add').length) {
+						$table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
+				}
+
+	    }, // end fn
+
+	    /**
+	     * Add row to an array input
+	     * @method function
+	     * @return {[type]} [description]
+	     */
+	    arrayAddRow : function( ) {
+	      var $container = $(this).closest('.array-field-container'),
+	          $table = $(this).closest('table'),
+	          params = $container.data('colparams'),
+	          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params );
+
+	      if (!!params.max && +$table.find('tr').length-1 === params.max) {
+	        return jUtility.msg.warning('This field requires at most ' + params.max + ' selections.');
+	      }
+
+	      $table.find('.btn-array-add,.no-row-filler').remove();
+
+	      $table.append($tr_new);
+
+	      // rename inputs so they all have unique names
+	      // $table.find('tr').each( function( i, elm ) {
+	      //   $(elm).find(':input').each( function(ii, ee) {
+	      //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
+	      //   });
+	      // });
+
+	      jUtility.formBootup();
+	    }, // end fn
+
+	    /**
+	     * Remove a row from an array input table
+	     * @return {[type]} [description]
+	     */
+	    arrayRemoveRow : function() {
+	      var $container = $(this).closest('.array-field-container'),
+	          $table = $(this).closest('table'),
+	          $tr = $(this).closest('tr'),
+	          params = $container.data('colparams'),
+	          $btn_add = $table.find('.btn-array-add').detach();
+
+
+	      if (!!params.min && +$table.find('tr').length-1 === params.min) {
+	        $table.find('tr:last-child').find('td:last-child').append($btn_add);
+	        return jUtility.msg.warning('This field requires at least ' + params.min + ' selections.');
+	      }
+
+	      $tr.remove();
+
+	      // rename inputs so they all have unique names
+	      // $table.find('tr').each( function( i, elm ) {
+	      //   $(elm).find(':input').each( function(ii, ee) {
+	      //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
+	      //   });
+	      // });
+	      if  ( !$table.find('tr').length ) {
+	        $table.append( '<tr class="no-row-filler"><td></td></tr>' );
+	      }
+
+	      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
+	    }, // end fn
+
+	    /**
+	     * [function description]
+	     * @param  {[type]} $inpt [description]
+	     * @return {[type]}       [description]
+	     */
+	    arrayRemoveAllRows : function($container) {
+	      var $table = $container.find('table'),
+	          $btn_add = $table.find('.btn-array-add').detach();
+
+	      $table.empty();
+	      $table.append( '<tr class="no-row-filler"><td></td></tr>' );
+	      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
+	    }, // end fn
+		}; // end fns
 
 		// initialize
 		this.fn._init();
