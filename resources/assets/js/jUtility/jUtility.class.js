@@ -9,42 +9,21 @@
  *  Prereqs: 	jQuery, jApp
  *
  */
+;'use strict';
 
- if (!Array.prototype.last){
-     Array.prototype.last = function(){
-         return this[this.length - 1];
-     };
- }
+ var $ = require('jQuery'),
+ 		 _ = require('underscore'),
+     jForm = require('../jForm/jForm.class'),
+     jInput = require('../jInput/jInput.class'),
+     bootstrap = require('bootstrap'),
+     validator = require('@ingenious/jquery-validator');
 
-;(function(window, $, jApp) {
+$.fn.bootpag = require('./vendor/jquery.bootpag');
 
-  'use strict';
+require('./vendor/jquery.md5')($);
+require('noty');
 
-  $.fn.serializeObject = function() {
-      var o = {};
-      var a = this.serializeArray();
-      $.each(a, function() {
-          if ($(this).prop('disabled')) return false;
-
-          if ( !!$(this).attr('data-tokens') ) {
-            jApp.log($(this).tokenInput('get'));
-            o[this.name] = _.pluck( $(this).tokenInput('get'), 'name');
-            return o;
-          }
-
-          if (o[this.name]) {
-              if (!o[this.name].push) {
-                  o[this.name] = [o[this.name]];
-              }
-              o[this.name].push(this.value || '');
-          } else {
-              o[this.name] = this.value || '';
-          }
-      });
-      return o;
-  };
-
-  var jUtility = {
+module.exports = {
 
     /**
      * Temp storage object
@@ -557,8 +536,8 @@
 
       var storeKey = model + '_permissions';
 
-      if (!!$.jStorage.get(storeKey,false)) {
-        return jUtility.callback.getPermissions( $.jStorage.get(storeKey)  );
+      if (!!jApp.store.get(storeKey,false)) {
+        return jUtility.callback.getPermissions( jApp.store.get(storeKey)  );
       }
 
       jApp.log('0.1 - Getting Permissions from server');
@@ -566,8 +545,8 @@
       var requestOptions = {
         url : '/getPermissions/' + model,
         success : function(response) {
-          $.jStorage.set(storeKey, response, { TTL : 60000*60*24 });
-          jApp.log( $.jStorage.getTTL( storeKey ) );
+          jApp.store.set(storeKey, response, { TTL : 60000*60*24 });
+          jApp.log( jApp.store.getTTL( storeKey ) );
 
           jUtility.callback.getPermissions(response);
           jUtility.buildMenus();
@@ -2569,7 +2548,7 @@
        */
       ag = $.extend( ag, {
         action : 'new',
-        store : $.jStorage,
+        store : jApp.store,
         currentRow : {},
         permissions : {},
         dataGrid : {
@@ -2577,7 +2556,7 @@
           // pagination parameters
           pagination : {
             totalPages : -1,
-            rowsPerPage : $.jStorage.get('pref_rowsPerPage',ag.options.rowsPerPage)
+            rowsPerPage : jApp.store.get('pref_rowsPerPage',ag.options.rowsPerPage)
           },
 
           // ajax requests
@@ -4449,9 +4428,4 @@
 
 		} // end callback defs
 
-  };
-
-  // add it to the global scope
-  window.jUtility = jUtility;
-
-})(window, $, jApp);
+  }

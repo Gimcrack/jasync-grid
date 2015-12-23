@@ -1,0 +1,259 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "234be996950e09fb285c2eb544cce22b",
+    "content-hash": "b866dfed29f2c84436a64f6716f894e5",
+    "packages": [
+        {
+            "name": "components/jquery",
+            "version": "2.1.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/components/jquery.git",
+                "reference": "7b1d1104656a092423fbfba13c5920e9bbba290c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/components/jquery/zipball/7b1d1104656a092423fbfba13c5920e9bbba290c",
+                "reference": "7b1d1104656a092423fbfba13c5920e9bbba290c",
+                "shasum": ""
+            },
+            "type": "component",
+            "extra": {
+                "component": {
+                    "scripts": [
+                        "jquery.js"
+                    ],
+                    "files": [
+                        "jquery.min.js",
+                        "jquery.min.map",
+                        "jquery-migrate.js",
+                        "jquery-migrate.min.js"
+                    ]
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "John Resig",
+                    "email": "jeresig@gmail.com"
+                }
+            ],
+            "description": "jQuery JavaScript Library",
+            "homepage": "http://jquery.com",
+            "time": "2015-05-08 05:04:47"
+        },
+        {
+            "name": "ingenious/bootstrap-multiselect",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Gimcrack/bsms.git",
+                "reference": "a177278a2bcbae45d9c7ecd1ae519b16161cba8a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Gimcrack/bsms/zipball/a177278a2bcbae45d9c7ecd1ae519b16161cba8a",
+                "reference": "a177278a2bcbae45d9c7ecd1ae519b16161cba8a",
+                "shasum": ""
+            },
+            "require": {
+                "twbs/bootstrap-sass": "^3.3@dev"
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache 2.0"
+            ],
+            "authors": [
+                {
+                    "name": "David Stutz",
+                    "email": "email@email.com"
+                }
+            ],
+            "description": "Fork of Bootstrap Multiselect Plugin By David Stutz",
+            "time": "2015-09-02 17:22:05"
+        },
+        {
+            "name": "ingenious/jquery-bootpag",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Gimcrack/jquery-bootpag.git",
+                "reference": "9867fab0444ee1370c3ca0a2c2f4fb10623f98b9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Gimcrack/jquery-bootpag/zipball/9867fab0444ee1370c3ca0a2c2f4fb10623f98b9",
+                "reference": "9867fab0444ee1370c3ca0a2c2f4fb10623f98b9",
+                "shasum": ""
+            },
+            "require": {
+                "components/jquery": "*"
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "botmonster",
+                    "email": "email@botmonster.com"
+                }
+            ],
+            "description": "Bootstrap dynamic pagination jQuery plugin",
+            "time": "2015-09-02 17:57:53"
+        },
+        {
+            "name": "ingenious/jquery-validator",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Gimcrack/jquery-validator.git",
+                "reference": "81fe7811aa8734d376777eeb698bccd2ba784854"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Gimcrack/jquery-validator/zipball/81fe7811aa8734d376777eeb698bccd2ba784854",
+                "reference": "81fe7811aa8734d376777eeb698bccd2ba784854",
+                "shasum": ""
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jeremy Bloomstrom",
+                    "email": "jeremy@in.genio.us"
+                }
+            ],
+            "description": "Custom js form validation class",
+            "time": "2015-12-23 00:34:39"
+        },
+        {
+            "name": "ingenious/underscore",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Gimcrack/underscore.git",
+                "reference": "9ba096013f9a99d01946fb7886c7a3a751c99f36"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Gimcrack/underscore/zipball/9ba096013f9a99d01946fb7886c7a3a751c99f36",
+                "reference": "9ba096013f9a99d01946fb7886c7a3a751c99f36",
+                "shasum": ""
+            },
+            "type": "component",
+            "extra": {
+                "component": {
+                    "scripts": [
+                        "underscore.js"
+                    ],
+                    "files": [
+                        "underscore-min.js",
+                        "underscore-min.map"
+                    ],
+                    "shim": {
+                        "exports": "_"
+                    }
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jeremy Ashkenas",
+                    "email": "jeremy@documentcloud.org"
+                }
+            ],
+            "description": "JavaScript's functional programming helper library.",
+            "homepage": "http://underscorejs.org",
+            "keywords": [
+                "browser",
+                "client",
+                "functional",
+                "server",
+                "util"
+            ],
+            "time": "2015-09-25 19:42:51"
+        },
+        {
+            "name": "twbs/bootstrap-sass",
+            "version": "v3.3.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/twbs/bootstrap-sass.git",
+                "reference": "446b41a5af0f20f139a6d33ded2a62101c3bd5a1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/twbs/bootstrap-sass/zipball/446b41a5af0f20f139a6d33ded2a62101c3bd5a1",
+                "reference": "446b41a5af0f20f139a6d33ded2a62101c3bd5a1",
+                "shasum": ""
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.3.x-dev"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mark Otto"
+                },
+                {
+                    "name": "Thomas McDonald"
+                },
+                {
+                    "name": "Tristan Harward"
+                },
+                {
+                    "name": "Peter Gumeson"
+                },
+                {
+                    "name": "Gleb Mazovetskiy"
+                },
+                {
+                    "name": "Jacob Thornton"
+                }
+            ],
+            "description": "bootstrap-sass is a Sass-powered version of Bootstrap 3, ready to drop right into your Sass powered applications.",
+            "homepage": "http://github.com/twbs/bootstrap-sass",
+            "keywords": [
+                "bootstrap",
+                "css",
+                "sass"
+            ],
+            "time": "2015-11-24 23:06:35"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "ingenious/underscore": 20,
+        "ingenious/bootstrap-multiselect": 20,
+        "ingenious/jquery-bootpag": 20,
+        "ingenious/jquery-validator": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}

@@ -4,161 +4,142 @@
     <meta charset="utf-8">
     <title>jAsync-Grid Test</title>
 
-    <link rel="stylesheet" href="vendor/_concat-application-css.css" media="screen" title="no title" charset="utf-8">
+    <link rel="stylesheet" href="/css/all.css" media="screen" title="no title" charset="utf-8">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700,300' rel='stylesheet' type='text/css'>
 
-    <script type="text/javascript" src="vendor/jquery-2.1.4.js"></script>
-    <script type="text/javascript" src="vendor/jquery-migrate-1.2.1.js"></script>
-    <script type="text/javascript" src="vendor/underscore.js"></script>
-    <script type="text/javascript" src="vendor/validator.class.js"></script>
-    <script type="text/javascript" src="vendor/perfect-scrollbar.jquery.js"></script>
-    <script type="text/javascript" src="vendor/functions.js"></script>
-    <script type="text/javascript" src="js/jstorage.js"></script>
-    <script type="text/javascript" src="js/jApp.class.js"></script>
-    <script type="text/javascript" src="js/jInput.class.js"></script>
-    <script type="text/javascript" src="js/jForm.class.js"></script>
-    <script type="text/javascript" src="js/jLinkTable.class.js"></script>
-    <script type="text/javascript" src="js/jGrid.class.js"></script>
-    <script type="text/javascript" src="js/jColParam.class.js"></script>
+    <script type="text/javascript" src="./vendor/components/jquery/jquery.js"> </script>
+    <script type="text/javascript" src="./vendor/ingenious/underscore/underscore-min.js"> </script>
+
+    <script type="text/javascript" src="build/all.js"></script>
 
     <script type="text/javascript">
-          // extend the application views
-      _.extend( jApp.views, {
+      $( function() {
+        $.extend(true, jApp.colparams, {
+        	'Group' : [
+        		{ // fieldset
+        			label : 'Group Details',
+        			helpText : 'Please fill out the following information about the group.',
+        			class : 'col-lg-4',
+        			fields : [
+        				{
+        					name : 'name',
+        					placeholder : 'e.g. Administrators',
+        					_label : 'Group Name',
+        					_enabled : true,
+        					required : true,
+        					'data-validType' : 'Anything',
+        				}, {
+        					name : 'description',
+        					type : 'textarea',
+        					_label : 'Description',
+        					_enabled : true
+        				}, {
+        					name : 'modules',
+        					type : 'select',
+        					_label : 'Assign roles/permissions to this group',
+        					_enabled : true,
+        					_labelssource : 'Module.role',
+        					_optionssource : 'Module.id',
+        					multiple : true,
+        				}
+        			]
+        		}, {
+        			class : 'col-lg-8',
+        			fields : [
+        				{
+        					name : 'users',
+        					type : 'array',
+        					_label : 'Add Users to this Group',
+        					_enabled : true,
+        					fields : [
+        						{
+        							name : 'users',
+        							type : 'select',
+        							_label : 'Select Users',
+        							_labelssource : 'User.username',
+        							_optionssource : 'User.id',
+        							_enabled : true,
+        							multiple : true
+        						}, {
+        							name : 'comment[]',
+        							placeholder : 'Optional Comment',
+        							_enabled : true,
+        						}
+        					]
+        				},
+        			]
+        		}
+        	]
+        });
 
-        profile : function() {
+        // extend the application views
+        $.extend( true, jApp.views.admin, {
 
-          _.extend( jApp.oG, {
+        	groups : function() {
 
-            profile : new jGrid({
+        		$.extend( true, jApp.oG.admin, {
 
-              table : 'contact',
-              dbView : 'vw_Contact',		// db table
-              pkey : 'ContactID',			// Primary Key Of Table
-              tableFriendly : 'User',
-              columnFriendly : 'FullName',
-              filter : 'ContactID = [[CONTACTID]]',
-              gridHeader : {
-                icon : 'fa-user',
-                headerTitle : 'My Profile',
-                helpText : 'Note: Resetting your password here will affect all Logins assigned to you.'
-              },
-              toggles : {
-                new : false,
-                del : false,
-                sort : false,
-                autoUpdate : false,
-                paginate : false,
-                headerFilters : false,
-              },
-              rowBtns : {
-                custom : {
-                  resetPassword : { type : 'button', class : 'btn btn-warning', icon : 'fa-refresh', label : '', fn : 'resetPassword', title : 'Reset Password'  } // etc.
-                }
-              },
-              columns : [ 				// columns to query
-                "ContactID",
-                "EmailLink",
-                "UserNames",
-                "ManagerName",
-                "GroupNames",
-                "UserIDs",
-                "GroupIDs",
-                "ManagerID",
-              ],
-              hidCols : [					// columns to hide
-                "UserIDs",
-                "GroupIDs",
-                "ManagerID"
-              ],
-              headers : [ 				// headers for table
-                "ID",
-                "Name",
-                "Login(s)",
-                "Reports To",
-                "Groups",
-              ],
-              templates : { 				// html template functions
+        			groups : new jGrid({
+        				table : 'groups',
+        				model : 'Group',
+        				columnFriendly : 'name',
+        				gridHeader : {
+        					icon : 'fa-users',
+        					headerTitle : 'Manage Groups',
+        					helpText : "<strong>Note:</strong> Manage Groups Here"
+        				},
+        				columns : [ 				// columns to query
+        					"id",
+        					"name",
+        					"description",
+        					"users",
+        					"modules"
+        				],
 
-                "ContactID" : function(value) {
-                  var temp = '0000' + value;
-                  return temp.slice(-4);
-                },
+        				headers : [ 				// headers for table
+        					"ID",
+        					"Name",
+        					"Description",
+        					"Users",
+        					"Module Access (Permissions)"
+        				],
+        				templates : { 				// html template functions
 
-              },
-              linkTables : [
-                { tables : { parent : 'Contact', child : 'Group' }, childFriendlyName : 'GroupName' },
-                { tables : { parent : 'Contact', child : 'Server' }, childFriendlyName : 'HostName' },
-                { tables : { parent : 'Contact', child : 'Application' }, childFriendlyName : 'ApplicationName' },
-                { tables : { parent : 'Contact', child : 'User' }, childFriendlyName : 'UserName' },
-              ],
-              sortBy : 'EmailLink',			// column to sort by
-              rowsPerPage : 10,			// rows per page to display on grid
-              pageNum	: 1,				// current page number to display
-              html : {
+        					"id" : function(value) {
+        						return ('0000' + value).slice(-4);
+        					},
 
-                // Edit Form Template
-                resetPassword : function() {/*
-                  <div id="div_resetFrm" class="div-btn-reset min div-form-panel-wrapper">
-                    <div class="frm_wrapper">
-                    <div class="panel panel-yellow">
-                      <div class="panel-heading">
-                        <button type="button" class="close" aria-hidden="true">×</button>
-                        <i class="fa fa-refresh fa-fw"></i> Reset Password
-                      </div>
-                      <div class="panel-overlay" style="display:none"></div>
-                      <div class="panel-body">
-                        <div class="row side-by-side formContainer"></div>
-                      </div>
-                    </div>
-                    </div>
-                  </div>
-                */},
+        					"name" : function(value) {
+        						var r = jApp.aG().currentRow;
+        						return value.link( window.location.href.trim('/') + '/' + r.id );
+        					},
 
-              },
-              formDefs : {
-                resetPassword : {
-                  table : 'User',
-                  dataView : 'dbo.lk_UserContact',
-                  pkey : 'ContactID',
-                  tableFriendly : 'User Password',
-                  atts : {
-                    name : 'frm_resetUser',
-                  },
-                  fieldset : {
-                    'legend' : 'Reset Password',
-                  },
-                  loadExternal : false,
-                  colParams : [
-                    { type : 'hidden', readonly : 'readonly', name : 'ContactID' },
-                    { type : 'password', name : 'Password1', id : 'Password1', required : 'required', validType : 'min>=6', _label : 'New Password', placeholder : '******' },
-                    { type : 'password', name : 'Password2', id : 'Password2', required : 'required', validType : 'field==#Password1', _label : 'Confirm Password', placeholder : '******' },
-                  ],
-                }
-              },
-              fn : {
-                resetPassword : function() {
-                  jApp.oG.profile.action = 'resetPassword';
-                  // modal overlay
-                  jApp.oG.profile.fn.overlay(2,'on');
+        					"users" : function(arr) {
+        						return _.pluck(arr, 'username').join(', ');
+        					},
 
-                  //setup target div
-                  var $target = jApp.oG.profile.$().find('#div_resetFrm');
-                  jApp.oG.profile.fn.setupTargetDiv($target);
-                }, //end fn
-              }
+        					"modules" : function(arr) {
+        						return _.pluck(arr, 'role').join(', ');
+        					},
 
-            })
-          })
-        }
+        				},
+        			})
+        		})
+        	}
+        });
+
+        jApp.views.admin.groups();
       });
-
-      jApp.views.profile();
-
     </script>
-
 
   </head>
   <body>
+    <div class="dev" id="wrapper">
+      <div class="" id="page-wrapper">
 
+      </div>
+
+    </div>
 
   </body>
 </html>

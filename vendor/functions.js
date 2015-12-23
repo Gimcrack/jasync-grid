@@ -69,7 +69,7 @@ function nfx_genie(image,message,type) {
 	}).show();
 }
 
-function htmlspecialchars_decode(string, quote_style) { 
+function htmlspecialchars_decode(string, quote_style) {
   //       discuss at: http://phpjs.org/functions/htmlspecialchars_decode/
   //      original by: Mirek Slugen
   //      improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
@@ -135,8 +135,8 @@ function htmlspecialchars_decode(string, quote_style) {
   return string;
 }
 
-	
-	
+
+
 /**
  *  Format phone numbers
 */
@@ -194,7 +194,7 @@ function formatInteger(z) {
 function formatSSN(z) {
 	z = z.replace(/\D/g, '');
 	var ret;
-	
+
 	switch (z.length) {
 		case 0:
 		case 1:
@@ -202,16 +202,16 @@ function formatSSN(z) {
 		case 3:
 			ret = z;
 		break;
-		
+
 		case 4:
 		case 5:
 			ret = z.substr(0,3) + '-' + z.substr(3);
 		break;
-		
+
 		default:
 			ret = z.substr(0,3) + '-' + z.substr(3,2) + '-' + z.substr(5);
 		break;
-			
+
 	}
 	return ret;
 }
@@ -221,24 +221,7 @@ function formatUC(z) {
 }
 
 (function( $ ){
-   $.fn.psiblings = function(search) {
-        // Get the current element's siblings
-        var siblings = this.siblings(search);
-
-        if (siblings.length != 0) { // Did we get a hit?
-            return siblings.eq(0);
-        }
-
-        // Traverse up another level
-        var parent = this.parent();
-        if (parent === undefined || parent.get(0).tagName.toLowerCase() == 'body') {
-            // We reached the body tag or failed to get a parent with no result.
-            // Return the empty siblings tag so as to return an empty jQuery object.
-            return siblings;
-        }
-        // Try again
-        return parent.psiblings(search);
-   }; 
+   
 })( jQuery );
 
 function strtotime(text, now) {
@@ -830,5 +813,3 @@ function date(format, timestamp) {
   };
   return this.date(format, timestamp);
 }
-
-

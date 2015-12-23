@@ -14,6 +14,9 @@
     ],
     "require": {
         "components/jquery": "^2.1",
-        "components/underscore" : "*"
+        "ingenious/underscore" : "dev-master",
+        "ingenious/bootstrap-multiselect" : "dev-master",
+        "ingenious/jquery-bootpag" : "dev-master",
+        "ingenious/jquery-validator": "dev-master"
     }
 }

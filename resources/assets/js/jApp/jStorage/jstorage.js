@@ -37,7 +37,7 @@
 /* global ActiveXObject: false */
 /* jshint browser: true */
 
-(function() {
+; module.exports = (function() {
     'use strict';
 
     var
@@ -992,5 +992,7 @@
 
     // Initialize jStorage
     _init();
+
+    return $.jStorage;
 
 })();

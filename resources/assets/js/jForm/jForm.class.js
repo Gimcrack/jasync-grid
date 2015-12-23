@@ -9,159 +9,32 @@
   *
   *  Prereqs: 	jQuery, underscore.js, jStorage.js
   */
+;'use strict';
 
- // jquery function for clearing a form of all its values
- $.fn.clearForm = function() {
-  return this.each(function() {
-    if ( !!$(this).prop('disabled') || !!$(this).prop('readonly') ) return false;
+var $ = require('jQuery'),
+    _ = require('underscore'),
+    jInput = require('../jInput/jInput.class');
 
-	var type = this.type, tag = this.tagName.toLowerCase();
-    if (tag == 'form')
-      return $(':input',this).clearForm();
-    if (type == 'text' || type == 'password' || tag == 'textarea')
-      this.value = '';
-    else if (type == 'checkbox' || type == 'radio')
-      this.checked = false;
-    else if (tag == 'select')
-       this.selectedIndex = (!!$(this).prop('multiple')) ? -1 : 0;
-	$(this).psiblings('.form-control-feedback').removeClass('glyphicon-remove').removeClass('glyphicon-ok').hide();
-	$(this).closest('.form_element').removeClass('has-error').removeClass('has-success');
-  });
-};
+module.exports = function( options ) {
 
-// javascript closure
-;(function( window, $ ) {
+		var
 
-	'use strict';
+      /**
+       * Alias of this
+       * @type {[type]}
+       */
+      self = this,
 
-	var jForm = function( options ) {
-		/**  **  **  **  **  **  **  **  **  **
- 		 *   VARS
- 		 **  **  **  **  **  **  **  **  **  **/
+      /**
+       * Shortcut to this.options.atts
+       */
+      oAtts,
 
-		// alias this
-		var self = this;
-
-		this.$frm = false;
-		this.store = $.jStorage;
-    this.submitted = false;
-
-
-		/**  **  **  **  **  **  **  **  **  **
-		 *   DEFAULT OPTIONS
-		 *
-		 *  Set the default options for the
-		 *  instance here. Any values specified
-		 *  at runtime will overwrite these
-		 *  values.
-		 **  **  **  **  **  **  **  **  **  **/
-
-		this.options = {
-			// form setup
-			model : '',
-      table : '',
-      atts : {						// form html attributes
-				'method' : 'POST',
-        'action' : '',
-				'role' : 'form',
-				'onSubmit' : 'return false',
-				'name' : false,
-        'enctype' : 'multipart/form-data'
-			},
-			hiddenElms : false,
-			wrap : '',
-			btns : false,
-			fieldset : false,
-			disabledElements : [],
-			/* colParams - 	accept, alt, autocomplete, autofocus, checked, cols,
-							disabled, form, formaction, formenctype, formmethod,
-							formnovalidate, formtarget, height, id, list, max,
-							maxlength, min, multiple, name, pattern, placeholder,
-							readonly, required, rows, size, src, step, type, data-validType,
-							value, width, wrap, onClick, onChange, class, _labels,
-							_options, _firstlabel, _firstoption, _label, _enabled,
-							viewName, data-ordering, fieldset, _optionsSource, _labelsSource,
-							_optionsFilter, _linkedElmID, _linkedElmOptions,
-							_linkedElmLabels, _linkedElmFilterCol
-			*/
-			colParams : {},
-			colParamsAdd : [], // storage container for additional colParams such as from linkTables
-			loadExternal : true, // load external colParams e.g. from a db
-			ttl : 30, // TTL for external data (mins)
-			tableFriendly : '', // friendly name of table e.g. Application
-			layout : 'standard' // standard (three-column layout) | single (one-col layout)
-		};
-
-		// set the runtime values for the options
-		$.extend(true, this.options,options);
-
-    // set up the callback functions
-    $.extend(true, this.callback, options.callback);
-
-    // alias for attributes container
-		var oAtts = this.options.atts;
-
-		// set default values
-		if (!this.options.fieldset) {
-			this.options.fieldset = {
-				'legend' : self.options.tableFriendly + ' Details',
-				'id' : 'fs_details'
-			};
-		}
-
-		// set the default buttons, if not present
-		if (!this.options.btns) {
-			this.options.btns = [
-        { type : 'button', class : 'btn btn-primary btn-formMenu',  id : 'btn_form_menu_heading', value : '<i class="fa fa-fw fa-bars"></i>',},
-				{ type : 'button', class : 'btn btn-primary btn-go', 	      id : 'btn_go',                value : '<i class="fa fa-fw fa-floppy-o"></i> Save &amp; Close' },
-				{ type : 'button', class : 'btn btn-primary btn-reset',     id : 'btn_reset',             value : '<i class="fa fa-fw fa-refresh"></i> Reset' },
-				{ type : 'button', class : 'btn btn-primary btn-cancel',    id : 'btn_cancel',            value : '<i class="fa fa-fw fa-times"></i> Cancel' },
-			];
-		}
-
-		// set the default name for the form, if not present
-		if (!this.options.atts.name) {
-			this.options.atts.name = 'frm_edit' + this.options.tableFriendly;
-		}
-
-		// set the default hidden elements if not present
-		if (!this.options.hiddenElms) {
-			// setup the hidden elements
-			this.options.hiddenElms = [
-				{ atts : { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : '_method', 'value' : oAtts.method || 'POST', 'data-static' : true } },
-			];
-		}
-
-		// container for jQuery DOM elements
-		this.DOM = {
-			$prnt : $('<div/>'),
-			$frm : false,
-			$fs : false
-		};
-
-		this.oInpts = {};
-		this.DOM.$Inpts = $('<div/>');
-		this.rowData = {};
-		this.readonlyFields = [];
-
-		/**  **  **  **  **  **  **  **  **  **
-		 *   HTML TEMPLATES
-		 *
-		 *  Place large html templates here
-		 *  as functions. These are rendered with
-		 *  the method self.fn.render.
-		 *
-		 *  Parameters of the form {@ParamName}
-		 *  are expanded by the render function
-		 **  **  **  **  **  **  **  **  **  **/
-		this.html = {
-
-		};// end html templates
-
-		// create shortcut to the form
-		this.$ = function() {
-			return this.DOM.$frm;
-		};
+      /**
+       * Runtime options
+       * @type {[type]}
+       */
+      runopts = options || {};
 
 		/**  **  **  **  **  **  **  **  **  **
  		 *   FUNCTION DEFS
@@ -171,45 +44,20 @@
 				var inpt;
 
 				// create the form
-				self.DOM.$frm = $('<form/>', oAtts )
-					.wrap(self.options.wrap);
+				self.DOM.$frm = self.factory.form();
 
-        // add the fieldset if we are not loading external col params
-        if ( !self.options.loadExternal ) {
-          self.DOM.$frm
-           .append(  $('<fieldset/>', self.options.fieldset)
-					      .append( $('<legend/>').html( self.options.fieldset.legend ) )
-          );
-        }
+        // handle the fieldset
+        self.fn.handleFieldset();
 
-        // add the inputs to the DOM
-        self.DOM.$frm.append( self.DOM.$Inpts );
-
-
-				// append the form to the parent container
-				self.DOM.$prnt.append( ( !!self.DOM.$frm.parents().length ) ?
-					  self.DOM.$frm.parents().last() :
-					  self.DOM.$frm
-				);
+        // append the DOM elements
+        self.fn.append();
 
 				// create and append the hidden elements
-				_.each( self.options.hiddenElms, function( o )  {
-          o.form = self;
-          inpt = new jInput( o );
-					self.oInpts[ o.atts.name ] = inpt ;
-					self.DOM.$Inpts.append( inpt.fn.handle() );
-					if (o.atts.readonly === 'readonly') {
-						self.readonlyFields.push( o.atts.name );
-					}
-				});
+				self.fn.buildInputs( self.options.hiddenElms );
 
-				// get the colParams
-				if ( !!self.options.loadExternal ) { // get the colparams from an external json source
-					self.fn.getColParams();
-				} else { // colparams must be specified locally, so process them
-					self.fn.processColParams();
-					self.fn.processBtns();
-				}
+        // handle the column parameters
+				self.fn.handleColParams();
+
 			}, // end fn
 
       /**
@@ -655,9 +503,273 @@
           self.submitted = false;
           //self.oElms['btn_go'].fn.enable();
         }
-      }
+      }, // end fn
+
+      /**
+       * Set the instance options
+       * @method function
+       * @return {[type]} [description]
+       */
+      setOptions : function( options ) {
+  			// insulate against options being null
+  			options = options || {};
+  			// set the runtime values for the options
+        var atts = options.atts || {};
+
+      	$.extend(true,
+          self.options,   // target
+          self.defaults,  // default options
+          {               // additional defaults
+            // Default attributes
+            atts : {
+              name : 'frm_edit' + ( options.tableFriendly || options.model || null )
+            },
+
+            // Default hidden elements
+            hiddenElms : [
+      				{ atts :
+                { 'type' : 'hidden', 'readonly' : 'readonly', 'name' : '_method', 'value' : atts.method || 'POST', 'data-static' : true }
+              },
+      			],
+
+            // Default fieldset heading
+            fieldset : {
+              'legend' : ( options.tableFriendly || 'Form' ) + ' Details',
+      				'id' : 'fs_details'
+            },
+
+            // Default buttons
+            btns : [
+              { type : 'button', class : 'btn btn-primary btn-formMenu',  id : 'btn_form_menu_heading', value : '<i class="fa fa-fw fa-bars"></i>',},
+      				{ type : 'button', class : 'btn btn-primary btn-go', 	      id : 'btn_go',                value : '<i class="fa fa-fw fa-floppy-o"></i> Save &amp; Close' },
+      				{ type : 'button', class : 'btn btn-primary btn-reset',     id : 'btn_reset',             value : '<i class="fa fa-fw fa-refresh"></i> Reset' },
+      				{ type : 'button', class : 'btn btn-primary btn-cancel',    id : 'btn_cancel',            value : '<i class="fa fa-fw fa-times"></i> Cancel' },
+      			],
+          },
+          options || {}   // runtime options
+        );
+
+      	// alias to attributes object
+      	oAtts = self.options.atts || {};
+
+        // set up the callback functions
+        $.extend(true, self.callback, options.callback || {} );
+
+        return self.fn; // for chaining methods
+      }, // end fn
+
+      /**
+       * Handle form fieldset
+       * @method function
+       * @return {[type]} [description]
+       */
+      handleFieldset : function() {
+        if (!!self.options.loadExternal) return false;
+
+        self.DOM.$frm.append( self.factory.fieldset() );
+      }, // end fn
+
+      /**
+       * Handle the column parameters
+       * @method function
+       * @return {[type]} [description]
+       */
+      handleColParams : function() {
+        if ( !!self.options.loadExternal ) { // get the colparams from an external json source
+					return self.fn.getColParams();
+				}
+
+				self.fn.processColParams();
+				self.fn.processBtns();
+
+      }, // end fn
+
+      /**
+       * Append the DOM elements
+       * @method function
+       * @return {[type]} [description]
+       */
+      append : function() {
+        self.DOM.$frm.append( self.DOM.$Inpts );
+
+        // append the form to the parent container
+				self.DOM.$prnt.append( ( !!self.DOM.$frm.parents().length ) ?
+					  self.DOM.$frm.parents().last() :
+					  self.DOM.$frm
+				);
+
+      }, // end fn
+
+      /**
+       * Build inputs from array
+       *  of column parameters
+       * @method function
+       * @return {[type]} [description]
+       */
+      buildInputs : function( aColParams ) {
+        _.each( aColParams, self.factory.input );
+      }, // end fn
+
+      /**
+       * pre-initialize the object
+       * @method function
+       * @return {[type]} [description]
+       */
+      _preInit : function() {
+        self.store = jApp.store;
+      	self.readonly = false;
+
+      	// Get the default options and config
+      	self.options  = {};
+      	self.defaults = require('./config/defaults');
+
+      	/**  **  **  **  **  **  **  **  **  **
+      		 *   DOM ELEMENTS
+      		 *
+      		 *  These placeholders get replaced
+      		 *  by their jQuery handles
+      		 **  **  **  **  **  **  **  **  **  **/
+      	self.DOM = {
+    			$prnt : $('<div/>'),
+    			$frm : false,
+    			$fs : false,
+          $Inpts : $('<div/>')
+    		};
+
+        /**
+         * Initialize submitted flag
+         * @type {Boolean}
+         */
+        self.submitted = false;
+
+        /**
+         * Reference jStorage object
+         * @type {[type]}
+         */
+        self.store = $.jStorage;
+
+      	/**
+      	 * Container for jInput objects
+      	 * @type {Array}
+      	 */
+      	self.oInpts = [];
+
+        /**
+         * Initialize the rowData object
+         * @type {Object}
+         */
+        self.rowData = {};
+
+        /**
+         * Initialize the readonly fields array
+         * @type {Array}
+         */
+        self.readonlyFields = [];
+
+        /**
+         * Initialize the html template container
+         * @type {Object}
+         */
+        self.html = {};
+
+        /**
+         * Shortcut function to the $frm
+         * @method function
+         * @return {[type]} [description]
+         */
+      	self.$ = function() {
+      		return self.DOM.$frm;
+      	};
+
+        // set the instance options
+        self.fn.setOptions( options );
+
+        // initialize
+        self.fn._init();
+
+      }, // end fn
 
 		}; // end fns
+
+    /**
+     * Builders for html elements
+     * @type {Object}
+     */
+    this.factory = {
+
+      /**
+       * Create a form element
+       * @method function
+       * @return {[type]} [description]
+       */
+      form : function( options ) {
+        options = options || self.options;
+
+        return $('<form/>', options.atts )
+          .data('jForm', self)
+					.wrap(options.wrap);
+      }, // end fn
+
+      /**
+       * Build and append an input
+       * from column parameters
+       * @method function
+       * @param  {[type]} colparams [description]
+       * @return {[type]}           [description]
+       */
+      input : function( colparams, index ) {
+        var inpt = self.factory.jInput( colparams ),
+            atts = colparams.atts || {};
+
+        // add the jInput object to the oInpts array
+        self.oInpts[ atts.name || index ] == inpt;
+
+        // add the input DOM handle to the DOM
+        self.DOM.$Inpts.append( inpt.fn.handle() );
+
+        // add the input to the readonly
+        //  fields list, if applicable
+        if ( !!atts.readonly ) {
+          self.readonlyFields.push( atts.name );
+        }
+
+      }, // end fn
+
+      /**
+       * Build a new jInput Object
+       * from column parameters
+       * @method function
+       * @param  {[type]} colparams [description]
+       * @return {[type]}           [description]
+       */
+      jInput : function( colparams ) {
+        colparams.form = self;
+        return new jInput( colparams );
+      }, // end fn
+
+      /**
+       * Create a fieldset element
+       * @method function
+       * @return {[type]} [description]
+       */
+      fieldset : function( options ) {
+        options = options || self.options.fieldset;
+        return $('<fieldset/>', options)
+                  .append( self.factory.legend() );
+      }, // end fn
+
+      /**
+       * Create a legend element
+       * @method function
+       * @param  {[type]} options [description]
+       * @return {[type]}         [description]
+       */
+      legend : function( options ) {
+        options = options || self.options.fieldset.legend;
+        return $('<legend/>').html(options);
+      }, // end fn
+
+    } // end factory
 
     // alias the submit function
     this.submit = this.fn.submit;
@@ -727,10 +839,6 @@
 		}; // end fns
 
 		// initialize
-		this.fn._init();
+		this.fn._preInit( options || {} );
 
 	} // end jForm declaration
-
-	window.jForm = jForm; // add to global scope
-
-})(window, $, jQuery);
