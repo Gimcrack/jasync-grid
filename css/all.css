@@ -15809,8 +15809,6 @@ fieldset[disabled] {
 .div-btn-delete.max .array-field-container,
 .div-btn-new.max .array-field-container,
 .div-btn-other.max .array-field-container {
-  max-height: 300px;
-  overflow: hidden;
   position: relative;
 }
 

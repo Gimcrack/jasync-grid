@@ -55,7 +55,12 @@ module.exports = function( options ) {
 	 * Method definitions
 	 * @type {Object}
 	 */
-	this.fn = {
+	this.fn = $.extend( true,
+    require('./config/methods/options'),
+    require('./config/methods/arrayInputs'),
+    require('./config/methods/multiselect'),
+    require('./config/methods/toggles'),
+    {
 
 		/**
 		 * Initialize the object
@@ -73,11 +78,8 @@ module.exports = function( options ) {
 			// run any postbuild subroutines
 			self.factory._postbuild();
 
-
 			//append the input
 			self.fn.appendInput();
-
-
 
 			// //update reference to $inpt for radio groups
 			// if (self.type === 'radio') {
@@ -110,7 +112,7 @@ module.exports = function( options ) {
 
 
     	// alias to attributes object
-    	oAtts = self.options.atts || {};
+    	//oAtts = self.options.atts || {};
 
       return self.fn; // for chaining methods
     }, // end fn
@@ -156,63 +158,11 @@ module.exports = function( options ) {
 
     }, // end fn
 
-		/**
-     * Process array field from parameters
+    /**
+     * Get input attributes
      * @method function
-     * @param  {[type]} params [description]
-     * @param  {[type]} target [description]
-     * @return {[type]}        [description]
+     * @return {[type]} [description]
      */
-    processArrayField : function( params ) {
-      var $container = $('<div/>', { class : 'array-field-container alert alert-info' }).data('colparams', params),
-          $table = $('<table/>', { class : '' } ),
-          hidNames = [],
-					masterSelect = params.fields.shift(),
-					inpt;
-
-			self.arrayField = true;
-
-			// populate the hidden field with the names of the pivot inputs
-      _.each( params.fields, function(o) {
-				if (!!o.name) {
-					o['data-name'] = o.name;
-					hidNames.push(o.name.replace('[]',''));
-				}
-      });
-
-			// add a row with the master select
-			inpt = new jInput( { atts : masterSelect, form: self.form } );
-      self.oInpts[ masterSelect.name ] = inpt;
-      $container.append( inpt.fn.handle() );
-
-			// append the inputs
-      // if (!!params.min) {
-      //   for ( var ii = +params.min-1; ii >= 0; ii--  ) {
-      //     $table.append( jUtility.jForm().fn.populateFieldRow( params, ii ) );
-      //   }
-      // } else {
-      //   $table.append( jUtility.jForm().fn.populateFieldRow( params ) );
-      // }
-
-			// add the table to the container
-      $container.append($table);
-
-
-
-      var hid = {
-        name : params.name + '_extra_columns',
-        type : 'hidden',
-        value : hidNames.join()
-      };
-
-      var oHid = new jInput({ atts : hid } );
-      $container.append( oHid.fn.handle() );
-
-			$container.perfectScrollbar();
-
-			return $container;
-    }, // end fn
-
 		getAtts : function( ) {
 			var gblAtts = self.globalAtts;
 			var stdAtts = self.allowedAtts[ self.type ];
@@ -227,7 +177,7 @@ module.exports = function( options ) {
 						!value ||
 						value == '__OFF__' ||
 						value == '__off__' ||
-							( _.indexOf( allowedAttributes, key ) === -1 && key.indexOf('data-') === -1 )
+						( _.indexOf( allowedAttributes, key ) === -1 && key.indexOf('data-') === -1 )
 				) {
 					//console.log(key + ' not allowed for ' + oAtts.name);
 					return false;
@@ -238,213 +188,26 @@ module.exports = function( options ) {
 			});
 			//console.log(filteredAtts);
 			return filteredAtts;
-		},
+		}, // end fn
 
-		hide : function() {
-			if (!!self.DOM.$prnt.hide) {
-				self.DOM.$prnt.hide();
-			}
-			return self.fn;
-		},
 
-		show : function() {
-			if ( oAtts.type !== 'hidden' ) {
-				self.DOM.$prnt.show();
-			}
-			return self.fn;
-		},
-
-		disable : function() {
-			if (oAtts.type !== 'hidden') {
-				self.DOM.$inpt.prop('disabled',true);
-				self.DOM.$inpt.addClass('disabled');
-			}
-			return self.fn;
-		},
-
-		enable : function() {
-			if (!!self.DOM.$inpt.prop) {
-				self.DOM.$inpt.prop('disabled',false);
-				self.DOM.$inpt.removeClass('disabled');
-			}
-			return self.fn;
-		},
-
+    /**
+     * Set time to live on the store value
+     * @method function
+     * @param  {[type]} ttl [description]
+     * @return {[type]}     [description]
+     */
 		setTTL : function(ttl) {
 			self.store.setTTL( ttl );
 		}, //end fn
 
-		/**
-		 * Initialize the select options
-		 * @param  {[type]} refresh [description]
-		 * @return {[type]}         [description]
-		 */
-		initSelectOptions : function(refresh) {
-
-			//console.log('Initializing Select Options');
-			//console.log(oAtts);
-
-			self.refreshAfterLoadingOptions = (!!refresh) ? true : false;
-
-			// local data
-			if ( !!oAtts._optionssource && oAtts._optionssource.indexOf('|') !== -1 ) {
-				jApp.log(' - local options data - ');
-				self.options.extData = false;
-				oAtts._options = oAtts._optionssource.split('|');
-				oAtts._labels = ( !!oAtts._labelssource ) ?
-					oAtts._labelssource.split('|') :
-					oAtts._optionssource.split('|');
-				self.fn.buildOptions();
-			}
-			// external data
-			else if ( !!oAtts._optionssource && oAtts._optionssource.indexOf('.') !== -1 ) {
-				jApp.log(' - external options data -');
-				self.options.extData = true;
-				//console.log('Getting External Options');
-				self.fn.getExtOptions();
-			}
-
-		}, // end fn
-
-		/**
-		 * Get the external url of the options
-		 * @return {[type]} [description]
-		 */
-		getExtUrl : function( type ) {
-			var model, lbl, opt, tmp;
-
-			type = type || oAtts.type;
-
-			tmp = oAtts._labelssource.split('.');
-			self.model = model = tmp[0]; // db table that contains option/label pairs
-			lbl = tmp[1]; // db column that contains labels
-			opt = oAtts._optionssource.split('.')[1];
-			//where = ( !!oAtts._optionsFilter && !!oAtts._optionsFilter.length ) ? oAtts._optionsFilter : '1=1';
-
-			switch (type) {
-				case 'select' :
-					return '/selopts/_' + model + '_' + opt + '_' + lbl;
-
-				default :
-					return '/tokenopts/_' + model + '_' + opt + '_' + lbl;
-			}
-
-		}, // end fn
-
-		getModel : function() {
-			var tmp = oAtts._optionssource.split('.');
-			return tmp[0];
-		}, // end fn
-
-		/**
-		 * Retrieve external options
-		 * @param  {[type]}   force    [description]
-		 * @param  {Function} callback [description]
-		 * @return {[type]}            [description]
-		 */
-		getExtOptions : function( force, callback ) {
-			console.log('getting external options');
-			self.options.extData = true;
-
-			force = ( typeof force !== 'undefined' ) ? force : false;
-
-			// use the copy in storage if available;
-			if (!force && self.options.cache && !!self.store.get( 'selectOptions_' + self.options.atts.name, false )) {
-				//console.log('using local copy of options');
-				return self.fn.buildOptions( JSON.parse( self.store.get( 'selectOptions_' + self.options.atts.name ) ) );
-			}
-
-			var url, data;
-
-			url = self.fn.getExtUrl();
-			data = {};
-
-			self.buildOptionsCallback = callback;
-
-			//console.log('executing request for external options');
-			$.getJSON( url, data, self.fn.buildOptions )
-			 .always( function() {
-					if (self.options.cache) {
-						self.store.setTTL( 'selectOptions_' + self.options.atts.name, 1000*60*self.options.ttl ); // expire in 10 mins.
-					}
-			 });
-		},
-
-		buildOptions : function( data ) {
-			// load JSON data if applicable
-			if (!!data) {
-				self.JSON = data;
-			}
-
-			if (oAtts.type === 'select') {
-				self.fn.populateSelectOptions();
-			} else {
-				self.fn.populateTokensOptions();
-			}
-
-		},
-
-		populateTokensOptions : function() {
-			jApp.log('--- Building TokenField Input ---');
-			jApp.log(self.JSON);
-
-			self.DOM.$inpt.data( 'tokenFieldSource', _.pluck( self.JSON, 'name' ) );
-		}, //end fn
-
-		populateSelectOptions : function() {
-
-			// grab the external data if applicable
-			if (self.options.extData ) {
-				oAtts._labels = _.pluck(self.JSON,'label');
-				oAtts._options = _.pluck(self.JSON,'option');
-
-				if (self.options.cache) {
-					self.store.set( 'selectOptions_' + self.options.atts.name, JSON.stringify(self.JSON) );
-				}
-			}
-
-			// hide if empty options
-			if ( ( !oAtts._options || !oAtts._options.length ) && !!self.options.hideIfNoOptions ) {
-				//console.log('Hiding the element because there are no options ' + oAtts.name)
-				return self.fn.disable().hide();
-			}
-			// else {
-			// 	self.fn.enable().show();
-			// }
-
-			// remove all options
-			console.log( self.DOM );
-			self.DOM.$inpt.find('option').remove();
-
-			// append first option if applicable
-			if (!!oAtts._firstlabel) {
-				var firstOption = (!!oAtts._firstoption) ? oAtts._firstoption : '';
-				self.DOM.$inpt.append(
-					$('<option/>', { value : firstOption }).html( oAtts._firstlabel )
-				);
-			}
-
-			// iterate over the label/value pairs and build the options
-			_.each( oAtts._options, function( v, k ) {
-				self.DOM.$inpt.append(
-					// determine if the current value is currently selected
-					( _.indexOf( oAtts.value, v ) !== -1 || ( !!self.$().attr('data-value') &&  _.indexOf( self.$().attr('data-value').split('|'), v ) !== -1 )) ?
-						$('<option/>', { value : v, 'selected' : 'selected' }).html( oAtts._labels[k] ) :
-						$('<option/>', { value : (!!v) ? v : '' }).html( oAtts._labels[k] )
-				);
-			});
-
-			// remove the unneeded data-value attribute
-			self.$().removeAttr('data-value');
-
-			// call the callback if applicable
-			if (typeof self.buildOptionsCallback === 'function') {
-				self.buildOptionsCallback();
-				delete self.buildOptionsCallback;
-			}
-
-		}, // end fn
-
+    /**
+     * Attribute handler function
+     * @method function
+     * @param  {[type]} key   [description]
+     * @param  {[type]} value [description]
+     * @return {[type]}       [description]
+     */
 		attr : function( key, value ) {
 			if (typeof key === 'object') {
 				//console.log( 'Setting the attrs' );
@@ -462,6 +225,12 @@ module.exports = function( options ) {
 			}
 		},
 
+    /**
+     * Value handler function
+     * @method function
+     * @param  {[type]} value [description]
+     * @return {[type]}       [description]
+     */
 		val : function( value ) {
 
 			if (!!value) {
@@ -489,6 +258,11 @@ module.exports = function( options ) {
 			}
 		},
 
+    /**
+     * Refresh the attributes of the element
+     * @method function
+     * @return {[type]} [description]
+     */
 		refresh : function() {
 			_.each( self.fn.getAtts(), function(v, k) {
 				if ( k !== 'type' ) { // cannot refresh type
@@ -499,230 +273,23 @@ module.exports = function( options ) {
 			self.DOM.$inpt.val( oAtts.value );
 		},
 
+    /**
+     * Render the html of the element
+     * @method function
+     * @return {[type]} [description]
+     */
 		render : function() {
 			return self.DOM.$prnt.prop('outerHTML');
 		},
 
-		handle : function() {
-			return self.DOM.$prnt;
-		},
-
-		multiselectDestroy : function() {
-			self.$().multiselect('destroy');
-		}, // end fn
-
-		multiselectRefresh : function() {
-			if ( !self.options.extData ) { return false; }
-
-			$(this).prop('disabled',true).find('i').addClass('fa-spin');
-
-			self.$().attr('data-tmpVal', self.$().val() || '' )
-					.val('')
-					.multiselect('refresh');
-					//.multiselect('disable');
-
-			self.fn.getExtOptions(true, function() {
-				jUtility.$currentForm()
-					 .find('.btn.btn-refresh').prop('disabled',false)
-						 .find('i').removeClass('fa-spin').end()
-					 .end()
-					.find('[data-tmpVal]').each( function(i,elm) {
-						$(elm).val( $(elm).attr('data-tmpVal') )
-							.multiselect('enable')
-							.multiselect('refresh')
-							.multiselect('rebuild')
-							.removeAttr('data-tmpVal');
-
-							//.data('jInput').fn.multiselect();
-						});
-			});
-		}, // end fn
-
-		/**
-		 * Add button and refresh button for multiselect elements
-		 * @return {[type]} [description]
-		 */
-		multiselectExtraButtons : function() {
-			if ( !self.options.extData ) return self;
-
-			// make an add button, if the model is not the same as the current form
-			if ( self.fn.getModel() !== jApp.opts().model ) {
-
-				jApp.log('----------------------INPUT-------------------');
-				jApp.log(self);
-
-				var model = self.fn.getModel(), frmDef = {
-					table : jApp.model2table( model ),
-					model : model,
-					pkey : 'id',
-					tableFriendly : model,
-					atts : { method : 'POST'}
-				}, key = 'new' + model + 'Frm';
-
-				if ( !jUtility.isFormExists( key ) ) {
-					console.log('building the form: ' + key);
-					jUtility.DOM.buildForm( frmDef, key, 'newOtherFrm', model );
-					jUtility.processFormBindings();
-				}
-
-				var $btnAdd = $('<button/>', {
-					type : 'button',
-					class : 'btn btn-primary btn-add',
-					title : 'Create New ' + model
-				}).html('New ' + model + ' <i class="fa fa-fw fa-external-link"></i>')
-					.off('click.custom').on('click.custom', function() {
-
-						jUtility.actionHelper( 'new' + model + 'Frm' );
-
-					});
-
-				self.DOM.$prnt.find('.btn-group .btn-add').remove().end()
-				.find('.btn-group').prepend( $btnAdd );
-			}
-
-			var $btnRefresh = $('<button/>', {
-				type : 'button',
-				class : 'btn btn-primary btn-refresh',
-				title : 'Refresh Options'
-			}).html('<i class="fa fa-fw fa-refresh"></i>')
-				.off('click.custom').on('click.custom', self.fn.multiselectRefresh);
-
-			self.DOM.$prnt.find('.btn-group .btn-refresh').remove().end()
-					.find('.btn-group').prepend( $btnRefresh );
-
-			return self;
-		}, // end fn
-
-		/**
-		 * Multiselect handler
-		 * @return {[type]} [description]
-		 */
-		multiselect : function() {
-			self.$().multiselect( self.options.bsmsDefaults ).multiselect('refresh');
-			self.fn.multiselectExtraButtons();
-			return self;
-		}, // end fn
-
-		/**
-     * Populate and array field with the form data
-     * @return {[type]} [description]
-     */
-    populateArrayFormData : function( oInpt, data ) {
-      self.fn.arrayRemoveAllRows( oInpt.$() );
-      jApp.log('------Array Data------' );
-      jApp.log(data);
-
-      // iterate through the data rows and populate the form
-      _.each( data, function( obj ) {
-
-        // create a row in the array field table
-        jApp.log('--------Adding Row To The Array ---------');
-        jApp.log( oInpt.$() );
-        self.fn.arrayAddRowFromContainer( oInpt.$(), obj );
-
-      });
-
-      // boot the form
-      jUtility.formBootup();
-
-    }, // end fn
-
-		/**
-     * Add row to array field from container
-     * @param  {[type]} $container [description]
-     * @return {[type]}            [description]
-     */
-    arrayAddRowFromContainer : function( $container, data ) {
-      var $table = $container.find('table'),
-          params = $container.data('colparams'),
-          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params, 1, data || {} ),
-          $btn_add = $table.find('.btn-array-add').eq(0).detach();
-
-      $table.find('.btn-array-add,.no-row-filler').remove();
-
-      $table.append($tr_new);
-
-			if (!$table.find('.btn-array-add').length) {
-					$table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-			}
-
-    }, // end fn
-
     /**
-     * Add row to an array input
+     * jQuery reference to the parent of the element
      * @method function
      * @return {[type]} [description]
      */
-    arrayAddRow : function( ) {
-      var $container = $(this).closest('.array-field-container'),
-          $table = $(this).closest('table'),
-          params = $container.data('colparams'),
-          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params );
-
-      if (!!params.max && +$table.find('tr').length-1 === params.max) {
-        return jUtility.msg.warning('This field requires at most ' + params.max + ' selections.');
-      }
-
-      $table.find('.btn-array-add,.no-row-filler').remove();
-
-      $table.append($tr_new);
-
-      // rename inputs so they all have unique names
-      // $table.find('tr').each( function( i, elm ) {
-      //   $(elm).find(':input').each( function(ii, ee) {
-      //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
-      //   });
-      // });
-
-      jUtility.formBootup();
-    }, // end fn
-
-    /**
-     * Remove a row from an array input table
-     * @return {[type]} [description]
-     */
-    arrayRemoveRow : function() {
-      var $container = $(this).closest('.array-field-container'),
-          $table = $(this).closest('table'),
-          $tr = $(this).closest('tr'),
-          params = $container.data('colparams'),
-          $btn_add = $table.find('.btn-array-add').detach();
-
-
-      if (!!params.min && +$table.find('tr').length-1 === params.min) {
-        $table.find('tr:last-child').find('td:last-child').append($btn_add);
-        return jUtility.msg.warning('This field requires at least ' + params.min + ' selections.');
-      }
-
-      $tr.remove();
-
-      // rename inputs so they all have unique names
-      // $table.find('tr').each( function( i, elm ) {
-      //   $(elm).find(':input').each( function(ii, ee) {
-      //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
-      //   });
-      // });
-      if  ( !$table.find('tr').length ) {
-        $table.append( '<tr class="no-row-filler"><td></td></tr>' );
-      }
-
-      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-    }, // end fn
-
-    /**
-     * [function description]
-     * @param  {[type]} $inpt [description]
-     * @return {[type]}       [description]
-     */
-    arrayRemoveAllRows : function($container) {
-      var $table = $container.find('table'),
-          $btn_add = $table.find('.btn-array-add').detach();
-
-      $table.empty();
-      $table.append( '<tr class="no-row-filler"><td></td></tr>' );
-      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-    }, // end fn
-
+		handle : function() {
+			return self.DOM.$prnt;
+		},
 
     /**
      * pre-initialize the object
@@ -786,7 +353,7 @@ module.exports = function( options ) {
       $separator = (!!self.options.separator) ? $('<br/>') : false;
 
       // set the type
-      self.type = oAtts.type;
+      self.type = self.options.atts.type;
 
 			// get the input name
 			self.fn.resolveInputName();
@@ -867,14 +434,13 @@ module.exports = function( options ) {
     appendTo : function($target) {
       self.DOM.$prnt.appendTo( $target );
     }, // end fn
-	}; // end fns
+	}); // end fns
 
   /**
    * Builders for html elements
    * @type {Object}
    */
   this.factory = {
-
     /**
      * Main builder method
      * @method function
@@ -893,21 +459,23 @@ module.exports = function( options ) {
 
     }, // end fn
 
-		/**
-		 * Run post-build subroutines
-		 * @method function
-		 * @return {[type]} [description]
-		 */
-		_postbuild : function() {
-			if (typeof self.factory._callback[ self.type ] === 'function' ) {
-				self.factory._callback[ self.type ]();
-			}
-		}, // end fn
+    /**
+     * Run post-build subroutines
+     * @method function
+     * @return {[type]} [description]
+     */
+    _postbuild : function() {
+      if (typeof self.factory._callback[ self.type ] === 'function' ) {
+        self.factory._callback[ self.type ]();
+      }
+    }, // end fn
 
-		// callback definitions
-		_callback : {
-			select : self.fn.initSelectOptions,
-		}, // end factory callbacks
+    // callback definitions
+    _callback : {
+      select : function() {
+        self.fn.initSelectOptions()
+      },
+    }, // end factory callbacks
 
     /**
      * create a generic input element
@@ -1011,7 +579,6 @@ module.exports = function( options ) {
     helpTextBlock : function() {
       return $('<small/>', { class : 'help-block', style : 'display:none' });
     }, // end fn
-
   }
 
 	// initialize

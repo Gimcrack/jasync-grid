@@ -223,7 +223,7 @@ module.exports = function( options ) {
 
         $('.panel-overlay').show();
 
-				$.getJSON( url, {}, self.callback.getRowData)
+				$.getJSON( jApp.prefixURL(url), {}, self.callback.getRowData)
           .fail( function() { console.error('There was a problem getting the row data');
 				}).always( function(response) {
 					if (typeof callback !== 'undefined' && typeof callback === 'function' ) {
@@ -295,7 +295,7 @@ module.exports = function( options ) {
        * @return {[type]}        [description]
        */
       populateFieldRow : function(params, index, data) {
-        var $btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
+        var //$btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' )
             $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' );
 
         jApp.log('---------Array Row Data---------');
@@ -306,13 +306,20 @@ module.exports = function( options ) {
               var $td = $('<td/>'),
                   value = null;
 
-              oo['data-pivot'] = _.pluck( 'name', params.fields );
 							oo['data-array-input'] = true;
 
-              if ( !!data && ( !!data.id || !!data.pivot )  ) {
-                value = ( ii === 0 ) ?
-                  data.id :
-                  data.pivot[ oo.name.replace('[]','') ] || null;
+              // if its the first input (the singleSelect) grab the value (the id of the row)
+              if ( !!data && !!data.id && ii === 0 ) {
+                value = data.id
+              }
+
+              console.log('-----[]-----');
+              console.log(oo);
+              console.log(data);
+
+              // if its not the first input, grab the value from the pivot data
+              if (ii> 0 && !!data && !!oo['data-pivotName'] && !!data.pivot && !!data.pivot[oo['data-pivotName']]) {
+                value = data.pivot[oo['data-pivotName']];
               }
 
               self.fn.processField( oo, $td, value );
@@ -321,7 +328,7 @@ module.exports = function( options ) {
 
         ).append(
           [
-              $('<td/>').append([$btn_remove, (+index || 0 === 0) ? $btn_add : null])
+              $('<td/>').append($btn_remove)
           ]
         );
       }, // end fn
@@ -484,7 +491,7 @@ module.exports = function( options ) {
         $.ajax({
           //dataType : 'json',
           method : 'POST',
-          url : self.options.atts.action,
+          url : jApp.prefixURL(self.options.atts.action),
           data : self.$().serialize(),
           success : self.callback.submit,
         }).done( self.fn.toggleSubmitted );
