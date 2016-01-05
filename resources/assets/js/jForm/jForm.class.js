@@ -12,8 +12,8 @@
 ;'use strict';
 
 var $ = require('jQuery'),
-    _ = require('underscore'),
-    jInput = require('../jInput/jInput.class');
+    _ = require('underscore');
+    //jInput = require('../jInput/jInput.class');
 
 module.exports = function( options ) {
 
@@ -313,9 +313,9 @@ module.exports = function( options ) {
                 value = data.id
               }
 
-              console.log('-----[]-----');
-              console.log(oo);
-              console.log(data);
+              jApp.log('-----[]-----');
+              jApp.log(oo);
+              jApp.log(data);
 
               // if its not the first input, grab the value from the pivot data
               if (ii> 0 && !!data && !!oo['data-pivotName'] && !!data.pivot && !!data.pivot[oo['data-pivotName']]) {
@@ -349,7 +349,10 @@ module.exports = function( options ) {
         // check if the type is array
         //if (params.type == 'array') return self.fn.processArrayField(params, target);
 
+        jApp.log(params);
+
         inpt = new jInput( { atts : params, form : self} );
+        jApp.log(inpt);
         self.oInpts[ params.name ] = inpt;
         inpt.fn.val( value );
         target.append( inpt.fn.handle() );
@@ -388,7 +391,7 @@ module.exports = function( options ) {
 					}
 				});
 
-				//console.log('Now adding the colParamsAdd : ' + self.options.colParamsAdd.length);
+				//jApp.log('Now adding the colParamsAdd : ' + self.options.colParamsAdd.length);
 				// process additional colParams that may have come from linkTables
 				_.each( _.sortBy( self.options.colParamsAdd, function( o ) { return (!isNaN(o['data-ordering'])) ? +o['data-ordering'] : 1000 } ) , function( o, key ) {
 					var inpt, eq;
@@ -417,7 +420,7 @@ module.exports = function( options ) {
 
 				// handle linked Elements
 				self.$().find('[_linkedElmID]').off('change.linkedelm').on('change.linkedelm', function() {
-					//console.log( 'Setting up linked Element' );
+					//jApp.log( 'Setting up linked Element' );
 					var This = $(this),
 						$col = This.attr('_linkedElmFilterCol'),
 						$id	 = This.val(),
@@ -426,9 +429,9 @@ module.exports = function( options ) {
 						oElm = self.fn.getElmById( This.attr('_linkedElmID') ),
 						atts;
 
-					//console.log(This.attr('name'));
-					//console.log($id);
-					//console.log(oElm);
+					//jApp.log(This.attr('name'));
+					//jApp.log($id);
+					//jApp.log(oElm);
 
 					// set data to always expire;
 					oElm.fn.setTTL(-1);
@@ -841,7 +844,7 @@ module.exports = function( options ) {
 
       // do something with the response
       submit : function(response) {
-        console.log(response);
+        jApp.log(response);
       }
 		}; // end fns
 

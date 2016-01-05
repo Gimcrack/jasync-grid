@@ -33,7 +33,7 @@ module.exports = function(options) {
 	$.extend(true,
 		this,
 		require('./config/defaults'),
-		require('./config/methods'),
+		require('./config/methods')(self),
 		require('./config/routing'),
 		options
 	);

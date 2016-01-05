@@ -3,14 +3,7 @@
  *
  * Options methods
  */
-;module.exports = function(self) {
-
-  /**
-   * Set up some convenience variables
-   */
-  var oAtts = function() { return self.options.atts };
-
-  return {
+;module.exports = {
 
   /**
    * Build the options
@@ -24,7 +17,7 @@
       self.JSON = data;
     }
 
-    if (oAtts().type === 'select') {
+    if (self.options.atts.type === 'select') {
       self.fn.populateSelectOptions();
     } else {
       self.fn.populateTokensOptions();
@@ -39,15 +32,15 @@
    * @return {[type]}            [description]
    */
   getExtOptions : function( force, callback ) {
-    jApp.log('getting external options');
+    console.log('getting external options');
     self.options.extData = true;
 
     force = ( typeof force !== 'undefined' ) ? force : false;
 
     // use the copy in storage if available;
-    if (!force && self.options.cache && !!self.store.get( 'selectOptions_' + oAtts().name, false )) {
-      //jApp.log('using local copy of options');
-      return self.fn.buildOptions( JSON.parse( self.store.get( 'selectOptions_' + oAtts().name ) ) );
+    if (!force && self.options.cache && !!self.store.get( 'selectOptions_' + self.options.atts.name, false )) {
+      //console.log('using local copy of options');
+      return self.fn.buildOptions( JSON.parse( self.store.get( 'selectOptions_' + self.options.atts.name ) ) );
     }
 
     var url, data;
@@ -57,11 +50,11 @@
 
     self.buildOptionsCallback = callback;
 
-    //jApp.log('executing request for external options');
+    //console.log('executing request for external options');
     $.getJSON( url, data, self.fn.buildOptions )
      .always( function() {
         if (self.options.cache) {
-          self.store.setTTL( 'selectOptions_' + oAtts().name, 1000*60*self.options.ttl ); // expire in 10 mins.
+          self.store.setTTL( 'selectOptions_' + self.options.atts.name, 1000*60*self.options.ttl ); // expire in 10 mins.
         }
      });
   }, // end fn
@@ -87,17 +80,17 @@
 
     // grab the external data if applicable
     if (self.options.extData ) {
-      oAtts()._labels = _.pluck(self.JSON,'label');
-      oAtts()._options = _.pluck(self.JSON,'option');
+      self.options.atts._labels = _.pluck(self.JSON,'label');
+      self.options.atts._options = _.pluck(self.JSON,'option');
 
       if (self.options.cache) {
-        self.store.set( 'selectOptions_' + oAtts().name, JSON.stringify(self.JSON) );
+        self.store.set( 'selectOptions_' + self.options.atts.name, JSON.stringify(self.JSON) );
       }
     }
 
     // hide if empty options
-    if ( ( !oAtts()._options || !oAtts()._options.length ) && !!self.options.hideIfNoOptions ) {
-      //jApp.log('Hiding the element because there are no options ' + oAtts().name)
+    if ( ( !self.options.atts._options || !self.options.atts._options.length ) && !!self.options.hideIfNoOptions ) {
+      //console.log('Hiding the element because there are no options ' + self.options.atts.name)
       return self.fn.disable().hide();
     }
     // else {
@@ -105,24 +98,24 @@
     // }
 
     // remove all options
-    jApp.log( self.DOM );
+    console.log( self.DOM );
     self.DOM.$inpt.find('option').remove();
 
     // append first option if applicable
-    if (!!oAtts()._firstlabel) {
-      var firstOption = (!!oAtts()._firstoption) ? oAtts()._firstoption : '';
+    if (!!self.options.atts._firstlabel) {
+      var firstOption = (!!self.options.atts._firstoption) ? self.options.atts._firstoption : '';
       self.DOM.$inpt.append(
-        $('<option/>', { value : firstOption }).html( oAtts()._firstlabel )
+        $('<option/>', { value : firstOption }).html( self.options.atts._firstlabel )
       );
     }
 
     // iterate over the label/value pairs and build the options
-    _.each( oAtts()._options, function( v, k ) {
+    _.each( self.options.atts._options, function( v, k ) {
       self.DOM.$inpt.append(
         // determine if the current value is currently selected
-        ( _.indexOf( oAtts().value, v ) !== -1 || ( !!self.$().attr('data-value') &&  _.indexOf( self.$().attr('data-value').split('|'), v ) !== -1 )) ?
-          $('<option/>', { value : v, 'selected' : 'selected' }).html( oAtts()._labels[k] ) :
-          $('<option/>', { value : (!!v) ? v : '' }).html( oAtts()._labels[k] )
+        ( _.indexOf( self.options.atts.value, v ) !== -1 || ( !!self.$().attr('data-value') &&  _.indexOf( self.$().attr('data-value').split('|'), v ) !== -1 )) ?
+          $('<option/>', { value : v, 'selected' : 'selected' }).html( self.options.atts._labels[k] ) :
+          $('<option/>', { value : (!!v) ? v : '' }).html( self.options.atts._labels[k] )
       );
     });
 
@@ -143,7 +136,7 @@
    * @return {[type]} [description]
    */
   getModel : function() {
-    var tmp = oAtts()._optionssource.split('.');
+    var tmp = self.options.atts._optionssource.split('.');
     return tmp[0];
   }, // end fn
 
@@ -153,25 +146,28 @@
    * @return {[type]}         [description]
    */
   initSelectOptions : function(refresh) {
-    jApp.log('Initializing Select Options');
+    var self = this;
+    var obj = obj || 'no obj';
+    console.log( obj );
+    console.log('Initializing Select Options');
 
     self.refreshAfterLoadingOptions = (!!refresh) ? true : false;
 
     // local data
-    if ( !!oAtts()._optionssource && oAtts()._optionssource.indexOf('|') !== -1 ) {
+    if ( !!self.options.atts._optionssource && self.options.atts._optionssource.indexOf('|') !== -1 ) {
       jApp.log(' - local options data - ');
       self.options.extData = false;
-      oAtts()._options = oAtts()._optionssource.split('|');
-      oAtts()._labels = ( !!oAtts()._labelssource ) ?
-        oAtts()._labelssource.split('|') :
-        oAtts()._optionssource.split('|');
+      self.options.atts._options = self.options.atts._optionssource.split('|');
+      self.options.atts._labels = ( !!self.options.atts._labelssource ) ?
+        self.options.atts._labelssource.split('|') :
+        self.options.atts._optionssource.split('|');
       self.fn.buildOptions();
     }
     // external data
-    else if ( !!oAtts()._optionssource && oAtts()._optionssource.indexOf('.') !== -1 ) {
+    else if ( !!self.options.atts._optionssource && self.options.atts._optionssource.indexOf('.') !== -1 ) {
       jApp.log(' - external options data -');
       self.options.extData = true;
-      //jApp.log('Getting External Options');
+      //console.log('Getting External Options');
       self.fn.getExtOptions();
     }
 
@@ -184,13 +180,13 @@
   getExtUrl : function( type ) {
     var model, lbl, opt, tmp;
 
-    type = type || oAtts().type;
+    type = type || self.options.atts.type;
 
-    tmp = oAtts()._labelssource.split('.');
+    tmp = self.options.atts._labelssource.split('.');
     self.model = model = tmp[0]; // db table that contains option/label pairs
     lbl = tmp[1]; // db column that contains labels
-    opt = oAtts()._optionssource.split('.')[1];
-    //where = ( !!oAtts()._optionsFilter && !!oAtts()._optionsFilter.length ) ? oAtts()._optionsFilter : '1=1';
+    opt = self.options.atts._optionssource.split('.')[1];
+    //where = ( !!self.options.atts._optionsFilter && !!self.options.atts._optionsFilter.length ) ? self.options.atts._optionsFilter : '1=1';
 
     switch (type) {
       case 'select' :
@@ -202,4 +198,4 @@
 
   }, // end fn
 
-}}
+}
