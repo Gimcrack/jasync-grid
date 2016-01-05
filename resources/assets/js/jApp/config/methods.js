@@ -36,7 +36,7 @@
       // remove any doubled-up slashes
       url = url.replace(/\/\//gi,'/');
 
-      return url;
+      return './' + url;
     }, // end fn
 
     /**

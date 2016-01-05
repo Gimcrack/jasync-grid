@@ -18,6 +18,6 @@ elixir(function(mix) {
     //scripts
     mix
       .browserify('index.js', './resources/assets/js/prebuild/async-grid.js')
-      .scriptsIn('./resources/assets/js/prebuild/', './build/')
+      .scriptsIn('./resources/assets/js/prebuild/', './build/async-grid.js')
       .livereload();
 });
