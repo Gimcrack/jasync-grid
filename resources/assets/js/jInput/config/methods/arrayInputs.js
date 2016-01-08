@@ -22,6 +22,7 @@
       var $container = $('<div/>', { class : 'array-field-container alert alert-info' }).data('colparams', params),
           $table = $('<table/>', { class : '' } ),
           masterSelect = self.fn.getArrayMasterSelectParams(params.fields[0]),
+          $btn_add = $('<button/>',   {type : 'button', class : 'btn btn-link btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
           inpt;
 
       self.arrayField = true;
@@ -36,6 +37,9 @@
 
       // set up the custom multiselect object
       inpt.fn.multiselect( self.fn.getArrayMasterSelectMultiSelectOptions() );
+
+      // add button
+      $table.append( $btn_add.wrap('<tr class="no-row-filler"><td></td></tr>') );
 
       // add the table to the container
       $container.append($table);
@@ -114,7 +118,8 @@
     getArrayMasterSelectMultiSelectOptions : function() {
       return $.extend(true, {}, self.options.bsmsDefaults, {
         buttonClass : 'btn btn-primary',
-        onDropdownHidden : self.fn.arrayAddValues
+        onDropdownHidden : self.fn.arrayAddValues,
+        nonSelectedText: 'Quick picker'
       } );
     }, // end fn
 
@@ -137,9 +142,6 @@
 
       });
 
-      // boot the form
-      jUtility.formBootup();
-
     }, // end fn
 
     /**
@@ -150,16 +152,11 @@
     arrayAddRowFromContainer : function( $container, data ) {
       var $table = $container.find('table'),
           params = $container.data('colparams'),
-          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params, 1, data || {} ),
-          $btn_add = $table.find('.btn-array-add').eq(0).detach();
+          $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params, 1, data || {} );
 
       $table.find('.btn-array-add,.no-row-filler').remove();
 
       $table.append($tr_new);
-
-      if (!$table.find('.btn-array-add').length) {
-          $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-      }
 
     }, // end fn
 
@@ -169,7 +166,7 @@
      * @return {[type]} [description]
      */
     arrayAddRow : function( value ) {
-      var $container = self.DOM.$container,
+      var $container = self.DOM.$container || $(this).closest('.array-field-container'),
           $table = $container.find('table'),
           params = $container.data('colparams'),
           $tr_new = jUtility.oCurrentForm().fn.populateFieldRow( params, 1, { id : value || null, pivot : null } );
@@ -182,14 +179,6 @@
 
       $table.append($tr_new);
 
-      // rename inputs so they all have unique names
-      // $table.find('tr').each( function( i, elm ) {
-      //   $(elm).find(':input').each( function(ii, ee) {
-      //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
-      //   });
-      // });
-
-      jUtility.formBootup();
     }, // end fn
 
     /**
@@ -201,7 +190,7 @@
           $table = $(this).closest('table'),
           $tr = $(this).closest('tr'),
           params = $container.data('colparams'),
-          $btn_add = $table.find('.btn-array-add').detach();
+          $btn_add = $table.find('.btn-array-add').eq(0).detach();
 
 
       if (!!params.min && +$table.find('tr').length-1 === params.min) {
@@ -221,7 +210,8 @@
         $table.append( '<tr class="no-row-filler"><td></td></tr>' );
       }
 
-      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
+      $table.find('tr:last-child').find('td:last-child').append($btn_add);
+
     }, // end fn
 
     /**
@@ -230,12 +220,10 @@
      * @return {[type]}       [description]
      */
     arrayRemoveAllRows : function($container) {
-      var $table = $container.find('table'),
-          $btn_add = $table.find('.btn-array-add').detach();
+      var $table = $container.find('table');
 
       $table.empty();
       $table.append( '<tr class="no-row-filler"><td></td></tr>' );
-      $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
     }, // end fn
   }
 }

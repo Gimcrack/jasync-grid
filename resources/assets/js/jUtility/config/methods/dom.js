@@ -29,9 +29,11 @@
       if ( typeof jApp.aG().html.forms[htmlKey] === 'undefined' ) return false;
 
       // create form object
+      jApp.aG().forms[oFrmHandle] = {}; // initialize it with a placeholder
       jApp.aG().forms[oFrmHandle] = oFrm = new jForm( params );
 
       // create form container
+      jApp.aG().forms[$frmHandle] = {}; // initialize it with a placeholder
       jApp.aG().forms[$frmHandle] = $('<div/>', { 'class' : 'gridFormContainer' })
         .html( jUtility.render( jApp.aG().html.forms[htmlKey], { tableFriendly : tableFriendly || jApp.opts().model } ) )
         .find( '.formContainer' ).append( oFrm.fn.handle() ).end()

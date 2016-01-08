@@ -30,7 +30,8 @@
       self.defaults,  // default options
       {               // additional computed defaults
         atts : {
-            'id' : atts.name || null
+            id : atts.name || null,
+            _enabled : true
         }
       },
       options || {}   // runtime options
@@ -142,7 +143,50 @@
     } else {
       return self.options.atts[key];
     }
-  },
+  }, // end fn
+
+  /**
+   * Set the value of the input
+   * @method function
+   * @param  {[type]} value [description]
+   * @return {[type]}       [description]
+   */
+  setValue : function( value ) {
+    jApp.log('--Setting value of ' + self.options.atts.name);
+    switch ( self.type ) {
+
+        case 'select' :
+
+          if (!!_.pluck(value, 'id').length) {
+            value = _.pluck(value, 'id');
+          }
+          if ( !!self.DOM.$inpt.data('multiselect') ) {
+            jApp.log( '-- setting bsms select value' );
+            jApp.log(value);
+            self.DOM.$inpt.multiselect('deselectAll');
+            self.fn.val( value );
+            self.DOM.$inpt.multiselect('select', value);
+            self.DOM.$inpt.multiselect('refresh');
+            return self.fn;
+          }
+
+          jApp.log( '-- normal select, not bsms' );
+          self.fn.val( value );
+          return self.fn;
+
+        case 'tokens' :
+          self.DOM.$inpt.tokenfield('setTokens', _.pluck(value, 'name'));
+          return self.fn;
+
+        case 'array' :
+          self.fn.populateArrayFormData( self, value);
+          return self.fn;
+
+        default :
+          self.fn.val(value);
+          return self.fn;
+    }
+  }, // end fn
 
   /**
    * Value handler function
@@ -154,15 +198,16 @@
 
     if (!!value) {
       if (typeof value !== 'object') {
-        if (self.options.atts.name == '_labelssource' || self.options.atts.name == '_optionssource') {
-          value = value.replace(/\,/gi,'|');
-        }
         self.$().attr('data-value',value);
-        return self.fn.attr('value',[value]);
+        self.fn.attr('value',[value]);
+        self.DOM.$inpt.val( value );
       } else {
-        self.$().attr('data-value',value.join('|'));
-        return self.fn.attr('value',value);
+        self.$().attr('data-value',value);
+        self.fn.attr('value',value);
+        self.DOM.$inpt.val( value );
       }
+
+      return self.fn;
     }
 
     switch( self.type ) {

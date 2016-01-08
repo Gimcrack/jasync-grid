@@ -26,6 +26,11 @@
   btns : false,
   fieldset : false,
   disabledElements : [],
+  defaultColparams : {
+    _enabled : true,
+    name : 'input',
+    type : 'text'
+  },
   colParams : {},
   colParamsAdd : [], // storage container for additional colParams such as from linkTables
   loadExternal : true, // load external colParams e.g. from a db

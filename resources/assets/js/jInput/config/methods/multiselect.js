@@ -18,6 +18,8 @@
      * @return {[type]} [description]
      */
     multiselect : function( options ) {
+      if (!!self.$().data('no-bsms')) return false;
+      
       self.$().multiselect( options || self.options.bsmsDefaults ).multiselect('refresh');
       self.fn.multiselectExtraButtons();
       return self;

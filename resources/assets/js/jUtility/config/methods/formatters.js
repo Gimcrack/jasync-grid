@@ -129,7 +129,8 @@
    *  function if applicable.
    **  **  **  **  **  **  **  **  **  **/
   prepareValue : function(value,column) {
-    var template;
+    var template,
+        templateFunctions = $.extend(true, {}, jApp.cellTemplates, jApp.opts().templates);
 
     if (value == null) {
       value = '';
@@ -139,8 +140,8 @@
       return '';
     }
 
-    if (typeof jApp.opts().templates[column] === 'function') {
-      template = jApp.opts().templates[column];
+    if (typeof templateFunctions[column] === 'function') {
+      template = templateFunctions[column];
       value = template(value);
     }
 

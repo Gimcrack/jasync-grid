@@ -10,7 +10,7 @@
    * Debug mode, set to false to supress messages
    * @type {Boolean}
    */
-  debug : true,
+  debug : false,
 
   /**
    * Placeholder for the activeGrid object

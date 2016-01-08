@@ -61,6 +61,36 @@ module.exports = function( options ) {
 			}, // end fn
 
       /**
+       * The the value of the input
+       * @method function
+       * @param  {[type]} value [description]
+       * @param  {[type]} key   [description]
+       * @return {[type]}       [description]
+       */
+      setInputValue : function( value, key ) {
+          var oInpt;
+
+          jApp.log('Setting up input ' + key);
+          jApp.log(value);
+
+
+          if ( typeof self.oInpts[key] === 'undefined' || typeof self.oInpts[key].$ !== 'function' ) {
+            jApp.log('No input associated with this key.');
+            return false;
+          }
+
+          // get the jInput object
+          oInpt = self.oInpts[key];
+
+          // enable the input
+          oInpt.fn.enable();
+
+          // set the value of the input
+          return oInpt.fn.setValue( value, key );
+
+      }, // end fn
+
+      /**
        * Is the form field an array input
        * @param  {[type]} oInpt [description]
        * @return {[type]}       [description]
@@ -167,7 +197,7 @@ module.exports = function( options ) {
        */
 			getColParams : function() {
         jApp.log('A. Getting external colparams');
-        self.options.colParams = jApp.colparams[ self.options.model ];
+        self.options.colParams = jApp.colparams[ self.options.model ] || self.options.colParams;
         jApp.log(self.options.colParams);
 
         //process the colParams;
@@ -190,11 +220,10 @@ module.exports = function( options ) {
             jApp.warn('Fails because is null');
             return false;
           }
-          // if (typeof o._enabled === 'undefined') {
-          //   jApp.warn(o)
-          //   jApp.warn('Fails because ')
-          //   return false;
-          // };
+
+          // add the default colparams before attempting to filter
+          o = $.extend(true, {}, self.options.defaultColparams, o);
+
           if (!o._enabled) {
             jApp.warn(o);
             jApp.warn('Fails because is not enabled');
@@ -223,9 +252,10 @@ module.exports = function( options ) {
 
         $('.panel-overlay').show();
 
-				$.getJSON( jApp.prefixURL(url), {}, self.callback.getRowData)
+				$.getJSON( jApp.prefixURL(url), {}, self.callback.getRowData )
           .fail( function() { console.error('There was a problem getting the row data');
-				}).always( function(response) {
+				})
+        .always( function(response) {
 					if (typeof callback !== 'undefined' && typeof callback === 'function' ) {
 						callback(response);
 					} else if ( typeof callback !== 'undefined' && typeof callback === 'string' && typeof self.fn[callback] !== 'undefined' && typeof self.fn[callback] === 'function' ) {
@@ -295,11 +325,12 @@ module.exports = function( options ) {
        * @return {[type]}        [description]
        */
       populateFieldRow : function(params, index, data) {
-        var //$btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' )
-            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-danger btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' );
+        var $btn_add = $('<button/>',   {type : 'button', class : 'btn btn-link btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' ),
+            $btn_remove = $('<button/>', {type : 'button', class : 'btn btn-link btn-array-remove'}).html( '<i class="fa fa-fw fa-trash-o"></i>' );
 
         jApp.log('---------Array Row Data---------');
         jApp.log(data);
+
 
         return $('<tr/>').append(
           _.map( params.fields, function( oo, ii ) {
@@ -328,7 +359,7 @@ module.exports = function( options ) {
 
         ).append(
           [
-              $('<td/>').append($btn_remove)
+              $('<td/>').append([$btn_remove,$btn_add])
           ]
         );
       }, // end fn
@@ -694,6 +725,9 @@ module.exports = function( options ) {
         // set the instance options
         self.fn.setOptions( options );
 
+        // the model of the form
+        self.model = self.options.model;
+
         // initialize
         self.fn._init();
 
@@ -802,44 +836,12 @@ module.exports = function( options ) {
 
 				self.DOM.$frm.clearForm();
 
-				_.each( response, function( value, key ) {
-          jApp.log('Setting up input ' + key);
-          jApp.log(value);
+        // iterate through each row and the the corresponding input value
+				_.each( response, self.fn.setInputValue );
 
-          if ( typeof self.oInpts[key] === 'undefined' || typeof self.oInpts[key].$ !== 'function' ) {
-            jApp.log('No input associated with this key.');
-            return false;
-          }
-
-          oInpt = self.oInpts[key];
-          $inpt = oInpt.$();
-
-          // enable the input
-          oInpt.fn.enable();
-
-					if (value != null && value.indexOf('|') !== -1 && key !== '_labelssource' && key !== '_optionssource') {
-						value = value.split('|');
-					}
-
-          if ( self.fn.isArrayFormField( oInpt )  ) { // handle an array input
-            jApp.log('-----------------Populating Array Form Field-----------------------');
-            oInpt.fn.populateArrayFormData( oInpt, value );
-          } else if ( self.fn.isTokensFormField( oInpt, value ) ) {
-            $inpt.tokenfield('setTokens', _.pluck(value,'name'));
-          }
-          else if (typeof value === 'object' && !!_.pluck(value,'id').length) {
-            oInpt.fn.val(_.pluck(value,'id'));
-          } else {
-            oInpt.fn.val(value);
-          }
-					if (oInpt.options.atts.type === 'select') {
-						$inpt.multiselect('refresh').change();
-					}
-
-				});
-
-				self.DOM.$frm.find('.bsms').multiselect('refresh');
+				//self.DOM.$frm.find('.bsms').multiselect('refresh').change();
 				$('.panel-overlay').hide();
+
 			},
 
       // do something with the response

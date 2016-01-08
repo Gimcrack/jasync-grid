@@ -28,7 +28,7 @@ global.editFrm = {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./jApp/jApp.class":43,"./jForm/jForm.class":46,"./jGrid/jGrid.class":47,"./jInput/jInput.class":60,"./jUtility/jUtility.class":79}],2:[function(require,module,exports){
+},{"./jApp/jApp.class":44,"./jForm/jForm.class":47,"./jGrid/jGrid.class":48,"./jInput/jInput.class":61,"./jUtility/jUtility.class":80}],2:[function(require,module,exports){
 /**
  *  jquery.validator.js - Custom Form Validation JS class
  *
@@ -6185,6 +6185,98 @@ module.exports = function (element) {
 'use strict';
 
 /**
+ * cellTemplate.js
+ *
+ * Cell template formatting functions
+ */
+
+;module.exports = function (self) {
+
+      return {
+            cellTemplates: {
+
+                  id: function id(value) {
+                        return ('0000' + value).slice(-4);
+                  },
+
+                  name: function name(value) {
+                        var r = self.activeGrid.currentRow;
+                        return value.link(window.location.href.trim('/') + '/' + r.id);
+                  },
+
+                  person_name: function person_name() {
+                        var r = self.activeGrid.currentRow;
+                        return !!r.person && r.person.name != null ? r.person.name : '';
+                  },
+
+                  username: function username(value) {
+                        var r = self.activeGrid.currentRow;
+                        return value.link(window.location.href.trim('/') + '/' + r.id);
+                  },
+
+                  email: function email(value) {
+                        return value.link('mailto:' + value);
+                  },
+
+                  users: function users(arr) {
+                        return _.pluck(arr, 'username').join(', ');
+                  },
+
+                  modules: function modules(arr) {
+                        return _.pluck(arr, 'role').join(', ');
+                  },
+
+                  group_modules: function group_modules(arr) {
+                        return _.compact(_.flatten(_.map(self.activeGrid.currentRow.groups, function (row, i) {
+                              return row.modules.length ? _.map(row.modules, function (o, ii) {
+                                    return o.role + ' (' + o.name + ')';
+                              }) : false;
+                        }))).join(', ');
+                  },
+
+                  user_groups: function user_groups(arr) {
+                        return _.compact(_.flatten(_.map(self.activeGrid.currentRow.users, function (row, i) {
+                              return row.groups.length ? _.pluck(row.groups, 'name') : false;
+                        }))).join(', ');
+                  },
+
+                  groups: function groups(arr) {
+                        return _.map(arr, function (o) {
+                              if (o.pivot.comment != null) {
+                                    return o.name + ' (' + o.pivot.comment + ')';
+                              }
+                              return o.name;
+                        }).join(', ');
+                  },
+
+                  created_at: function created_at(value) {
+                        return date('Y-m-d', strtotime(value));
+                  },
+
+                  updated_at: function updated_at(value) {
+                        return date('Y-m-d', strtotime(value));
+                  },
+
+                  permissions: function permissions() {
+                        var row = jApp.aG().currentRow,
+                            p = [];
+
+                        if (!!Number(row.create_enabled)) p.push('Create');
+                        if (!!Number(row.read_enabled)) p.push('Read');
+                        if (!!Number(row.update_enabled)) p.push('Update');
+                        if (!!Number(row.delete_enabled)) p.push('Delete');
+
+                        return p.join(', ');
+                  }
+
+            }
+      };
+};
+
+},{}],40:[function(require,module,exports){
+'use strict';
+
+/**
  * colparams.js
  *
  * Specify any default column parameters here
@@ -6239,7 +6331,7 @@ module.exports = function (element) {
   }]
 };
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 'use strict';
 
 /**
@@ -6254,7 +6346,7 @@ module.exports = function (element) {
    * Debug mode, set to false to supress messages
    * @type {Boolean}
    */
-  debug: true,
+  debug: false,
 
   /**
    * Placeholder for the activeGrid object
@@ -6316,7 +6408,7 @@ module.exports = function (element) {
 
 };
 
-},{"./colparams":39}],41:[function(require,module,exports){
+},{"./colparams":40}],42:[function(require,module,exports){
 'use strict';
 
 /**
@@ -6340,24 +6432,76 @@ module.exports = function (element) {
     }, // end fn
 
     /**
+     * Add a view
+     * @method function
+     * @return {[type]} [description]
+     */
+    addView: function addView(name, viewDefinition, colparams) {
+      var viewTarget = self.views,
+          gridTarget = self.oG,
+          tmp_name = name.split('.'),
+          tmp_name_part,
+          viewName;
+
+      // drill down if applicable
+      while (tmp_name.length > 1) {
+
+        tmp_name_part = tmp_name.shift();
+        jApp.log('name part ' + tmp_name_part);
+
+        if (typeof viewTarget[tmp_name_part] === 'undefined') {
+          viewTarget[tmp_name_part] = {};
+        }
+
+        if (typeof gridTarget[tmp_name_part] === 'undefined') {
+          gridTarget[tmp_name_part] = {};
+        }
+
+        viewTarget = viewTarget[tmp_name_part];
+        gridTarget = gridTarget[tmp_name_part];
+      }
+
+      // get the viewName
+      viewName = tmp_name[0];
+
+      // add the view function
+      viewTarget[viewName] = function () {
+        gridTarget[viewName] = new jGrid(viewDefinition);
+      };
+
+      // add the colparams
+      self.colparams[viewDefinition.model] = colparams;
+    }, // end fn
+
+    /**
      * Prefix url with api route prefix
      * @method function
      * @param  {[type]} url [description]
      * @return {[type]}     [description]
      */
     prefixURL: function prefixURL(url) {
-      // sanitize url
-      url = url.replace('http://', ''); // remove http://
-      url = url.replace('https://', ''); // remove https://
-      url = url.replace(self.apiRoutePrefix, ''); // remove api route prefix, if it has already been applied
+      var parser,
+          path = url;
 
-      // add the api route prefix
-      url = self.apiRoutePrefix + '/' + url;
+      // handle well-formed urls
+      if (url.indexOf('http:') === 0) {
+        parser = document.createElement('a');
+        parser.href = url;
+        path = parser.pathname;
+      }
+      // remove the route prefix
+      path = path.toString().replace(self.apiRoutePrefix, '');
 
-      // remove any doubled-up slashes
-      url = url.replace(/\/\//gi, '/');
+      // add the route prefix
+      path = self.apiRoutePrefix + '/' + path;
 
-      return './' + url;
+      // trim trailing and leading slashes and remove any double slashes
+      path = path.split('/').filter(function (str) {
+        if (!!str) return str;
+      }).join('/');
+
+      // add the location origin and return it
+      return location.origin + '/' + path;
     }, // end fn
 
     /**
@@ -6421,7 +6565,7 @@ module.exports = function (element) {
     } };
 };
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 'use strict';
 
 /**
@@ -6534,7 +6678,7 @@ module.exports = function (element) {
   }
 };
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 /**
  *  jApp.class.js - Custom Grid App container
  *
@@ -6566,7 +6710,7 @@ module.exports = function (options) {
   * Configuration
   * @type {Object}
   */
-	$.extend(true, this, require('./config/defaults'), require('./config/methods')(self), require('./config/routing'), options);
+	$.extend(true, this, require('./config/defaults'), require('./config/methods')(self), require('./config/cellTemplates')(self), require('./config/routing'), options);
 
 	/**
   * Warn about debug mode if it's on
@@ -6577,7 +6721,7 @@ module.exports = function (options) {
 	}
 };
 
-},{"./config/defaults":40,"./config/methods":41,"./config/routing":42,"./jStorage/jstorage":44}],44:[function(require,module,exports){
+},{"./config/cellTemplates":39,"./config/defaults":41,"./config/methods":42,"./config/routing":43,"./jStorage/jstorage":45}],45:[function(require,module,exports){
 'use strict';
 
 function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
@@ -7570,7 +7714,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     return $.jStorage;
 })();
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 'use strict';
 
 /**
@@ -7601,6 +7745,11 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   btns: false,
   fieldset: false,
   disabledElements: [],
+  defaultColparams: {
+    _enabled: true,
+    name: 'input',
+    type: 'text'
+  },
   colParams: {},
   colParamsAdd: [], // storage container for additional colParams such as from linkTables
   loadExternal: true, // load external colParams e.g. from a db
@@ -7609,7 +7758,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   layout: 'standard' // standard (three-column layout) | single (one-col layout)
 };
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 'use strict';
 
 function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
@@ -7673,6 +7822,34 @@ module.exports = function (options) {
 
       // handle the column parameters
       self.fn.handleColParams();
+    }, // end fn
+
+    /**
+     * The the value of the input
+     * @method function
+     * @param  {[type]} value [description]
+     * @param  {[type]} key   [description]
+     * @return {[type]}       [description]
+     */
+    setInputValue: function setInputValue(value, key) {
+      var oInpt;
+
+      jApp.log('Setting up input ' + key);
+      jApp.log(value);
+
+      if (typeof self.oInpts[key] === 'undefined' || typeof self.oInpts[key].$ !== 'function') {
+        jApp.log('No input associated with this key.');
+        return false;
+      }
+
+      // get the jInput object
+      oInpt = self.oInpts[key];
+
+      // enable the input
+      oInpt.fn.enable();
+
+      // set the value of the input
+      return oInpt.fn.setValue(value, key);
     }, // end fn
 
     /**
@@ -7782,7 +7959,7 @@ module.exports = function (options) {
      */
     getColParams: function getColParams() {
       jApp.log('A. Getting external colparams');
-      self.options.colParams = jApp.colparams[self.options.model];
+      self.options.colParams = jApp.colparams[self.options.model] || self.options.colParams;
       jApp.log(self.options.colParams);
 
       //process the colParams;
@@ -7804,11 +7981,10 @@ module.exports = function (options) {
           jApp.warn('Fails because is null');
           return false;
         }
-        // if (typeof o._enabled === 'undefined') {
-        //   jApp.warn(o)
-        //   jApp.warn('Fails because ')
-        //   return false;
-        // };
+
+        // add the default colparams before attempting to filter
+        o = $.extend(true, {}, self.options.defaultColparams, o);
+
         if (!o._enabled) {
           jApp.warn(o);
           jApp.warn('Fails because is not enabled');
@@ -7906,8 +8082,8 @@ module.exports = function (options) {
      * @return {[type]}        [description]
      */
     populateFieldRow: function populateFieldRow(params, index, data) {
-      var //$btn_add = $('<button/>', {type : 'button', class : 'btn btn-primary btn-array-add'}).html( '<i class="fa fa-fw fa-plus"></i>' )
-      $btn_remove = $('<button/>', { type: 'button', class: 'btn btn-danger btn-array-remove' }).html('<i class="fa fa-fw fa-trash-o"></i>');
+      var $btn_add = $('<button/>', { type: 'button', class: 'btn btn-link btn-array-add' }).html('<i class="fa fa-fw fa-plus"></i>'),
+          $btn_remove = $('<button/>', { type: 'button', class: 'btn btn-link btn-array-remove' }).html('<i class="fa fa-fw fa-trash-o"></i>');
 
       jApp.log('---------Array Row Data---------');
       jApp.log(data);
@@ -7934,7 +8110,7 @@ module.exports = function (options) {
 
         self.fn.processField(oo, $td, value);
         return $td;
-      })).append([$('<td/>').append($btn_remove)]);
+      })).append([$('<td/>').append([$btn_remove, $btn_add])]);
     }, // end fn
 
     /**
@@ -8288,6 +8464,9 @@ module.exports = function (options) {
       // set the instance options
       self.fn.setOptions(options);
 
+      // the model of the form
+      self.model = self.options.model;
+
       // initialize
       self.fn._init();
     } }; // end fns
@@ -8401,42 +8580,10 @@ module.exports = function (options) {
 
       self.DOM.$frm.clearForm();
 
-      _.each(response, function (value, key) {
-        jApp.log('Setting up input ' + key);
-        jApp.log(value);
+      // iterate through each row and the the corresponding input value
+      _.each(response, self.fn.setInputValue);
 
-        if (typeof self.oInpts[key] === 'undefined' || typeof self.oInpts[key].$ !== 'function') {
-          jApp.log('No input associated with this key.');
-          return false;
-        }
-
-        oInpt = self.oInpts[key];
-        $inpt = oInpt.$();
-
-        // enable the input
-        oInpt.fn.enable();
-
-        if (value != null && value.indexOf('|') !== -1 && key !== '_labelssource' && key !== '_optionssource') {
-          value = value.split('|');
-        }
-
-        if (self.fn.isArrayFormField(oInpt)) {
-          // handle an array input
-          jApp.log('-----------------Populating Array Form Field-----------------------');
-          oInpt.fn.populateArrayFormData(oInpt, value);
-        } else if (self.fn.isTokensFormField(oInpt, value)) {
-          $inpt.tokenfield('setTokens', _.pluck(value, 'name'));
-        } else if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' && !!_.pluck(value, 'id').length) {
-          oInpt.fn.val(_.pluck(value, 'id'));
-        } else {
-          oInpt.fn.val(value);
-        }
-        if (oInpt.options.atts.type === 'select') {
-          $inpt.multiselect('refresh').change();
-        }
-      });
-
-      self.DOM.$frm.find('.bsms').multiselect('refresh');
+      //self.DOM.$frm.find('.bsms').multiselect('refresh').change();
       $('.panel-overlay').hide();
     },
 
@@ -8450,7 +8597,7 @@ module.exports = function (options) {
   this.fn._preInit(options || {});
 }; // end jForm declaration
 
-},{"./config/defaults":45}],47:[function(require,module,exports){
+},{"./config/defaults":46}],48:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8586,7 +8733,7 @@ module.exports = function (options) {
 	this.fn._init();
 }; // end fn
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8634,7 +8781,7 @@ module.exports = {
   tel: ['autocomplete', 'autofocus', 'defaultValue', 'disabled', 'form', 'list', 'maxLength', 'pattern', 'placeholder', 'readOnly', 'required', 'size', 'type', 'value']
 }; // end allowable attributes
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8646,7 +8793,7 @@ module.exports = {
   select: ['_firstoption', '_firstlabel', '_labelssource', '_optionssource', '_optionsfilter']
 };
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8665,7 +8812,8 @@ module.exports = {
 	atts: {
 		type: 'text',
 		class: 'form-control',
-		name: 'input'
+		name: 'input',
+		_enabled: true
 	},
 
 	// DOM presentation options
@@ -8701,7 +8849,7 @@ module.exports = {
 
 };
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8712,7 +8860,7 @@ module.exports = {
   hidden: ['_label', 'onClick', 'onChange']
 };
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8721,7 +8869,7 @@ module.exports = {
  */
 module.exports = ['accesskey', 'class', 'contenteditable', 'contextmenu', 'dir', 'draggable', 'dropzone', 'hidden', 'id', 'lang', 'lang', 'spellcheck', 'style', 'tabindex', 'title', 'translate', 'data-validType', 'readonly', 'required', 'onClick', 'onChange', 'form'];
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8730,7 +8878,7 @@ module.exports = ['accesskey', 'class', 'contenteditable', 'contextmenu', 'dir',
  */
 module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-validType-template', 'type'];
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 'use strict';
 
 /**
@@ -8759,6 +8907,7 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
                   var $container = $('<div/>', { class: 'array-field-container alert alert-info' }).data('colparams', params),
                       $table = $('<table/>', { class: '' }),
                       masterSelect = self.fn.getArrayMasterSelectParams(params.fields[0]),
+                      $btn_add = $('<button/>', { type: 'button', class: 'btn btn-link btn-array-add' }).html('<i class="fa fa-fw fa-plus"></i>'),
                       inpt;
 
                   self.arrayField = true;
@@ -8773,6 +8922,9 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
 
                   // set up the custom multiselect object
                   inpt.fn.multiselect(self.fn.getArrayMasterSelectMultiSelectOptions());
+
+                  // add button
+                  $table.append($btn_add.wrap('<tr class="no-row-filler"><td></td></tr>'));
 
                   // add the table to the container
                   $container.append($table);
@@ -8854,7 +9006,8 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
             getArrayMasterSelectMultiSelectOptions: function getArrayMasterSelectMultiSelectOptions() {
                   return $.extend(true, {}, self.options.bsmsDefaults, {
                         buttonClass: 'btn btn-primary',
-                        onDropdownHidden: self.fn.arrayAddValues
+                        onDropdownHidden: self.fn.arrayAddValues,
+                        nonSelectedText: 'Quick picker'
                   });
             }, // end fn
 
@@ -8875,9 +9028,6 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
                         jApp.log(oInpt.$());
                         self.fn.arrayAddRowFromContainer(oInpt.$(), obj);
                   });
-
-                  // boot the form
-                  jUtility.formBootup();
             }, // end fn
 
             /**
@@ -8888,16 +9038,11 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
             arrayAddRowFromContainer: function arrayAddRowFromContainer($container, data) {
                   var $table = $container.find('table'),
                       params = $container.data('colparams'),
-                      $tr_new = jUtility.oCurrentForm().fn.populateFieldRow(params, 1, data || {}),
-                      $btn_add = $table.find('.btn-array-add').eq(0).detach();
+                      $tr_new = jUtility.oCurrentForm().fn.populateFieldRow(params, 1, data || {});
 
                   $table.find('.btn-array-add,.no-row-filler').remove();
 
                   $table.append($tr_new);
-
-                  if (!$table.find('.btn-array-add').length) {
-                        $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
-                  }
             }, // end fn
 
             /**
@@ -8906,7 +9051,7 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
              * @return {[type]} [description]
              */
             arrayAddRow: function arrayAddRow(value) {
-                  var $container = self.DOM.$container,
+                  var $container = self.DOM.$container || $(this).closest('.array-field-container'),
                       $table = $container.find('table'),
                       params = $container.data('colparams'),
                       $tr_new = jUtility.oCurrentForm().fn.populateFieldRow(params, 1, { id: value || null, pivot: null });
@@ -8918,15 +9063,6 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
                   $table.find('.btn-array-add,.no-row-filler').remove();
 
                   $table.append($tr_new);
-
-                  // rename inputs so they all have unique names
-                  // $table.find('tr').each( function( i, elm ) {
-                  //   $(elm).find(':input').each( function(ii, ee) {
-                  //     $(ee).attr('name', $(ee).attr('data-name') + '_' + i)
-                  //   });
-                  // });
-
-                  jUtility.formBootup();
             }, // end fn
 
             /**
@@ -8938,7 +9074,7 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
                       $table = $(this).closest('table'),
                       $tr = $(this).closest('tr'),
                       params = $container.data('colparams'),
-                      $btn_add = $table.find('.btn-array-add').detach();
+                      $btn_add = $table.find('.btn-array-add').eq(0).detach();
 
                   if (!!params.min && +$table.find('tr').length - 1 === params.min) {
                         $table.find('tr:last-child').find('td:last-child').append($btn_add);
@@ -8957,7 +9093,7 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
                         $table.append('<tr class="no-row-filler"><td></td></tr>');
                   }
 
-                  $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
+                  $table.find('tr:last-child').find('td:last-child').append($btn_add);
             }, // end fn
 
             /**
@@ -8966,16 +9102,14 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
              * @return {[type]}       [description]
              */
             arrayRemoveAllRows: function arrayRemoveAllRows($container) {
-                  var $table = $container.find('table'),
-                      $btn_add = $table.find('.btn-array-add').detach();
+                  var $table = $container.find('table');
 
                   $table.empty();
                   $table.append('<tr class="no-row-filler"><td></td></tr>');
-                  $table.find('tr:last-child').find('td:last-child,th:last-child').append($btn_add);
             } };
 };
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 'use strict';
 
 /**
@@ -9116,7 +9250,7 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
     } };
 };
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 'use strict';
 
 function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
@@ -9154,7 +9288,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       self.defaults, // default options
       { // additional computed defaults
         atts: {
-          'id': atts.name || null
+          id: atts.name || null,
+          _enabled: true
         }
       }, options || {} // runtime options
       );
@@ -9255,7 +9390,50 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       } else {
         return self.options.atts[key];
       }
-    },
+    }, // end fn
+
+    /**
+     * Set the value of the input
+     * @method function
+     * @param  {[type]} value [description]
+     * @return {[type]}       [description]
+     */
+    setValue: function setValue(value) {
+      jApp.log('--Setting value of ' + self.options.atts.name);
+      switch (self.type) {
+
+        case 'select':
+
+          if (!!_.pluck(value, 'id').length) {
+            value = _.pluck(value, 'id');
+          }
+          if (!!self.DOM.$inpt.data('multiselect')) {
+            jApp.log('-- setting bsms select value');
+            jApp.log(value);
+            self.DOM.$inpt.multiselect('deselectAll');
+            self.fn.val(value);
+            self.DOM.$inpt.multiselect('select', value);
+            self.DOM.$inpt.multiselect('refresh');
+            return self.fn;
+          }
+
+          jApp.log('-- normal select, not bsms');
+          self.fn.val(value);
+          return self.fn;
+
+        case 'tokens':
+          self.DOM.$inpt.tokenfield('setTokens', _.pluck(value, 'name'));
+          return self.fn;
+
+        case 'array':
+          self.fn.populateArrayFormData(self, value);
+          return self.fn;
+
+        default:
+          self.fn.val(value);
+          return self.fn;
+      }
+    }, // end fn
 
     /**
      * Value handler function
@@ -9267,15 +9445,16 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
       if (!!value) {
         if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) !== 'object') {
-          if (self.options.atts.name == '_labelssource' || self.options.atts.name == '_optionssource') {
-            value = value.replace(/\,/gi, '|');
-          }
           self.$().attr('data-value', value);
-          return self.fn.attr('value', [value]);
+          self.fn.attr('value', [value]);
+          self.DOM.$inpt.val(value);
         } else {
-          self.$().attr('data-value', value.join('|'));
-          return self.fn.attr('value', value);
+          self.$().attr('data-value', value);
+          self.fn.attr('value', value);
+          self.DOM.$inpt.val(value);
         }
+
+        return self.fn;
       }
 
       switch (self.type) {
@@ -9483,7 +9662,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     } };
 };
 
-},{"../allowedAttributes":48,"../allowedColParams":49,"../defaults":50,"../disallowedColParams":51,"../globalAttributes":52,"../globalColParams":53}],57:[function(require,module,exports){
+},{"../allowedAttributes":49,"../allowedColParams":50,"../defaults":51,"../disallowedColParams":52,"../globalAttributes":53,"../globalColParams":54}],58:[function(require,module,exports){
 'use strict';
 
 /**
@@ -9508,6 +9687,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      * @return {[type]} [description]
      */
     multiselect: function multiselect(options) {
+      if (!!self.$().data('no-bsms')) return false;
+
       self.$().multiselect(options || self.options.bsmsDefaults).multiselect('refresh');
       self.fn.multiselectExtraButtons();
       return self;
@@ -9599,7 +9780,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     } };
 };
 
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 'use strict';
 
 /**
@@ -9797,7 +9978,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     } };
 };
 
-},{}],59:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 'use strict';
 
 /**
@@ -9869,7 +10050,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   };
 };
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 'use strict';
 
 /**  **  **  **  **  **  **  **  **  **  **  **  **  **  **  **  **
@@ -9973,7 +10154,7 @@ module.exports = function (options) {
   self.fn._preInit(options || {});
 }; // end fn
 
-},{"./config/methods/arrayInputs":54,"./config/methods/factory":55,"./config/methods/input":56,"./config/methods/multiselect":57,"./config/methods/options":58,"./config/methods/toggles":59,"./vendor/bootstrap-multiselect":61,"perfect-scrollbar/jquery":17}],61:[function(require,module,exports){
+},{"./config/methods/arrayInputs":55,"./config/methods/factory":56,"./config/methods/input":57,"./config/methods/multiselect":58,"./config/methods/options":59,"./config/methods/toggles":60,"./vendor/bootstrap-multiselect":62,"perfect-scrollbar/jquery":17}],62:[function(require,module,exports){
 'use strict';
 
 function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
@@ -11327,7 +11508,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     });
 };
 
-},{}],62:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 'use strict';
 
 /**
@@ -11783,7 +11964,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }; // end defaults
 };
 
-},{}],63:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 "use strict";
 
 /**
@@ -11928,7 +12109,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }
 };
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 'use strict';
 
 /**
@@ -11971,7 +12152,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }
 };
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 "use strict";
 
 /**
@@ -12160,7 +12341,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }
 };
 
-},{}],66:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 'use strict';
 
 /**
@@ -12219,7 +12400,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
 };
 
-},{}],67:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 'use strict';
 
 /**
@@ -12364,7 +12545,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     }
   } };
 
-},{"../formBindings":63,"../gridBindings":65}],68:[function(require,module,exports){
+},{"../formBindings":64,"../gridBindings":66}],69:[function(require,module,exports){
 'use strict';
 
 /**
@@ -12564,7 +12745,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     }).length;
   } };
 
-},{}],69:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 'use strict';
 
 /**
@@ -12615,6 +12796,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      *  request
      **  **  **  **  **  **  **  **  **  **/
     update: function update(response) {
+      var responseData, self;
+
       jApp.log('6.6 data received. processing...');
 
       jUtility.DOM.setupGridHeaders();
@@ -12630,14 +12813,19 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       }
 
       // init vars
-      var self = jApp.aG();
+      self = jApp.aG();
+
+      // extract the data from the response;
+      responseData = response.data;
+
+      // TODO - handle pagination of api data and lazy loading
 
       // detect changes in data;
-      self.dataGrid.delta = !$.isEmptyObject(self.dataGrid.data) ? jUtility.deltaData(self.dataGrid.data, response) : response;
+      self.dataGrid.delta = !$.isEmptyObject(self.dataGrid.data) ? jUtility.deltaData(self.dataGrid.data, responseData) : responseData;
 
       // merge the changes into self.dataGrid.data
       if (!!self.dataGrid.delta) {
-        self.dataGrid.data = response;
+        self.dataGrid.data = responseData;
       } else {
         // abort if no changes in the data
         return false;
@@ -12815,7 +13003,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       });
     } } };
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 'use strict';
 
 function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
@@ -12851,9 +13039,11 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       if (typeof jApp.aG().html.forms[htmlKey] === 'undefined') return false;
 
       // create form object
+      jApp.aG().forms[oFrmHandle] = {}; // initialize it with a placeholder
       jApp.aG().forms[oFrmHandle] = oFrm = new jForm(params);
 
       // create form container
+      jApp.aG().forms[$frmHandle] = {}; // initialize it with a placeholder
       jApp.aG().forms[$frmHandle] = $('<div/>', { 'class': 'gridFormContainer' }).html(jUtility.render(jApp.aG().html.forms[htmlKey], { tableFriendly: tableFriendly || jApp.opts().model })).find('.formContainer').append(oFrm.fn.handle()).end().appendTo(jApp.aG().$());
     }, // end fn
 
@@ -13920,7 +14110,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
   } };
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 "use strict";
 
 /**
@@ -14052,7 +14242,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    *  function if applicable.
    **  **  **  **  **  **  **  **  **  **/
   prepareValue: function prepareValue(value, column) {
-    var template;
+    var template,
+        templateFunctions = $.extend(true, {}, jApp.cellTemplates, jApp.opts().templates);
 
     if (value == null) {
       value = '';
@@ -14062,8 +14253,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       return '';
     }
 
-    if (typeof jApp.opts().templates[column] === 'function') {
-      template = jApp.opts().templates[column];
+    if (typeof templateFunctions[column] === 'function') {
+      template = templateFunctions[column];
       value = template(value);
     }
 
@@ -14199,7 +14390,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     return jApp.aG().currentRow[p1];
   } };
 
-},{}],72:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 'use strict';
 
 /**
@@ -14221,6 +14412,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
     //multiselects
     .find('select:not(.no-bsms)').addClass('bsms').end().find('.bsms').each(function (i, elm) {
+      if (!!$(elm).data('no-bsms')) return false;
+
       $(elm).data('jInput').fn.multiselect().fn.multiselectRefresh();
     }).end().find('[data-tokens]').each(function () {
       if (!!$(this).data('tokenFieldSource')) {
@@ -14264,7 +14457,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
         //$(elm).data("DateTimePicker").remove();
         $(elm).val('');
-        if ($(elm).hasClass('bsms')) {
+        if ($(elm).hasClass('bsms') && !$elm.data('no-bsms')) {
           $(elm).data('jInput').fn.multiselect();
           $(elm).multiselect('refresh');
         }
@@ -14276,24 +14469,62 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, // end fn
 
   /**
+   * Does the meta data describe the current form?
+   * @method function
+   * @param  {[type]} meta [description]
+   * @param  {[type]} oFrm [description]
+   * @return {[type]}      [description]
+   */
+  doesThisMetaDataDescribeTheCurrentForm: function doesThisMetaDataDescribeTheCurrentForm(meta) {
+    var current = jUtility.oCurrentForm();
+
+    return meta.action === jApp.aG().action || !!meta.model && !!current.model && meta.model === current.model;
+  }, // end fn
+
+  /**
    * Maximize the current form
    * @method function
    * @return {[type]} [description]
    */
   maximizeCurrentForm: function maximizeCurrentForm() {
     try {
+      jApp.log('   maximizing the current form');
+      jApp.log(jUtility.oCurrentForm());
+
+      var openFormKey = null,
+          openForm;
 
       if (jApp.openForms.length) {
-        jApp.openForms.last().wrapper.removeClass('max').find('button').prop('disabled', true);
+        jApp.openForms.last().wrapper.removeClass('max');
+
+        _.each(jApp.openForms, function (meta, key) {
+          if (jUtility.doesThisMetaDataDescribeTheCurrentForm(meta)) {
+            jApp.log('openFormKey ' + key);
+            openFormKey = key;
+            jApp.log(meta);
+            openForm = meta;
+          }
+        });
       }
 
-      jApp.openForms.push({
-        wrapper: jUtility.$currentFormWrapper().addClass('max'),
-        obj: jUtility.oCurrentForm(),
-        $: jUtility.$currentForm(),
-        action: jApp.aG().action,
-        model: jUtility.oCurrentForm().model
-      });
+      if (openFormKey !== null && !!openForm) {
+        // form is minimized, open it.
+        jApp.openForms.splice(openFormKey, 1); // remove the element from the array
+        jApp.openForms.push(openForm); // move the element to the end
+      } else {
+          // open a new form
+          jApp.openForms.push({
+            wrapper: jUtility.$currentFormWrapper(),
+            obj: jUtility.oCurrentForm(),
+            $: jUtility.$currentForm(),
+            action: jApp.aG().action,
+            model: jUtility.oCurrentForm().model
+          });
+        }
+
+      // maximize the form and enable its buttons
+      jApp.openForms.last().wrapper.addClass('max');
+      //.find('button').prop('disabled',false);
     } catch (e) {
       console.warn(e);
       return false;
@@ -14466,7 +14697,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    *
    **  **  **  **  **  **  **  **  **  **/
   oCurrentForm: function oCurrentForm() {
-    var key;
+    var key,
+        tmpForms,
+        tmpIndex,
+        action = jApp.aG().action;
+
+    jApp.log(' Getting current form for action: ' + action, true);
 
     switch (jApp.aG().action) {
       case 'new':
@@ -14478,15 +14714,29 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         return jApp.aG().forms.oEditFrm;
     }
 
-    if (!!(key = _.findKey(jApp.aG().forms, function (o, key) {
-      if (key.indexOf('o') !== 0) return false;
-      return key.toLowerCase().indexOf(jApp.aG().action.toString().toLowerCase()) !== -1;
-    }))) {
-      return jApp.aG().forms[key];
-    } else {
-      console.warn('There is no valid form associated with the current action');
-      return false;
+    // the form is not a standard form, try to find it from the current action
+
+    // get an array of the form objects
+    tmpForms = _.compact(_.map(jApp.aG().forms, function (o, key) {
+      if (key.indexOf('o') === 0) return key;else return false;
+    }));
+    jApp.log('-- these are the forms', true);
+    jApp.log(tmpForms, true);
+
+    // try to find the action in the forms
+    tmpIndex = _.findIndex(tmpForms, function (str) {
+      return str.toLowerCase().indexOf(action.toLowerCase()) !== -1;
+    });
+    jApp.log('-- the index of the current form ' + tmpIndex, true);
+
+    if (tmpIndex > -1) {
+      jApp.log('Found current form', true);
+      jApp.log(jApp.aG().forms[tmpForms[tmpIndex]], true);
+      return jApp.aG().forms[tmpForms[tmpIndex]];
     }
+
+    console.warn('There is no valid form associated with the current action');
+    return false;
   },
 
   /**  **  **  **  **  **  **  **  **  **
@@ -14560,7 +14810,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     return fd;
   } };
 
-},{"../forms":64}],73:[function(require,module,exports){
+},{"../forms":65}],74:[function(require,module,exports){
 'use strict';
 
 /**
@@ -15199,7 +15449,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     jUtility.getGridData();
   } };
 
-},{"../defaults":62,"../initParams":66,"../templates":78}],74:[function(require,module,exports){
+},{"../defaults":63,"../initParams":67,"../templates":79}],75:[function(require,module,exports){
 "use strict";
 
 /**
@@ -15305,7 +15555,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     }
   } };
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 'use strict';
 
 /**
@@ -15378,7 +15628,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     } }
 };
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 'use strict';
 
 /**
@@ -15450,7 +15700,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     jApp.tbl().find('[name=RowsPerPage]').parent().hide();
   } };
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 'use strict';
 
 /**
@@ -15630,7 +15880,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       jUtility.DOM.activityPreloader('hide');
     } } };
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 
 /**
@@ -15676,7 +15926,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }
 };
 
-},{}],79:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 'use strict';
 
 /**
@@ -15706,7 +15956,7 @@ require('noty');
 
 module.exports = $.extend(require('./config/methods/bindings'), require('./config/methods/booleans'), require('./config/methods/callbacks'), require('./config/methods/dom'), require('./config/methods/formatters'), require('./config/methods/forms'), require('./config/methods/grid'), require('./config/methods/intervals'), require('./config/methods/messaging'), require('./config/methods/pagination'), require('./config/methods/request'));
 
-},{"../jForm/jForm.class":46,"../jInput/jInput.class":60,"./config/methods/bindings":67,"./config/methods/booleans":68,"./config/methods/callbacks":69,"./config/methods/dom":70,"./config/methods/formatters":71,"./config/methods/forms":72,"./config/methods/grid":73,"./config/methods/intervals":74,"./config/methods/messaging":75,"./config/methods/pagination":76,"./config/methods/request":77,"./vendor/jquery.bootpag":80,"./vendor/jquery.md5":81,"@ingenious/jquery-validator":2,"bootstrap":3,"noty":16}],80:[function(require,module,exports){
+},{"../jForm/jForm.class":47,"../jInput/jInput.class":61,"./config/methods/bindings":68,"./config/methods/booleans":69,"./config/methods/callbacks":70,"./config/methods/dom":71,"./config/methods/formatters":72,"./config/methods/forms":73,"./config/methods/grid":74,"./config/methods/intervals":75,"./config/methods/messaging":76,"./config/methods/pagination":77,"./config/methods/request":78,"./vendor/jquery.bootpag":81,"./vendor/jquery.md5":82,"@ingenious/jquery-validator":2,"bootstrap":3,"noty":16}],81:[function(require,module,exports){
 'use strict';
 
 /**
@@ -15857,7 +16107,7 @@ module.exports = $.extend(require('./config/methods/bindings'), require('./confi
     });
 };
 
-},{}],81:[function(require,module,exports){
+},{}],82:[function(require,module,exports){
 "use strict";
 
 /** jQuery md5()

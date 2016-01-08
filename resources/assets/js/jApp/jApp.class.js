@@ -34,6 +34,7 @@ module.exports = function(options) {
 		this,
 		require('./config/defaults'),
 		require('./config/methods')(self),
+		require('./config/cellTemplates')(self),
 		require('./config/routing'),
 		options
 	);

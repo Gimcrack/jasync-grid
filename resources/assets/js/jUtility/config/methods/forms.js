@@ -21,6 +21,8 @@
       //multiselects
       .find('select:not(.no-bsms)').addClass('bsms').end()
       .find('.bsms').each( function(i,elm) {
+        if (!!$(elm).data('no-bsms')) return false;
+
         $(elm).data('jInput').fn.multiselect().fn.multiselectRefresh();
       } ).end()
       .find('[data-tokens]').each( function(){
@@ -68,7 +70,7 @@
 
         //$(elm).data("DateTimePicker").remove();
         $(elm).val('');
-        if ( $(elm).hasClass('bsms') ) {
+        if ( $(elm).hasClass('bsms') && !($elm).data('no-bsms') ) {
           $(elm).data('jInput').fn.multiselect();
           $(elm).multiselect('refresh');
         }
@@ -80,25 +82,63 @@
   }, // end fn
 
   /**
+   * Does the meta data describe the current form?
+   * @method function
+   * @param  {[type]} meta [description]
+   * @param  {[type]} oFrm [description]
+   * @return {[type]}      [description]
+   */
+  doesThisMetaDataDescribeTheCurrentForm : function( meta ) {
+    var current = jUtility.oCurrentForm();
+
+    return ( meta.action === jApp.aG().action ||
+          (!!meta.model && !!current.model && meta.model === current.model ) );
+  }, // end fn
+
+  /**
    * Maximize the current form
    * @method function
    * @return {[type]} [description]
    */
   maximizeCurrentForm : function() {
     try {
+      jApp.log('   maximizing the current form');
+      jApp.log( jUtility.oCurrentForm() );
+
+      var openFormKey = null,
+          openForm;
 
       if ( jApp.openForms.length ) {
         jApp.openForms.last().wrapper.removeClass('max')
-          .find('button').prop('disabled',true);
+
+        _.each( jApp.openForms, function(meta, key ) {
+            if ( jUtility.doesThisMetaDataDescribeTheCurrentForm( meta ) ) {
+              jApp.log('openFormKey ' + key);
+              openFormKey = key;
+              jApp.log(meta);
+              openForm = meta;
+            }
+        })
       }
 
-      jApp.openForms.push({
-        wrapper : jUtility.$currentFormWrapper().addClass('max'),
-        obj : jUtility.oCurrentForm(),
-        $ : jUtility.$currentForm(),
-        action : jApp.aG().action,
-        model : jUtility.oCurrentForm().model
-      });
+      if (openFormKey !== null && !!openForm) { // form is minimized, open it.
+        jApp.openForms.splice(openFormKey,1); // remove the element from the array
+        jApp.openForms.push( openForm ); // move the element to the end
+
+      } else { // open a new form
+        jApp.openForms.push({
+          wrapper : jUtility.$currentFormWrapper(),
+          obj : jUtility.oCurrentForm(),
+          $ : jUtility.$currentForm(),
+          action : jApp.aG().action,
+          model : jUtility.oCurrentForm().model
+        });
+      }
+
+      // maximize the form and enable its buttons
+      jApp.openForms.last().wrapper.addClass('max')
+        //.find('button').prop('disabled',false);
+
     } catch(e) {
       console.warn(e);
       return false;
@@ -279,7 +319,9 @@
    *
    **  **  **  **  **  **  **  **  **  **/
   oCurrentForm : function() {
-    var key;
+    var key, tmpForms, tmpIndex, action = jApp.aG().action ;
+
+    jApp.log(' Getting current form for action: ' + action, true );
 
     switch ( jApp.aG().action ) {
       case 'new' :
@@ -291,16 +333,25 @@
         return jApp.aG().forms.oEditFrm
     }
 
-    if (!! (key = _.findKey( jApp.aG().forms, function(o, key) {
-      if (key.indexOf('o') !== 0) return false;
-      return key.toLowerCase().indexOf( jApp.aG().action.toString().toLowerCase() ) !== -1;
-    }) )) {
-      return jApp.aG().forms[key];
-    } else {
-      console.warn( 'There is no valid form associated with the current action' );
-      return false;
+    // the form is not a standard form, try to find it from the current action
+
+    // get an array of the form objects
+    tmpForms = _.compact(_.map(jApp.aG().forms, function(o, key) { if (key.indexOf('o') === 0) return key; else return false } ));
+    jApp.log('-- these are the forms', true);
+    jApp.log(tmpForms, true);
+
+    // try to find the action in the forms
+    tmpIndex = _.findIndex( tmpForms, function(str) { return str.toLowerCase().indexOf( action.toLowerCase() ) !== -1 } );
+    jApp.log('-- the index of the current form ' + tmpIndex, true)
+
+    if (tmpIndex > -1) {
+        jApp.log('Found current form', true);
+        jApp.log(jApp.aG().forms[ tmpForms[tmpIndex] ], true);
+        return jApp.aG().forms[ tmpForms[tmpIndex] ];
     }
 
+    console.warn( 'There is no valid form associated with the current action' );
+    return false;
 
   },
 

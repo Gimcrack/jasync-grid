@@ -19,5 +19,6 @@ elixir(function(mix) {
     mix
       .browserify('index.js', './resources/assets/js/prebuild/async-grid.js')
       .scriptsIn('./resources/assets/js/prebuild/', './build/async-grid.js')
-      .livereload();
+      .livereload()
+      .copy('./build/async-grid.js','./vendor/build-export/async-grid.js');
 });

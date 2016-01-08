@@ -19,24 +19,75 @@
     }, // end fn
 
     /**
+     * Add a view
+     * @method function
+     * @return {[type]} [description]
+     */
+    addView : function( name, viewDefinition, colparams ) {
+      var viewTarget = self.views,
+          gridTarget = self.oG,
+          tmp_name = name.split('.'),
+          tmp_name_part,
+          viewName;
+
+      // drill down if applicable
+      while (tmp_name.length > 1) {
+
+        tmp_name_part = tmp_name.shift();
+        jApp.log('name part ' + tmp_name_part);
+
+        if (typeof viewTarget[tmp_name_part] === 'undefined') {
+          viewTarget[tmp_name_part] = {};
+        }
+
+        if (typeof gridTarget[tmp_name_part] === 'undefined') {
+          gridTarget[tmp_name_part] = {};
+        }
+
+        viewTarget = viewTarget[tmp_name_part];
+        gridTarget = gridTarget[tmp_name_part];
+      }
+
+      // get the viewName
+      viewName = tmp_name[0];
+
+      // add the view function
+      viewTarget[viewName] = function() {
+        gridTarget[viewName] = new jGrid(viewDefinition);
+      }
+
+      // add the colparams
+      self.colparams[ viewDefinition.model ] = colparams;
+
+    }, // end fn
+
+    /**
      * Prefix url with api route prefix
      * @method function
      * @param  {[type]} url [description]
      * @return {[type]}     [description]
      */
     prefixURL : function(url) {
-      // sanitize url
-      url = url.replace('http://',''); 	// remove http://
-      url = url.replace('https://',''); // remove https://
-      url = url.replace(self.apiRoutePrefix,'') // remove api route prefix, if it has already been applied
+      var parser,
+          path = url;
 
-      // add the api route prefix
-      url = self.apiRoutePrefix + '/' + url;
+      // handle well-formed urls
+      if (url.indexOf('http:') === 0) {
+        parser = document.createElement('a');
+        parser.href = url;
+        path = parser.pathname;
+      }
+      // remove the route prefix
+      path = path.toString().replace(self.apiRoutePrefix,'');
 
-      // remove any doubled-up slashes
-      url = url.replace(/\/\//gi,'/');
+      // add the route prefix
+      path = self.apiRoutePrefix + '/' + path;
 
-      return './' + url;
+      // trim trailing and leading slashes and remove any double slashes
+      path = path.split('/').filter( function(str) { if (!!str) return str; } ).join('/');
+
+      // add the location origin and return it
+      return location.origin + '/' + path;
     }, // end fn
 
     /**

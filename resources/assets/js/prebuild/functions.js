@@ -1,9 +1,23 @@
+if (!window.location.origin) {
+  window.location.origin = window.location.protocol + "//"
+    + window.location.hostname
+    + (window.location.port ? ':' + window.location.port : '');
+}
 
 if (!Array.prototype.last){
    Array.prototype.last = function(){
        return this[this.length - 1];
    };
 }
+
+_.findKeyWhere = function(list, properties){
+    var k;
+    var filter = _.matches(properties);
+    _.some(list, function(value, key){
+        return filter(value) && (k = key);
+    });
+    return k;
+};
 
 $.fn.serializeObject = function() {
    var o = {};

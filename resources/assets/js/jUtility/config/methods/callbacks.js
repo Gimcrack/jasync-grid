@@ -46,6 +46,8 @@
      *  request
      **  **  **  **  **  **  **  **  **  **/
     update : function(response) {
+      var responseData, self;
+
       jApp.log('6.6 data received. processing...');
 
       jUtility.DOM.setupGridHeaders();
@@ -61,16 +63,21 @@
       }
 
       // init vars
-      var	self = jApp.aG();
+      self = jApp.aG();
+
+      // extract the data from the response;
+      responseData = response.data;
+
+      // TODO - handle pagination of api data and lazy loading
 
       // detect changes in data;
       self.dataGrid.delta = ( !$.isEmptyObject(self.dataGrid.data) ) ?
-        jUtility.deltaData(self.dataGrid.data,response) :
-        response;
+        jUtility.deltaData(self.dataGrid.data,responseData) :
+        responseData;
 
       // merge the changes into self.dataGrid.data
       if (!!self.dataGrid.delta) {
-        self.dataGrid.data = response;
+        self.dataGrid.data = responseData;
       } else { // abort if no changes in the data
         return false;
       }

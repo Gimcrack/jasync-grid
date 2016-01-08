@@ -14,7 +14,8 @@
 	atts : {
 		type : 'text',
 		class : 'form-control',
-		name : 'input'
+		name : 'input',
+		_enabled : true
 	},
 
 	// DOM presentation options
