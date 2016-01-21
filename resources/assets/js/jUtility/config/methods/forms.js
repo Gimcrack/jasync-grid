@@ -146,11 +146,26 @@
   }, // end fn
 
   /**
+   * Exit the current form, checking in the record if needed
+   * @method function
+   * @return {[type]} [description]
+   */
+  exitCurrentForm : function() {
+    if ( jUtility.needsCheckin() )  {
+      console.log('checking in record');
+      return jUtility.checkin( jUtility.getCurrentRowId() );
+    }
+
+    return jUtility.closeCurrentForm();
+  }, // end fn
+
+  /**
    * Close the current form
    * @method function
    * @return {[type]} [description]
    */
   closeCurrentForm : function() {
+
     try {
       var oTgt = jApp.openForms.pop();
 
@@ -175,6 +190,7 @@
 
     } catch(ignore) {}
   }, // end fn
+
 
   /**
    * Load Form Definitions
@@ -266,16 +282,18 @@
    * @return {[type]} [description]
    */
   getCurrentFormAction : function() {
-    switch (jApp.aG().action) {
-      case 'edit' :
-      case 'delete' :
-        return jApp.routing.get( jApp.opts().model, jUtility.getCurrentRowId() );
+    var action = jApp.aG().action;
 
+    if ( action.indexOf('edit') === 0 || action.indexOf('delete') === 0 ) {
+      return jApp.routing.get( jUtility.getActionModel(), jUtility.getCurrentRowId() );
+    }
+
+    switch ( action ) {
       case 'withSelectedDelete' :
-        return jApp.routing.get( jApps.opts().model );
+        return jApp.routing.get( jUtility.getActionModel() );
 
       case 'withSelectedUpdate' :
-        return jApp.routing.get( 'massUpdate', jApp.opts().model );
+        return jApp.routing.get( 'massUpdate', jUtility.getActionModel() );
 
       case 'resetPassword' :
         return jApp.routing.get( 'resetPassword/' + jUtility.getCurrentRowId() );
@@ -308,6 +326,41 @@
     return !!jApp.aG().$().find('.div-form-panel-wrapper.max').length;
   }, // end fn
 
+  /**
+   * formFactory
+   *
+   * build a new form for the model
+   * @method function
+   * @param  {[type]} model [description]
+   * @return {[type]}       [description]
+   */
+  formFactory : function(model) {
+    var colparams,
+        key = 'edit' + model + 'frm',
+        htmlkey = 'editOtherFrm',
+        tableFriendly = model,
+        formDef = {
+          model : model,
+          pkey : 'id',
+          tableFriendly : model,
+          atts : { method : 'PATCH'}
+        },
+        oFrm;
+
+    if ( !jApp.colparams[model] ) {
+      console.warn('there are no colparams available for ' + model);
+      return false;
+    }
+
+    // build the form
+    oFrm = jUtility.DOM.buildForm(formDef, key, htmlkey, tableFriendly);
+
+    // set up the form bindings
+    jUtility.bind();
+
+    return oFrm;
+  }, // end fn
+
   /**  **  **  **  **  **  **  **  **  **
    *   oCurrentForm
    *
@@ -319,7 +372,7 @@
    *
    **  **  **  **  **  **  **  **  **  **/
   oCurrentForm : function() {
-    var key, tmpForms, tmpIndex, action = jApp.aG().action ;
+    var key, tmpForms, tmpIndex, action = jApp.aG().action, model;
 
     jApp.log(' Getting current form for action: ' + action, true );
 
@@ -350,9 +403,17 @@
         return jApp.aG().forms[ tmpForms[tmpIndex] ];
     }
 
-    console.warn( 'There is no valid form associated with the current action' );
-    return false;
+    // we don't have a form built yet, see if we have a form definition for the current action and build the form
+    return jUtility.formFactory( jUtility.getActionModel() );
 
+    // if ( jUtility.isOtherButtonChecked() ) {
+    //   model = jUtility.getOtherButtonModel();
+    //   console.log('building a new form for model ' + model )
+    //   model = jApp.aG().temp.actionModel;
+    //   return jUtility.formFactory( model );
+    // } else {
+    //   console.warn('could not find the actionModel to build the form');
+    // }
   },
 
   /**  **  **  **  **  **  **  **  **  **

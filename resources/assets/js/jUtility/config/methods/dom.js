@@ -38,6 +38,8 @@
         .html( jUtility.render( jApp.aG().html.forms[htmlKey], { tableFriendly : tableFriendly || jApp.opts().model } ) )
         .find( '.formContainer' ).append( oFrm.fn.handle() ).end()
         .appendTo( jApp.aG().$() );
+
+      return oFrm;
     }, // end fn
 
     /**
@@ -534,6 +536,91 @@
     }, //end fn
 
     /**
+     * Handler that triggers when an "other" button is clicked
+     * @method function
+     * @return {[type]} [description]
+     */
+    editOtherButtonHandler : function() {
+      var id = $(this).attr('data-id'),
+          model = $(this).attr('data-model'),
+          icon = _.without($(this).find('i').attr('class').split(' '),'fa','fa-fw')[0],
+          options;
+
+      $('.btn-editOther.active')
+        .not(this)
+        .removeClass('btn-default active')
+        .addClass('btn-link');
+
+      $(this).toggleClass('btn-link btn-default active');
+
+      options = ( !!$('.btn-editOther.active').length ) ?
+        { id: id, model:model, icon : icon } :
+        null;
+
+      jUtility.DOM.updateRowMenuExternalItem( options );
+
+      jUtility.DOM.toggleRowMenu(!!$('.btn-editOther.active').length);
+
+      return true;
+    }, // end fn
+
+    /**
+     * Update the row menu when an external item is checked
+     * @method function
+     * @return {[type]} [description]
+     */
+    updateRowMenuExternalItem : function( options ) {
+      var $row = $('.table-rowMenu-row'),
+          iconClass = $row.find('.btn-rowMenu i').attr('data-tmpClass');
+
+      if (!!options) {
+        $('.chk_cid:checked,.chk_all').prop('checked',false).prop('indeterminate',false);
+
+        $row
+          .addClass('other')
+          .find('.btn-rowMenu')
+          .addClass('other')
+          .find('i')
+            .attr('data-tmpClass',options.icon)
+            .removeClass(iconClass)
+            .removeClass('fa-check-square-o')
+            .addClass(options.icon)
+          .end().end()
+          .find('.btn-primary')
+          .removeClass('btn-primary')
+          .addClass('btn-warning')
+          .end()
+          .find('.btn-history')
+          .hide();
+
+
+          jUtility.DOM.toggleRowMenuItems( false );
+      }
+
+      else {
+
+        $row
+          .removeClass('other')
+          .find('.btn-rowMenu')
+          .removeClass('other')
+          .find('i')
+            .removeClass(iconClass)
+            .addClass('fa-check-square-o')
+            .removeAttr('data-tmpClass')
+          .end().end()
+          .find('.btn-warning')
+          .removeClass('btn-warning')
+          .addClass('btn-primary')
+          .end()
+          .find('.btn-history')
+          .show();
+      }
+
+
+
+    }, // end fn
+
+    /**
      * Update the row menu
      * @method function
      * @return {[type]} [description]
@@ -555,6 +642,9 @@
           jUtility.DOM.toggleRowMenuItems( true );
         break;
       }
+
+      // reset the row menu back to normal
+      jUtility.DOM.updateRowMenuExternalItem();
     }, // end fn
 
     /**
@@ -592,15 +682,20 @@
       jUtility.DOM.updateColWidths();
     }, // end fn
 
-
     /**
-     * Reset row menu to non-expanded state
+     * Clear the selected items
      * @method function
      * @return {[type]} [description]
      */
-    resetRowMenu : function() {
-      //$('.btn-showMenu').removeClass('rotate');
-      //jApp.aG().DOM.$rowMenu.removeClass('expand');
+    clearSelection : function() {
+      jApp.aG().$()
+        .find('.chk_cid').prop('checked',false)
+        .end()
+        .find('.btn-editOther.active')
+          .removeClass('active btn-default')
+          .addClass('btn-link');
+
+      $('.chk_cid').eq(0).change();
     }, // end fn
 
     /**
@@ -626,6 +721,23 @@
         jApp.tbl().find('.helpText').hide();
       }
 
+    }, // end fn
+
+    /**
+     * Refresh the grid
+     * @method function
+     * @return {[type]} [description]
+     */
+    refreshGrid : function() {
+      $(this)
+        .addClass('disabled')
+        .prop('disabled',true)
+        .find('i').addClass('fa-spin').end()
+        // .delay(2000)
+        // .removeClass('disabled')
+        // .prop('disabled',false)
+        // .find('i').removeClass('fa-spin').end();
+      jUtility.updateAll();
     }, // end fn
 
     /**

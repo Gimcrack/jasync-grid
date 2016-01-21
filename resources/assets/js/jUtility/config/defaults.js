@@ -380,6 +380,20 @@
       },
 
       /**
+       * Inspect Record Button
+       * @type {Object}
+       */
+      inspect : {
+        type : 'button',
+        class : 'btn btn-primary btn-inspect',
+        id : 'btn_inspect',
+        icon : 'fa-info',
+        label : 'Inspect ...',
+        'data-permission' : 'read_enabled',
+        'data-multiple' : false
+      },
+
+      /**
        * Edit Button
        * @type {Object}
        */

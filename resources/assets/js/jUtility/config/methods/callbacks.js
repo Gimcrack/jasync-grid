@@ -32,7 +32,7 @@
           }
         }
         jUtility.getGridData();
-        jUtility.DOM.resetRowMenu();
+        jUtility.DOM.clearSelection();
       }
     }, // end fn
 

@@ -14,7 +14,7 @@
     if (typeof jApp.opts().rowDataUrl !== 'undefined') {
       return jApp.prefixURL( jApp.opts().rowDataUrl );
     }
-    return jApp.routing.get( jApp.opts().model, jUtility.getCurrentRowId() );
+    return jApp.routing.get( jUtility.getActionModel(), jUtility.getCurrentRowId() );
   }, //end fn
 
   /**

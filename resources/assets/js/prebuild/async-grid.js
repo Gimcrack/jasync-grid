@@ -6184,6 +6184,8 @@ module.exports = function (element) {
 },{"../lib/dom":20,"../lib/helper":23,"./instances":35,"./update-geometry":36,"./update-scroll":37}],39:[function(require,module,exports){
 'use strict';
 
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+
 /**
  * cellTemplate.js
  *
@@ -6192,85 +6194,232 @@ module.exports = function (element) {
 
 ;module.exports = function (self) {
 
-      return {
-            cellTemplates: {
+  _.nameButton = function (value, icon) {
+    var iconString = !!icon ? '<i class="fa fa-fw ' + icon + '"></i>' : '';
+    return '<button style="padding:4px" class="btn btn-link btn-chk">' + iconString + value + '</button>';
+  };
 
-                  id: function id(value) {
-                        return ('0000' + value).slice(-4);
-                  },
+  _.link = function (value, icon, external) {
+    var row = self.activeGrid.currentRow,
+        id = row.id,
+        href = window.location.href.trim('/');
 
-                  name: function name(value) {
-                        var r = self.activeGrid.currentRow;
-                        return value.link(window.location.href.trim('/') + '/' + r.id);
-                  },
+    switch (true) {
+      case !!icon && !!external:
+        value = '<span><i class="fa fa-fw ' + icon + '"></i>' + value + '<i class="fa fa-fw fa-external-link"></i></span>';
+        break;
 
-                  person_name: function person_name() {
-                        var r = self.activeGrid.currentRow;
-                        return !!r.person && r.person.name != null ? r.person.name : '';
-                  },
+      case !!icon:
+        value = '<span><i class="fa fa-fw ' + icon + '"></i>' + value + '</span>';
+        break;
 
-                  username: function username(value) {
-                        var r = self.activeGrid.currentRow;
-                        return value.link(window.location.href.trim('/') + '/' + r.id);
-                  },
+      case !!external:
+        value = '<span>' + value + '<i class="fa fa-fw fa-external-link"></i></span>';
+        break;
+    }
 
-                  email: function email(value) {
-                        return value.link('mailto:' + value);
-                  },
+    return value.link(href + '/' + id);
+  };
 
-                  users: function users(arr) {
-                        return _.pluck(arr, 'username').join(', ');
-                  },
+  _.email = function (value, icon) {
 
-                  modules: function modules(arr) {
-                        return _.pluck(arr, 'role').join(', ');
-                  },
+    var row = self.activeGrid.currentRow,
+        id = row.id,
+        href = window.location.href.trim('/'),
+        text = !!icon ? '<span><i class="fa fa-fw ' + icon + '"></i>' + value + '<i class="fa fa-fw fa-external-link"></span>' : '<span><i class="fa fa-fw fa-envelope"></i>' + value + '<i class="fa fa-fw fa-external-link"></span>';
 
-                  group_modules: function group_modules(arr) {
-                        return _.compact(_.flatten(_.map(self.activeGrid.currentRow.groups, function (row, i) {
-                              return row.modules.length ? _.map(row.modules, function (o, ii) {
-                                    return o.role + ' (' + o.name + ')';
-                              }) : false;
-                        }))).join(', ');
-                  },
+    return text.link('mailto:' + value);
+  };
 
-                  user_groups: function user_groups(arr) {
-                        return _.compact(_.flatten(_.map(self.activeGrid.currentRow.users, function (row, i) {
-                              return row.groups.length ? _.pluck(row.groups, 'name') : false;
-                        }))).join(', ');
-                  },
+  _.get = function (key, target, callback, icon, model) {
+    var tmpKeyArr = key.split('.'),
+        tmpKeyNext,
+        returnArr;
 
-                  groups: function groups(arr) {
-                        return _.map(arr, function (o) {
-                              if (o.pivot.comment != null) {
-                                    return o.name + ' (' + o.pivot.comment + ')';
-                              }
-                              return o.name;
-                        }).join(', ');
-                  },
+    // move variables around
+    if (typeof target === 'string') {
+      icon = target;
+      target = null;
+    }
 
-                  created_at: function created_at(value) {
-                        return date('Y-m-d', strtotime(value));
-                  },
+    if (typeof callback === 'string') {
+      if (callback.indexOf('fa-') === 0) {
+        model = icon;
+        icon = callback;
+      } else {
+        model = callback;
+        icon = null;
+      }
+      callback = null;
+    }
 
-                  updated_at: function updated_at(value) {
-                        return date('Y-m-d', strtotime(value));
-                  },
+    if (target != null) {
+      return _.map(target, function (row, i) {
+        var iconString = !!icon ? '<i class="fa fa-fw ' + icon + '"></i>' : '';
+        return '<button style="padding:4px" class="btn btn-link btn-editOther" data-id="' + row.id + '" data-model="' + model + '">' + iconString + row[key] + '</button>';
+      });
+    } else {
 
-                  permissions: function permissions() {
-                        var row = jApp.aG().currentRow,
-                            p = [];
+      target = self.activeGrid.currentRow;
 
-                        if (!!Number(row.create_enabled)) p.push('Create');
-                        if (!!Number(row.read_enabled)) p.push('Read');
-                        if (!!Number(row.update_enabled)) p.push('Update');
-                        if (!!Number(row.delete_enabled)) p.push('Delete');
+      while (tmpKeyArr.length > 1) {
+        tmpKeyNext = tmpKeyArr.shift();
 
-                        return p.join(', ');
-                  }
+        if (target[tmpKeyNext] != null) {
+          target = target[tmpKeyNext];
+        } else {
+          console.warn(key + ' is not a valid key of ');
+          console.warn(target);
+          return false;
+        }
+      }
 
-            }
-      };
+      switch (_typeof(target[tmpKeyArr[0]])) {
+        case 'undefined':
+          return false;
+          break;
+
+        case 'string':
+          returnArr = [target[tmpKeyArr[0]]];
+          break;
+
+        default:
+          returnArr = target[tmpKeyArr[0]];
+      }
+    }
+
+    if (!!callback) {
+      returnArr = returnArr.map(callback);
+    }
+
+    if (!!icon) {
+      returnArr = returnArr.map(function (val) {
+        return '<span><i class="fa fa-fw ' + icon + '"></i>' + val + '</span>';
+      });
+    }
+
+    console.log(returnArr);
+
+    return returnArr.join(' ');
+  };
+
+  /**
+   * pivotExtract
+   *
+   *	Pulls a unique, flattened list out of the specified
+   *	target or the current row. Optionally, you can
+   *	specify a callback function which will be applied
+   *	to the list using .map. You can also specify a
+   *	font-awesome icon to be applied to each item in the list.
+   *
+   * @method function
+   * @param  {[type]}   target   [description]
+   * @param  {Function} callback [description]
+   * @param  {[type]}   icon     [description]
+   * @return {[type]}            [description]
+   */
+  _.pivotExtract = function (target, callback, icon) {
+
+    // find the target. If it's a string it's a key of the currentRow
+    if ((typeof target === 'undefined' ? 'undefined' : _typeof(target)) !== 'object') {
+      target = self.activeGrid.currentRow[target];
+    }
+
+    var a = _.uniq( // return unique values
+    _.compact( // remove falsy values
+    _.flatten( // flatten multi-dimensional array
+    _.map( // map currentRow.users return list of group names
+    target, callback))));
+
+    // add the icons if applicable
+    if (icon != null) {
+      a = a.map(function (val) {
+        return '<span><i class="fa fa-fw ' + icon + '"></i>' + val + '</span>';
+      });
+    }
+
+    return a.join(' '); // join the list and return
+  };
+
+  return {
+    cellTemplates: {
+
+      id: function id(value) {
+        return ('0000' + value).slice(-4);
+      },
+
+      name: function name(value) {
+        return _.nameButton(value, self.opts().gridHeader.icon);
+      },
+
+      hostname: function hostname(value) {
+        return _.nameButton(value, 'fa-server');
+      },
+
+      username: function username(value) {
+        return _.nameButton(value, 'fa-user');
+      },
+
+      person_name: function person_name() {
+        return _.get('person.name', 'fa-male');
+      },
+
+      email: function email(value) {
+        return _.email(value);
+      },
+
+      users: function users(arr) {
+        return _.get('username', arr, 'fa-user', 'User');
+      },
+
+      roles: function roles(arr) {
+        return _.get('name', arr, 'fa-briefcase', 'Role');
+      },
+
+      groups: function groups(arr) {
+        return _.get('name', arr, 'fa-users', 'Group');
+      },
+
+      group_roles: function group_roles(arr) {
+        return _.pivotExtract('groups', function (row, i) {
+          return row.roles.length ? _.get('name', row.roles, 'fa-briefcase', 'Role') : false;
+        });
+      },
+
+      group_users: function group_users(arr) {
+        return _.pivotExtract('groups', function (row, i) {
+          return row.users.length ? _.get('username', row.users, 'fa-user', 'User') : false;
+        });
+      },
+
+      user_groups: function user_groups(arr) {
+        return _.pivotExtract('users', function (row, i) {
+          return row.groups.length ? _.get('name', row.groups, 'fa-users', 'Group') : false;
+        });
+      },
+
+      created_at: function created_at(value) {
+        return date('Y-m-d', strtotime(value));
+      },
+
+      updated_at: function updated_at(value) {
+        return date('Y-m-d', strtotime(value));
+      },
+
+      permissions: function permissions() {
+        var row = jApp.aG().currentRow,
+            p = [];
+
+        if (!!Number(row.create_enabled)) p.push('Create');
+        if (!!Number(row.read_enabled)) p.push('Read');
+        if (!!Number(row.update_enabled)) p.push('Update');
+        if (!!Number(row.delete_enabled)) p.push('Delete');
+
+        return p.join(', ');
+      }
+
+    }
+  };
 };
 
 },{}],40:[function(require,module,exports){
@@ -6346,7 +6495,7 @@ module.exports = function (element) {
    * Debug mode, set to false to supress messages
    * @type {Boolean}
    */
-  debug: false,
+  debug: true,
 
   /**
    * Placeholder for the activeGrid object
@@ -8089,7 +8238,7 @@ module.exports = function (options) {
       jApp.log(data);
 
       return $('<tr/>').append(_.map(params.fields, function (oo, ii) {
-        var $td = $('<td/>'),
+        var $td = $('<td/>', { nowrap: 'nowrap' }),
             value = null;
 
         oo['data-array-input'] = true;
@@ -8110,7 +8259,7 @@ module.exports = function (options) {
 
         self.fn.processField(oo, $td, value);
         return $td;
-      })).append([$('<td/>').append([$btn_remove, $btn_add])]);
+      })).append([$('<td/>', { nowrap: 'nowrap' }).append([$btn_remove, $btn_add])]);
     }, // end fn
 
     /**
@@ -9400,11 +9549,14 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      */
     setValue: function setValue(value) {
       jApp.log('--Setting value of ' + self.options.atts.name);
+      jApp.log('---value');
+      jApp.log(value);
       switch (self.type) {
 
         case 'select':
 
-          if (!!_.pluck(value, 'id').length) {
+          if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) === 'object' && !!_.pluck(value, 'id').length) {
+            jApp.log('-- plucking the value out of the object');
             value = _.pluck(value, 'id');
           }
           if (!!self.DOM.$inpt.data('multiselect')) {
@@ -11890,6 +12042,20 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       },
 
       /**
+       * Inspect Record Button
+       * @type {Object}
+       */
+      inspect: {
+        type: 'button',
+        class: 'btn btn-primary btn-inspect',
+        id: 'btn_inspect',
+        icon: 'fa-info',
+        label: 'Inspect ...',
+        'data-permission': 'read_enabled',
+        'data-multiple': false
+      },
+
+      /**
        * Edit Button
        * @type {Object}
        */
@@ -12023,15 +12189,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   },
 
   "button.close, .btn-cancel": {
-    click: function click() {
-      if (jUtility.needsCheckin()) {
-        console.log('checking in record');
-        jUtility.checkin(jUtility.getCurrentRowId());
-      } else {
-        console.log('closing current form');
-        jUtility.closeCurrentForm();
-      }
-    }
+    click: jUtility.exitCurrentForm
   },
 
   ".btn-go": {
@@ -12291,6 +12449,17 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
       // set the state of the checkAll checkbox
       $chk_all.prop('checked', total_num === num_checked ? true : false).prop('indeterminate', num_checked > 0 && num_checked < total_num ? true : false);
+
+      if (!!num_checked) {
+        $('.btn-editOther.active').removeClass('btn-default active').addClass('btn-link');
+      }
+    }
+  },
+
+  ".btn-chk": {
+    click: function click() {
+      $('.chk_cid:checked').prop('checked', false).eq(0).change();
+      $(this).closest('.table-row').find('.chk_cid').click();
     }
   },
 
@@ -12302,8 +12471,15 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
   ".btn-edit": {
     click: function click() {
-      jUtility.actionHelper('edit');
+      if (jUtility.isOtherButtonChecked()) {
+        return jUtility.actionHelper('edit' + jUtility.getOtherButtonModel());
+      }
+      return jUtility.actionHelper('edit');
     }
+  },
+
+  ".btn-editOther": {
+    click: jUtility.DOM.editOtherButtonHandler
   },
 
   ".btn-headerFilters": {
@@ -12317,17 +12493,11 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   },
 
   ".btn-clear": {
-    click: function click() {
-      jApp.aG().$().find('.chk_cid').prop('checked', false);
-      $('.chk_cid').eq(0).change();
-    }
+    click: jUtility.DOM.clearSelection
   },
 
   ".btn-refresh": {
-    click: function click() {
-      $(this).addClass('disabled').delay(2000).removeClass('disabled');
-      jUtility.updateAll();
-    }
+    click: jUtility.DOM.refreshGrid
   },
 
   // ".btn-showMenu" : {
@@ -12570,6 +12740,15 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, //end fn
 
   /**
+   * Is an "other" button checked?
+   * @method function
+   * @return {[type]} [description]
+   */
+  isOtherButtonChecked: function isOtherButtonChecked() {
+    return !!$('.btn-editOther.active').length;
+  }, // end fn
+
+  /**
    * Initialize scrollbar
    * @method function
    * @return {[type]} [description]
@@ -12722,7 +12901,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @return {[type]} [description]
    */
   needsCheckout: function needsCheckout() {
-    return jUtility.isCheckout() && (jApp.aG().action === 'edit' || jApp.aG().action === 'delete');
+    var action = jApp.aG().action;
+    return jUtility.isCheckout() && (action === 'edit' || action === 'delete' || action.indexOf('edit') === 0);
   }, //end fn
 
   /**
@@ -12782,7 +12962,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
           }
         }
         jUtility.getGridData();
-        jUtility.DOM.resetRowMenu();
+        jUtility.DOM.clearSelection();
       }
     }, // end fn
 
@@ -13045,6 +13225,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       // create form container
       jApp.aG().forms[$frmHandle] = {}; // initialize it with a placeholder
       jApp.aG().forms[$frmHandle] = $('<div/>', { 'class': 'gridFormContainer' }).html(jUtility.render(jApp.aG().html.forms[htmlKey], { tableFriendly: tableFriendly || jApp.opts().model })).find('.formContainer').append(oFrm.fn.handle()).end().appendTo(jApp.aG().$());
+
+      return oFrm;
     }, // end fn
 
     /**
@@ -13515,6 +13697,51 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     }, //end fn
 
     /**
+     * Handler that triggers when an "other" button is clicked
+     * @method function
+     * @return {[type]} [description]
+     */
+    editOtherButtonHandler: function editOtherButtonHandler() {
+      var id = $(this).attr('data-id'),
+          model = $(this).attr('data-model'),
+          icon = _.without($(this).find('i').attr('class').split(' '), 'fa', 'fa-fw')[0],
+          options;
+
+      $('.btn-editOther.active').not(this).removeClass('btn-default active').addClass('btn-link');
+
+      $(this).toggleClass('btn-link btn-default active');
+
+      options = !!$('.btn-editOther.active').length ? { id: id, model: model, icon: icon } : null;
+
+      jUtility.DOM.updateRowMenuExternalItem(options);
+
+      jUtility.DOM.toggleRowMenu(!!$('.btn-editOther.active').length);
+
+      return true;
+    }, // end fn
+
+    /**
+     * Update the row menu when an external item is checked
+     * @method function
+     * @return {[type]} [description]
+     */
+    updateRowMenuExternalItem: function updateRowMenuExternalItem(options) {
+      var $row = $('.table-rowMenu-row'),
+          iconClass = $row.find('.btn-rowMenu i').attr('data-tmpClass');
+
+      if (!!options) {
+        $('.chk_cid:checked,.chk_all').prop('checked', false).prop('indeterminate', false);
+
+        $row.addClass('other').find('.btn-rowMenu').addClass('other').find('i').attr('data-tmpClass', options.icon).removeClass(iconClass).removeClass('fa-check-square-o').addClass(options.icon).end().end().find('.btn-primary').removeClass('btn-primary').addClass('btn-warning').end().find('.btn-history').hide();
+
+        jUtility.DOM.toggleRowMenuItems(false);
+      } else {
+
+        $row.removeClass('other').find('.btn-rowMenu').removeClass('other').find('i').removeClass(iconClass).addClass('fa-check-square-o').removeAttr('data-tmpClass').end().end().find('.btn-warning').removeClass('btn-warning').addClass('btn-primary').end().find('.btn-history').show();
+      }
+    }, // end fn
+
+    /**
      * Update the row menu
      * @method function
      * @return {[type]} [description]
@@ -13536,6 +13763,9 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
           jUtility.DOM.toggleRowMenuItems(true);
           break;
       }
+
+      // reset the row menu back to normal
+      jUtility.DOM.updateRowMenuExternalItem();
     }, // end fn
 
     /**
@@ -13574,13 +13804,14 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     }, // end fn
 
     /**
-     * Reset row menu to non-expanded state
+     * Clear the selected items
      * @method function
      * @return {[type]} [description]
      */
-    resetRowMenu: function resetRowMenu() {
-      //$('.btn-showMenu').removeClass('rotate');
-      //jApp.aG().DOM.$rowMenu.removeClass('expand');
+    clearSelection: function clearSelection() {
+      jApp.aG().$().find('.chk_cid').prop('checked', false).end().find('.btn-editOther.active').removeClass('active btn-default').addClass('btn-link');
+
+      $('.chk_cid').eq(0).change();
     }, // end fn
 
     /**
@@ -13598,6 +13829,20 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       if (!jApp.opts().gridHeader.helpText) {
         jApp.tbl().find('.helpText').hide();
       }
+    }, // end fn
+
+    /**
+     * Refresh the grid
+     * @method function
+     * @return {[type]} [description]
+     */
+    refreshGrid: function refreshGrid() {
+      $(this).addClass('disabled').prop('disabled', true).find('i').addClass('fa-spin').end();
+      // .delay(2000)
+      // .removeClass('disabled')
+      // .prop('disabled',false)
+      // .find('i').removeClass('fa-spin').end();
+      jUtility.updateAll();
     }, // end fn
 
     /**
@@ -14532,11 +14777,26 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, // end fn
 
   /**
+   * Exit the current form, checking in the record if needed
+   * @method function
+   * @return {[type]} [description]
+   */
+  exitCurrentForm: function exitCurrentForm() {
+    if (jUtility.needsCheckin()) {
+      console.log('checking in record');
+      return jUtility.checkin(jUtility.getCurrentRowId());
+    }
+
+    return jUtility.closeCurrentForm();
+  }, // end fn
+
+  /**
    * Close the current form
    * @method function
    * @return {[type]} [description]
    */
   closeCurrentForm: function closeCurrentForm() {
+
     try {
       var oTgt = jApp.openForms.pop();
 
@@ -14645,16 +14905,18 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @return {[type]} [description]
    */
   getCurrentFormAction: function getCurrentFormAction() {
-    switch (jApp.aG().action) {
-      case 'edit':
-      case 'delete':
-        return jApp.routing.get(jApp.opts().model, jUtility.getCurrentRowId());
+    var action = jApp.aG().action;
 
+    if (action.indexOf('edit') === 0 || action.indexOf('delete') === 0) {
+      return jApp.routing.get(jUtility.getActionModel(), jUtility.getCurrentRowId());
+    }
+
+    switch (action) {
       case 'withSelectedDelete':
-        return jApp.routing.get(jApps.opts().model);
+        return jApp.routing.get(jUtility.getActionModel());
 
       case 'withSelectedUpdate':
-        return jApp.routing.get('massUpdate', jApp.opts().model);
+        return jApp.routing.get('massUpdate', jUtility.getActionModel());
 
       case 'resetPassword':
         return jApp.routing.get('resetPassword/' + jUtility.getCurrentRowId());
@@ -14686,6 +14948,41 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     return !!jApp.aG().$().find('.div-form-panel-wrapper.max').length;
   }, // end fn
 
+  /**
+   * formFactory
+   *
+   * build a new form for the model
+   * @method function
+   * @param  {[type]} model [description]
+   * @return {[type]}       [description]
+   */
+  formFactory: function formFactory(model) {
+    var colparams,
+        key = 'edit' + model + 'frm',
+        htmlkey = 'editOtherFrm',
+        tableFriendly = model,
+        formDef = {
+      model: model,
+      pkey: 'id',
+      tableFriendly: model,
+      atts: { method: 'PATCH' }
+    },
+        oFrm;
+
+    if (!jApp.colparams[model]) {
+      console.warn('there are no colparams available for ' + model);
+      return false;
+    }
+
+    // build the form
+    oFrm = jUtility.DOM.buildForm(formDef, key, htmlkey, tableFriendly);
+
+    // set up the form bindings
+    jUtility.bind();
+
+    return oFrm;
+  }, // end fn
+
   /**  **  **  **  **  **  **  **  **  **
    *   oCurrentForm
    *
@@ -14700,7 +14997,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     var key,
         tmpForms,
         tmpIndex,
-        action = jApp.aG().action;
+        action = jApp.aG().action,
+        model;
 
     jApp.log(' Getting current form for action: ' + action, true);
 
@@ -14735,8 +15033,17 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       return jApp.aG().forms[tmpForms[tmpIndex]];
     }
 
-    console.warn('There is no valid form associated with the current action');
-    return false;
+    // we don't have a form built yet, see if we have a form definition for the current action and build the form
+    return jUtility.formFactory(jUtility.getActionModel());
+
+    // if ( jUtility.isOtherButtonChecked() ) {
+    //   model = jUtility.getOtherButtonModel();
+    //   console.log('building a new form for model ' + model )
+    //   model = jApp.aG().temp.actionModel;
+    //   return jUtility.formFactory( model );
+    // } else {
+    //   console.warn('could not find the actionModel to build the form');
+    // }
   },
 
   /**  **  **  **  **  **  **  **  **  **
@@ -15128,9 +15435,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @return {[type]}            [description]
    */
   withSelectedAction: function withSelectedAction(action, callback, includeHidden) {
-    var $cid = jUtility.getCheckedItems(includeHidden);
+    var $cid = jUtility.getCheckedItems(includeHidden),
+        model = jUtility.getActionModel();
 
-    if (!$cid.length) {
+    if (!$cid.length && !jUtility.isOtherButtonChecked()) {
       return jUtility.msg.warning('Nothing selected.');
     }
 
@@ -15138,7 +15446,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       // DELETE SELECTED
       case 'delete':
         jApp.aG().action = 'withSelectedDelete';
-        bootbox.confirm('Are you sure you want to delete ' + $cid.length + ' items?', function (response) {
+        bootbox.confirm('Are you sure you want to delete ' + $cid.length + ' ' + model + ' record(s)?', function (response) {
           if (!!response) {
             jUtility.postJSON({
               url: jUtility.getCurrentFormAction(),
@@ -15165,9 +15473,16 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @return {[type]}        [description]
    */
   actionHelper: function actionHelper(action) {
+    var id, model;
+
     jApp.aG().action = action;
+
     if (jUtility.needsCheckout()) {
-      jUtility.checkout(jUtility.getCurrentRowId());
+
+      id = jUtility.getCurrentRowId();
+      model = jUtility.getActionModel();
+
+      jUtility.checkout(id, model);
     } else {
       jUtility.setupFormContainer();
     }
@@ -15184,11 +15499,60 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, //end fn
 
   /**
+   * Get the model that the action is action on
+   * @method function
+   * @return {[type]} [description]
+   */
+  getActionModel: function getActionModel() {
+    if (jUtility.isOtherButtonChecked()) {
+      return jUtility.getOtherButtonModel();
+    }
+    // if (!!jApp.aG().temp && !!jApp.aG().temp.actionModel) {
+    //   return jApp.aG().temp.actionModel;
+    // }
+    return jApp.opts().model;
+  }, // end fn
+
+  /**
+   * Get the id of the "other" button that is checked
+   * @method function
+   * @return {[type]} [description]
+   */
+  getOtherButtonId: function getOtherButtonId() {
+    return jUtility.getActiveOtherButton().attr('data-id');
+  }, // end fn
+
+  /**
+   * Get the model of the "other" button that is checked
+   * @method function
+   * @return {[type]} [description]
+   */
+  getOtherButtonModel: function getOtherButtonModel() {
+    return jUtility.getActiveOtherButton().attr('data-model');
+  }, // end fn
+
+  /**
+   * Get the "other" button that is checked
+   * @method function
+   * @return {[type]} [description]
+   */
+  getActiveOtherButton: function getActiveOtherButton() {
+    return $('.btn-editOther.active').eq(0);
+  }, // end fn
+
+  /**
    * Get current row id
    * @method function
    * @return {[type]} [description]
    */
   getCurrentRowId: function getCurrentRowId() {
+    // if (!!jApp.aG().temp && jApp.aG().temp.actionId > 0) {
+    //   return jApp.aG().temp.actionId;
+    // }
+    if (jUtility.isOtherButtonChecked()) {
+      return jUtility.getOtherButtonId();
+    }
+
     return jUtility.getCheckedItems(true);
   }, //end fn
 
@@ -15300,9 +15664,14 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @param  {[type]} id [description]
    * @return {[type]}    [description]
    */
-  checkout: function checkout(id) {
+  checkout: function checkout(id, model) {
+
+    if (!model) {
+      model = jApp.opts().model;
+    }
+
     jUtility.getJSON({
-      url: jApp.routing.get('checkout', jApp.opts().model, id), //jApp.prefixURL( '/checkout/_' + jApp.opts().model + '_' + id ),
+      url: jApp.routing.get('checkout', model, id), //jApp.prefixURL( '/checkout/_' + jApp.opts().model + '_' + id ),
       success: jUtility.callback.checkout
     });
   }, // end fn
@@ -15312,9 +15681,14 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @param  {[type]} id [description]
    * @return {[type]}    [description]
    */
-  checkin: function checkin(id) {
+  checkin: function checkin(id, model) {
+
+    if (!model) {
+      model = jUtility.getActionModel();
+    }
+
     jUtility.getJSON({
-      url: jApp.routing.get('checkin', jApp.opts().model, id), // jApp.prefixURL( '/checkin/_' + jApp.opts().model + '_' + id ),
+      url: jApp.routing.get('checkin', model, id), // jApp.prefixURL( '/checkin/_' + jApp.opts().model + '_' + id ),
       success: jUtility.callback.checkin,
       always: function always() {/* ignore */}
     });
@@ -15358,6 +15732,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    */
   getCheckedItems: function getCheckedItems(includeHidden) {
     var selector = !!includeHidden ? '.chk_cid:checked' : '.chk_cid:checked:visible';
+
+    if (jUtility.isOtherButtonChecked()) {
+      return [jUtility.getOtherButtonId()];
+    }
 
     return $('.table-grid').find(selector).map(function (i, elm) {
       return $(elm).closest('.table-row').attr('data-identifier');
@@ -15719,7 +16097,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     if (typeof jApp.opts().rowDataUrl !== 'undefined') {
       return jApp.prefixURL(jApp.opts().rowDataUrl);
     }
-    return jApp.routing.get(jApp.opts().model, jUtility.getCurrentRowId());
+    return jApp.routing.get(jUtility.getActionModel(), jUtility.getCurrentRowId());
   }, //end fn
 
   /**
@@ -15892,7 +16270,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 ;module.exports = {
 
   // main grid body
-  tmpMainGridBody: "<div class=\"row\">\n                      <div class=\"col-lg-12\">\n                        <div class=\"panel panel-info panel-grid panel-grid1\">\n                          <div class=\"panel-heading\">\n                            <h1 class=\"page-header\"><i class=\"fa {@icon} fa-fw\"></i><span class=\"header-title\"> {@headerTitle} </span></h1>\n                            <div class=\"alert alert-warning alert-dismissible helpText\" role=\"alert\"> <button type=\"button\" class=\"close\" data-dismiss=\"alert\"><span aria-hidden=\"true\">&times;</span><span class=\"sr-only\">Close</span></button> {@helpText} </div>\n                          </div>\n                          <div class=\"panel-body grid-panel-body\">\n                            <div class=\"table-responsive\">\n                              <div class=\"table table-bordered table-grid\">\n                                <div class=\"table-head\">\n                                  <div class=\"table-row table-menu-row\">\n                                    <div class=\"table-header table-menu-header\" style=\"width:100%\">\n                                      <div class=\"btn-group btn-group-sm table-btn-group\">  </div>\n                                    </div>\n                                  </div>\n                                  <div style=\"display:none\" class=\"table-row table-rowMenu-row\"></div>\n                                  <div class=\"table-row tfilters\" style=\"display:none\">\n                                    <div style=\"width:10px;\" class=\"table-header\">&nbsp;</div>\n                                    <div style=\"width:175px;\" class=\"table-header\" align=\"right\"> <span class=\"label label-info filter-showing\"></span> </div>\n                                  </div>\n                                </div>\n                                <div class=\"table-body\" id=\"tbl_grid_body\">\n                                  <!--{$tbody}-->\n                                </div>\n                                <div class=\"table-foot\">\n                                  <div class=\"row\">\n                                    <div class=\"col-md-3\">\n                                      <div style=\"display:none\" class=\"ajax-activity-preloader pull-left\"></div>\n                                      <div class=\"divRowsPerPage pull-right\">\n                                        <select style=\"width:180px;display:inline-block\" type=\"select\" name=\"RowsPerPage\" id=\"RowsPerPage\" class=\"form-control\">\n                                          <option value=\"10\">10</option>\n                                          <option value=\"15\">15</option>\n                                          <option value=\"25\">25</option>\n                                          <option value=\"50\">50</option>\n                                          <option value=\"100\">100</option>\n                                          <option value=\"10000\">All</option>\n                                        </select>\n                                      </div>\n                                    </div>\n                                    <div class=\"col-md-9\">\n                                      <div class=\"paging\"></div>\n                                    </div>\n                                  </div>\n                                </div>\n                                <!-- /. table-foot -->\n                              </div>\n                            </div>\n                            <!-- /.table-responsive -->\n                          </div>\n                          <!-- /.panel-body -->\n                        </div>\n                        <!-- /.panel -->\n                      </div>\n                      <!-- /.col-lg-12 -->\n                    </div>\n                    <!-- /.row -->",
+  tmpMainGridBody: "<div class=\"row\">\n                      <div class=\"col-lg-12\">\n                        <div class=\"panel panel-info panel-grid panel-grid1\">\n                          <div class=\"panel-heading\">\n                            <h1 class=\"page-header\"><i class=\"fa {@icon} fa-fw\"></i><span class=\"header-title\"> {@headerTitle} </span></h1>\n                            <div class=\"alert alert-warning alert-dismissible helpText\" role=\"alert\"> <button type=\"button\" class=\"close\" data-dismiss=\"alert\"><span aria-hidden=\"true\">&times;</span><span class=\"sr-only\">Close</span></button> {@helpText} </div>\n                          </div>\n                          <div class=\"panel-body grid-panel-body\">\n                            <div class=\"table-responsive\">\n                              <div class=\"table table-bordered table-grid\">\n                                <div class=\"table-head\">\n                                  <div class=\"table-row table-menu-row\">\n                                    <div class=\"table-header table-menu-header\" style=\"width:100%\">\n                                      <div class=\"btn-group btn-group-sm table-btn-group\">  </div>\n                                    </div>\n                                  </div>\n                                  <div style=\"display:none\" class=\"table-row table-rowMenu-row\"></div>\n                                  <div style=\"display:none\" class=\"table-row table-otherMenu-row\"></div>\n                                  <div class=\"table-row tfilters\" style=\"display:none\">\n                                    <div style=\"width:10px;\" class=\"table-header\">&nbsp;</div>\n                                    <div style=\"width:175px;\" class=\"table-header\" align=\"right\"> <span class=\"label label-info filter-showing\"></span> </div>\n                                  </div>\n                                </div>\n                                <div class=\"table-body\" id=\"tbl_grid_body\">\n                                  <!--{$tbody}-->\n                                </div>\n                                <div class=\"table-foot\">\n                                  <div class=\"row\">\n                                    <div class=\"col-md-3\">\n                                      <div style=\"display:none\" class=\"ajax-activity-preloader pull-left\"></div>\n                                      <div class=\"divRowsPerPage pull-right\">\n                                        <select style=\"width:180px;display:inline-block\" type=\"select\" name=\"RowsPerPage\" id=\"RowsPerPage\" class=\"form-control\">\n                                          <option value=\"10\">10</option>\n                                          <option value=\"15\">15</option>\n                                          <option value=\"25\">25</option>\n                                          <option value=\"50\">50</option>\n                                          <option value=\"100\">100</option>\n                                          <option value=\"10000\">All</option>\n                                        </select>\n                                      </div>\n                                    </div>\n                                    <div class=\"col-md-9\">\n                                      <div class=\"paging\"></div>\n                                    </div>\n                                  </div>\n                                </div>\n                                <!-- /. table-foot -->\n                              </div>\n                            </div>\n                            <!-- /.table-responsive -->\n                          </div>\n                          <!-- /.panel-body -->\n                        </div>\n                        <!-- /.panel -->\n                      </div>\n                      <!-- /.col-lg-12 -->\n                    </div>\n                    <!-- /.row -->",
 
   // check all checkbox template
   tmpCheckAll: "<label for=\"chk_all\" class=\"btn btn-default pull-right\"> <input id=\"chk_all\" type=\"checkbox\" class=\"chk_all\" name=\"chk_all\"> </label>",
@@ -15917,6 +16295,9 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
     // New Form Template
     newOtherFrm: "<div id=\"div_newFrm\" class=\"div-btn-new min div-form-panel-wrapper\">\n                    <div class=\"frm_wrapper\">\n                      <div class=\"panel panel-info\">\n                        <div class=\"panel-heading\"> <button type=\"button\" class=\"close\" aria-hidden=\"true\" data-original-title=\"\" title=\"\">×</button> <i class=\"fa fa-plus fa-fw\"></i> New: <span class=\"spn_editFriendlyName\">{@tableFriendly}</span> </div>\n                        <div class=\"panel-overlay\" style=\"display:none\"></div>\n                        <div class=\"panel-body\">\n                          <div class=\"row side-by-side\">\n                            <div class=\"side-by-side newOtherFormContainer formContainer\"> </div>\n                          </div>\n                        </div>\n                      </div>\n                    </div>\n                  </div>",
+
+    // Edit Form Template
+    editOtherFrm: "<div id=\"div_editFrm\" class=\"div-btn-edit min div-form-panel-wrapper\">\n                    <div class=\"frm_wrapper\">\n                      <div class=\"panel panel-warning\">\n                        <div class=\"panel-heading\"> <button type=\"button\" class=\"close\" aria-hidden=\"true\" data-original-title=\"\" title=\"\">×</button> <i class=\"fa fa-plus fa-fw\"></i> Edit: <span class=\"spn_editFriendlyName\">{@tableFriendly}</span> </div>\n                        <div class=\"panel-overlay\" style=\"display:none\"></div>\n                        <div class=\"panel-body\">\n                          <div class=\"row side-by-side\">\n                            <div class=\"side-by-side editOtherFormContainer formContainer\"> </div>\n                          </div>\n                        </div>\n                      </div>\n                    </div>\n                  </div>",
 
     // Delete Form Template
     deleteFrm: "<div id=\"div_deleteFrm\" class=\"div-btn-delete min div-form-panel-wrapper\">\n                  <div class=\"frm_wrapper\">\n                    <div class=\"panel panel-red\">\n                      <div class=\"panel-heading\"> <button type=\"button\" class=\"close\" aria-hidden=\"true\">×</button> <i class=\"fa fa-trash-o fa-fw\"></i> <span class=\"spn_editFriendlyName\"></span> : {@deleteText} </div>\n                      <div class=\"panel-overlay\" style=\"display:none\"></div>\n                      <div class=\"panel-body\">\n                        <div class=\"row side-by-side\">\n                          <div class=\"delFormContainer formContainer\"></div>\n                        </div>\n                      </div>\n                    </div>\n                    </form>\n                  </div>\n                </div>",

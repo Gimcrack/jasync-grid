@@ -24,6 +24,7 @@
                                     </div>
                                   </div>
                                   <div style="display:none" class="table-row table-rowMenu-row"></div>
+                                  <div style="display:none" class="table-row table-otherMenu-row"></div>
                                   <div class="table-row tfilters" style="display:none">
                                     <div style="width:10px;" class="table-header">&nbsp;</div>
                                     <div style="width:175px;" class="table-header" align="right"> <span class="label label-info filter-showing"></span> </div>
@@ -119,6 +120,21 @@
                         <div class="panel-body">
                           <div class="row side-by-side">
                             <div class="side-by-side newOtherFormContainer formContainer"> </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>`,
+
+    // Edit Form Template
+    editOtherFrm	: `<div id="div_editFrm" class="div-btn-edit min div-form-panel-wrapper">
+                    <div class="frm_wrapper">
+                      <div class="panel panel-warning">
+                        <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-plus fa-fw"></i> Edit: <span class="spn_editFriendlyName">{@tableFriendly}</span> </div>
+                        <div class="panel-overlay" style="display:none"></div>
+                        <div class="panel-body">
+                          <div class="row side-by-side">
+                            <div class="side-by-side editOtherFormContainer formContainer"> </div>
                           </div>
                         </div>
                       </div>

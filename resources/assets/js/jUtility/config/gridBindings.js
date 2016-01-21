@@ -145,6 +145,17 @@
       $chk_all
       .prop('checked', (total_num === num_checked) ? true : false )
       .prop('indeterminate', (num_checked > 0 && num_checked < total_num) ? true : false );
+
+      if (!!num_checked) {
+        $('.btn-editOther.active').removeClass('btn-default active').addClass('btn-link');
+      }
+    }
+  },
+
+  ".btn-chk" : {
+    click : function() {
+      $('.chk_cid:checked').prop('checked',false).eq(0).change();
+      $(this).closest('.table-row').find('.chk_cid').click();
     }
   },
 
@@ -156,8 +167,15 @@
 
   ".btn-edit" : {
     click : function() {
-      jUtility.actionHelper('edit');
+      if ( jUtility.isOtherButtonChecked() ) {
+        return jUtility.actionHelper('edit' + jUtility.getOtherButtonModel() );
+      }
+      return jUtility.actionHelper('edit');
     }
+  },
+
+  ".btn-editOther" : {
+    click : jUtility.DOM.editOtherButtonHandler
   },
 
   ".btn-headerFilters" : {
@@ -171,17 +189,11 @@
   },
 
   ".btn-clear" : {
-    click : function() {
-      jApp.aG().$().find('.chk_cid').prop('checked',false);
-      $('.chk_cid').eq(0).change();
-    }
+    click : jUtility.DOM.clearSelection
   },
 
   ".btn-refresh" : {
-    click : function() {
-      $(this).addClass('disabled').delay(2000).removeClass('disabled');
-      jUtility.updateAll();
-    }
+    click : jUtility.DOM.refreshGrid
   },
 
   // ".btn-showMenu" : {

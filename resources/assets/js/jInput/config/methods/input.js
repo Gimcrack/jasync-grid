@@ -153,11 +153,14 @@
    */
   setValue : function( value ) {
     jApp.log('--Setting value of ' + self.options.atts.name);
+    jApp.log('---value');
+    jApp.log(value);
     switch ( self.type ) {
 
         case 'select' :
 
-          if (!!_.pluck(value, 'id').length) {
+          if (typeof value === 'object' && !!_.pluck(value, 'id').length) {
+            jApp.log('-- plucking the value out of the object')
             value = _.pluck(value, 'id');
           }
           if ( !!self.DOM.$inpt.data('multiselect') ) {

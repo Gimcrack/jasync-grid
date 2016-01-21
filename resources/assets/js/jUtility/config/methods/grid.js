@@ -295,15 +295,16 @@
    * @return {[type]}            [description]
    */
   withSelectedAction : function(action, callback, includeHidden) {
-    var $cid = jUtility.getCheckedItems(includeHidden);
+    var $cid = jUtility.getCheckedItems(includeHidden),
+        model = jUtility.getActionModel();
 
-    if (!$cid.length) { return jUtility.msg.warning('Nothing selected.'); }
+    if ( !$cid.length && !jUtility.isOtherButtonChecked() ) { return jUtility.msg.warning('Nothing selected.'); }
 
     switch(action) {
       // DELETE SELECTED
       case 'delete' :
         jApp.aG().action = 'withSelectedDelete';
-        bootbox.confirm('Are you sure you want to delete ' + $cid.length + ' items?', function(response) {
+        bootbox.confirm('Are you sure you want to delete ' + $cid.length + ' ' + model + ' record(s)?', function(response) {
           if (!!response) {
             jUtility.postJSON( {
               url : jUtility.getCurrentFormAction(),
@@ -333,9 +334,16 @@
    * @return {[type]}        [description]
    */
   actionHelper : function(action) {
+    var id,  model;
+
     jApp.aG().action = action;
+
     if ( jUtility.needsCheckout() ) {
-      jUtility.checkout( jUtility.getCurrentRowId() );
+
+      id = jUtility.getCurrentRowId();
+      model = jUtility.getActionModel();
+
+      jUtility.checkout( id, model  );
     } else {
       jUtility.setupFormContainer();
     }
@@ -354,7 +362,47 @@
       'There was a problem completing your request.';
   }, //end fn
 
+  /**
+   * Get the model that the action is action on
+   * @method function
+   * @return {[type]} [description]
+   */
+  getActionModel : function() {
+    if ( jUtility.isOtherButtonChecked() ) {
+      return jUtility.getOtherButtonModel();
+    }
+    // if (!!jApp.aG().temp && !!jApp.aG().temp.actionModel) {
+    //   return jApp.aG().temp.actionModel;
+    // }
+    return jApp.opts().model;
+  }, // end fn
 
+  /**
+   * Get the id of the "other" button that is checked
+   * @method function
+   * @return {[type]} [description]
+   */
+  getOtherButtonId : function() {
+    return jUtility.getActiveOtherButton().attr('data-id');
+  }, // end fn
+
+  /**
+   * Get the model of the "other" button that is checked
+   * @method function
+   * @return {[type]} [description]
+   */
+  getOtherButtonModel : function() {
+    return jUtility.getActiveOtherButton().attr('data-model');
+  }, // end fn
+
+  /**
+   * Get the "other" button that is checked
+   * @method function
+   * @return {[type]} [description]
+   */
+  getActiveOtherButton : function() {
+    return $('.btn-editOther.active').eq(0);
+  }, // end fn
 
   /**
    * Get current row id
@@ -362,6 +410,13 @@
    * @return {[type]} [description]
    */
   getCurrentRowId : function() {
+    // if (!!jApp.aG().temp && jApp.aG().temp.actionId > 0) {
+    //   return jApp.aG().temp.actionId;
+    // }
+    if ( jUtility.isOtherButtonChecked() ) {
+      return jUtility.getOtherButtonId();
+    }
+
     return jUtility.getCheckedItems(true);
   }, //end fn
 
@@ -488,10 +543,15 @@
    * @param  {[type]} id [description]
    * @return {[type]}    [description]
    */
-  checkout : function(id) {
-    jUtility.getJSON( {
-      url : jApp.routing.get('checkout', jApp.opts().model, id), //jApp.prefixURL( '/checkout/_' + jApp.opts().model + '_' + id ),
-      success : jUtility.callback.checkout
+  checkout: function checkout(id, model) {
+
+    if (!model) {
+      model = jApp.opts().model;
+    }
+
+    jUtility.getJSON({
+      url: jApp.routing.get('checkout', model, id), //jApp.prefixURL( '/checkout/_' + jApp.opts().model + '_' + id ),
+      success: jUtility.callback.checkout
     });
   }, // end fn
 
@@ -500,12 +560,18 @@
    * @param  {[type]} id [description]
    * @return {[type]}    [description]
    */
-  checkin : function(id) {
+  checkin : function(id, model) {
+
+    if (!model) {
+      model = jUtility.getActionModel();
+    }
+
     jUtility.getJSON({
-      url : jApp.routing.get('checkin', jApp.opts().model, id), // jApp.prefixURL( '/checkin/_' + jApp.opts().model + '_' + id ),
+      url : jApp.routing.get('checkin', model, id), // jApp.prefixURL( '/checkin/_' + jApp.opts().model + '_' + id ),
       success : jUtility.callback.checkin,
       always : function() { /* ignore */ }
     });
+
   }, // end fn
 
   /**
@@ -546,6 +612,10 @@
    */
   getCheckedItems : function( includeHidden ) {
     var selector = (!!includeHidden) ? '.chk_cid:checked' : '.chk_cid:checked:visible';
+
+    if ( jUtility.isOtherButtonChecked() ) {
+      return [ jUtility.getOtherButtonId() ];
+    }
 
     return $('.table-grid').find( selector ).map( function(i, elm) {
       return $(elm).closest('.table-row').attr('data-identifier');

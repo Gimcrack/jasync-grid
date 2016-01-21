@@ -20,6 +20,15 @@
   }, //end fn
 
   /**
+   * Is an "other" button checked?
+   * @method function
+   * @return {[type]} [description]
+   */
+  isOtherButtonChecked : function() {
+    return !!$('.btn-editOther.active').length;
+  }, // end fn
+
+  /**
    * Initialize scrollbar
    * @method function
    * @return {[type]} [description]
@@ -175,7 +184,8 @@
    * @return {[type]} [description]
    */
   needsCheckout : function() {
-    return ( jUtility.isCheckout() && ( jApp.aG().action === 'edit' || jApp.aG().action === 'delete' ) );
+    var action = jApp.aG().action;
+    return ( jUtility.isCheckout() && ( action === 'edit' || action === 'delete' || action.indexOf('edit') === 0 ) );
   }, //end fn
 
   /**

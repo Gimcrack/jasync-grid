@@ -334,7 +334,7 @@ module.exports = function( options ) {
 
         return $('<tr/>').append(
           _.map( params.fields, function( oo, ii ) {
-              var $td = $('<td/>'),
+              var $td = $('<td/>', { nowrap : 'nowrap' }),
                   value = null;
 
 							oo['data-array-input'] = true;
@@ -359,7 +359,7 @@ module.exports = function( options ) {
 
         ).append(
           [
-              $('<td/>').append([$btn_remove,$btn_add])
+              $('<td/>', { nowrap : 'nowrap' } ).append([$btn_remove,$btn_add])
           ]
         );
       }, // end fn

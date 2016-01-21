@@ -54,15 +54,7 @@
   },
 
   "button.close, .btn-cancel" : {
-    click : function() {
-      if ( jUtility.needsCheckin() )  {
-        console.log('checking in record');
-        jUtility.checkin( jUtility.getCurrentRowId() );
-      } else {
-        console.log('closing current form');
-        jUtility.closeCurrentForm();
-      }
-    }
+    click : jUtility.exitCurrentForm
   },
 
   ".btn-go" : {
