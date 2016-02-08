@@ -61,6 +61,19 @@ module.exports = function( options ) {
 			}, // end fn
 
       /**
+       * Serialize the input values
+       * @method function
+       * @return {[type]} [description]
+       */
+      serialize : function() {
+        var ret = {};
+        _.each( self.oInpts, function( o, i ) {
+          ret[i] = o.fn.serialize();
+        });
+        return ret;
+      }, // end fn
+
+      /**
        * The the value of the input
        * @method function
        * @param  {[type]} value [description]
@@ -134,7 +147,7 @@ module.exports = function( options ) {
         //     });
         // })
 
-        return self.$().serialize();
+        return self.fn.serialize();
 
       }, // end fn
 
@@ -384,7 +397,7 @@ module.exports = function( options ) {
 
         inpt = new jInput( { atts : params, form : self} );
         jApp.log(inpt);
-        if ( ! isArrayFormField ) self.oInpts.push( inpt );
+        if ( ! isArrayFormField ) self.oInpts[params.name] = inpt;
         inpt.fn.val( value );
         target.append( inpt.fn.handle() );
         //if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
@@ -693,7 +706,7 @@ module.exports = function( options ) {
       	 * Container for jInput objects
       	 * @type {Array}
       	 */
-      	self.oInpts = [];
+      	self.oInpts = {};
 
         /**
          * Initialize the rowData object
@@ -766,7 +779,7 @@ module.exports = function( options ) {
             atts = colparams.atts || {};
 
         // add the jInput object to the oInpts array
-        self.oInpts[ atts.name || index ] == inpt;
+        self.oInpts[atts.name] = inpt;
 
         // add the input DOM handle to the DOM
         self.DOM.$Inpts.append( inpt.fn.handle() );

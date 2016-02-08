@@ -223,7 +223,42 @@
       default :
         return self.DOM.$inpt.val();
     }
-  },
+  }, // end fn
+
+  /**
+   * Serialize the input value and return the object representation
+   * @method function
+   * @return {[type]} [description]
+   */
+  serialize : function() {
+    var ret = {};
+
+    if ( ! self.arrayField ) {
+      return self.fn.val();
+    } else {
+      self.DOM.$container.find('tr').each( function(i, row) {
+          var $inpts = $(row).find(':input:not(button)'),
+              key,
+              val;
+
+          $inpts.each( function(ii, inpt) {
+            val = $(inpt).val();
+            name = $(inpt).attr('data-pivotName');
+
+            if ( name == null ) return false;
+
+            if ( ii == 0 ) {
+              key = val;
+              ret[key] = {};
+            } else {
+              ret[key][name] = val;
+            }
+          });
+      });
+
+      return ret;
+    }
+  }, // end fn
 
   /**
    * Refresh the attributes of the element

@@ -7974,6 +7974,19 @@ module.exports = function (options) {
     }, // end fn
 
     /**
+     * Serialize the input values
+     * @method function
+     * @return {[type]} [description]
+     */
+    serialize: function serialize() {
+      var ret = {};
+      _.each(self.oInpts, function (o, i) {
+        ret[i] = o.fn.serialize();
+      });
+      return ret;
+    }, // end fn
+
+    /**
      * The the value of the input
      * @method function
      * @param  {[type]} value [description]
@@ -8045,7 +8058,7 @@ module.exports = function (options) {
       //     });
       // })
 
-      return self.$().serialize();
+      return self.fn.serialize();
     }, // end fn
 
     /**
@@ -8257,7 +8270,7 @@ module.exports = function (options) {
           value = data.pivot[oo['data-pivotName']];
         }
 
-        self.fn.processField(oo, $td, value);
+        self.fn.processField(oo, $td, value, true);
         return $td;
       })).append([$('<td/>', { nowrap: 'nowrap' }).append([$btn_remove, $btn_add])]);
     }, // end fn
@@ -8269,7 +8282,7 @@ module.exports = function (options) {
      * @param  {[type]} target [description]
      * @return {[type]}        [description]
      */
-    processField: function processField(params, target, value) {
+    processField: function processField(params, target, value, isArrayFormField) {
       var inpt;
 
       jApp.log('B. Processing Field');
@@ -8282,10 +8295,10 @@ module.exports = function (options) {
 
       inpt = new jInput({ atts: params, form: self });
       jApp.log(inpt);
-      self.oInpts[params.name] = inpt;
+      if (!isArrayFormField) self.oInpts[params.name] = inpt;
       inpt.fn.val(value);
       target.append(inpt.fn.handle());
-      if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
+      //if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
     }, // end fn
 
     /**
@@ -8429,7 +8442,7 @@ module.exports = function (options) {
         //dataType : 'json',
         method: 'POST',
         url: jApp.prefixURL(self.options.atts.action),
-        data: self.$().serialize(),
+        data: self.fn.serialize(),
         success: self.callback.submit
       }).done(self.fn.toggleSubmitted);
     }, //end fn
@@ -8581,7 +8594,7 @@ module.exports = function (options) {
        * Container for jInput objects
        * @type {Array}
        */
-      self.oInpts = [];
+      self.oInpts = {};
 
       /**
        * Initialize the rowData object
@@ -8651,7 +8664,7 @@ module.exports = function (options) {
           atts = colparams.atts || {};
 
       // add the jInput object to the oInpts array
-      self.oInpts[atts.name || index] == inpt;
+      self.oInpts[atts.name] = inpt;
 
       // add the input DOM handle to the DOM
       self.DOM.$Inpts.append(inpt.fn.handle());
@@ -9066,6 +9079,7 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
 
                   // add a row with the master select
                   inpt = new jInput({ atts: masterSelect, form: self.form });
+                  inpt.DOM.$container = $container;
                   self.oInpts[masterSelect.name] = inpt;
                   $container.append(inpt.fn.handle());
 
@@ -9619,7 +9633,42 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         default:
           return self.DOM.$inpt.val();
       }
-    },
+    }, // end fn
+
+    /**
+     * Serialize the input value and return the object representation
+     * @method function
+     * @return {[type]} [description]
+     */
+    serialize: function serialize() {
+      var ret = {};
+
+      if (!self.arrayField) {
+        return self.fn.val();
+      } else {
+        self.DOM.$container.find('tr').each(function (i, row) {
+          var $inpts = $(row).find(':input:not(button)'),
+              key,
+              val;
+
+          $inpts.each(function (ii, inpt) {
+            val = $(inpt).val();
+            name = $(inpt).attr('data-pivotName');
+
+            if (name == null) return false;
+
+            if (ii == 0) {
+              key = val;
+              ret[key] = {};
+            } else {
+              ret[key][name] = val;
+            }
+          });
+        });
+
+        return ret;
+      }
+    }, // end fn
 
     /**
      * Refresh the attributes of the element

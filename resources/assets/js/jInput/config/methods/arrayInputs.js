@@ -32,6 +32,7 @@
 
       // add a row with the master select
       inpt = new jInput( { atts : masterSelect, form: self.form } );
+      inpt.DOM.$container = $container;
       self.oInpts[ masterSelect.name ] = inpt;
       $container.append( inpt.fn.handle() );
 
