@@ -353,7 +353,7 @@ module.exports = function( options ) {
                 value = data.pivot[oo['data-pivotName']];
               }
 
-              self.fn.processField( oo, $td, value );
+              self.fn.processField( oo, $td, value, true );
               return $td;
           })
 
@@ -371,7 +371,7 @@ module.exports = function( options ) {
        * @param  {[type]} target [description]
        * @return {[type]}        [description]
        */
-      processField : function( params, target, value ) {
+      processField : function( params, target, value, isArrayFormField ) {
         var inpt;
 
         jApp.log('B. Processing Field');
@@ -384,10 +384,10 @@ module.exports = function( options ) {
 
         inpt = new jInput( { atts : params, form : self} );
         jApp.log(inpt);
-        self.oInpts[ params.name ] = inpt;
+        if ( ! isArrayFormField ) self.oInpts.push( inpt );
         inpt.fn.val( value );
         target.append( inpt.fn.handle() );
-        if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
+        //if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
 
       }, // end fn
 
@@ -526,7 +526,7 @@ module.exports = function( options ) {
           //dataType : 'json',
           method : 'POST',
           url : jApp.prefixURL(self.options.atts.action),
-          data : self.$().serialize(),
+          data : self.fn.serialize(),
           success : self.callback.submit,
         }).done( self.fn.toggleSubmitted );
 
