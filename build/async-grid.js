@@ -9988,6 +9988,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 },{}],59:[function(require,module,exports){
 'use strict';
 
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+
 /**
  * options.js
  *
@@ -10142,7 +10144,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       self.refreshAfterLoadingOptions = !!refresh ? true : false;
 
       // local data
-      if (!!oAtts()._optionssource && oAtts()._optionssource.indexOf('|') !== -1) {
+      if (!!oAtts()._optionssource && _typeof(oAtts()._optionssource) === 'object') {
+        self.options.extData = false;
+        oAtts()._options = oAtts()._optionssource;
+        oAtts()._labels = !!oAtts()._labelssource ? oAtts()._labelssource : oAtts()._optionssource;
+        self.fn.buildOptions();
+      } else if (!!oAtts()._optionssource && oAtts()._optionssource.indexOf('|') !== -1) {
         jApp.log(' - local options data - ');
         self.options.extData = false;
         oAtts()._options = oAtts()._optionssource.split('|');
