@@ -364,7 +364,12 @@ module.exports = function( options ) {
               // if its not the first input, grab the value from the pivot data
               if (ii> 0 && !!data && !!oo['data-pivotName'] && !!data.pivot && !!data.pivot[oo['data-pivotName']]) {
                 value = data.pivot[oo['data-pivotName']];
+              
+              // if it's not a m-m relationship, look for the data in the root of the object
+              } else if ( ii> 0 && !!data && !!oo['data-pivotName'] && !!data[oo['data-pivotName']] ) {
+                value = data[oo['data-pivotName']];
               }
+
 
               self.fn.processField( oo, $td, value, true );
               return $td;
