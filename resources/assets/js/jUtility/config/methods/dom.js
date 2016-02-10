@@ -1091,6 +1091,7 @@
 
 
       if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
+
         $btn = $('<div/>', { class : 'btn-group btn-group-sm' });
 
         if ( !! custom ) {
