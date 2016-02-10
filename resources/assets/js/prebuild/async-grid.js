@@ -13792,12 +13792,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       if (!!options) {
         $('.chk_cid:checked,.chk_all').prop('checked', false).prop('indeterminate', false);
 
-        $row.addClass('other').find('.btn-rowMenu').addClass('other').find('i').attr('data-tmpClass', options.icon).removeClass(iconClass).removeClass('fa-check-square-o').addClass(options.icon).end().end().find('.btn-primary').removeClass('btn-primary').addClass('btn-warning').end().find('.btn-history').hide();
+        $row.addClass('other').find('.btn-rowMenu').addClass('other').find('i').attr('data-tmpClass', options.icon).removeClass(iconClass).removeClass('fa-check-square-o').addClass(options.icon).end().end().find('.btn-primary').removeClass('btn-primary').addClass('btn-warning').end().find('.btn-history,.btn-custom').hide();
 
         jUtility.DOM.toggleRowMenuItems(false);
       } else {
 
-        $row.removeClass('other').find('.btn-rowMenu').removeClass('other').find('i').removeClass(iconClass).addClass('fa-check-square-o').removeAttr('data-tmpClass').end().end().find('.btn-warning').removeClass('btn-warning').addClass('btn-primary').end().find('.btn-history').show();
+        $row.removeClass('other').find('.btn-rowMenu').removeClass('other').find('i').removeClass(iconClass).addClass('fa-check-square-o').removeAttr('data-tmpClass').end().end().find('.btn-warning').removeClass('btn-warning').addClass('btn-primary').end().find('.btn-history,.btn-custom').show();
       }
     }, // end fn
 
@@ -14107,9 +14107,9 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
               }
 
               if (type == 'buttons') {
-                jUtility.DOM.createMenuButton(oo).appendTo(target);
+                jUtility.DOM.createMenuButton(oo, 'custom').appendTo(target);
               } else {
-                jUtility.DOM.createMenuLink(oo).appendTo(target);
+                jUtility.DOM.createMenuLink(oo, 'custom').appendTo(target);
               }
             });
           } else {
@@ -14226,12 +14226,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      * @param  {obj} o html parameters of the button
      * @return {jQuery obj}
      */
-    createMenuButton: function createMenuButton(params) {
+    createMenuButton: function createMenuButton(params, custom) {
       var $btn, $btn_a, $btn_choice, $ul;
 
       if (_typeof(params[0]) === 'object') {
         // determine if button is a dropdown menu
-        $btn = $('<div/>', { class: 'btn-group btn-group-sm' });
+        $btn = $('<div/>', { class: !!custom ? 'btn-group btn-group-sm btn-custom' : 'btn-group btn-group-sm' });
         // params[0] will contain the dropdown toggle button
         $btn_a = $('<a/>', {
           type: 'button',
@@ -14305,6 +14305,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         var signature = 'btn_' + Array(26).join((Math.random().toString(36) + '000000000000000000000').slice(2, 18)).slice(0, 25);
 
         $btn = $('<button/>', _.omit(params, ['fn'])).attr('data-signature', signature);
+
+        if (!!custom) {
+          $btn.addClass('btn-custom');
+        }
 
         //add ignore flag for toggle buttons
         if ($btn.hasClass('btn-toggle')) {

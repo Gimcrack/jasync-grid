@@ -590,7 +590,7 @@
           .removeClass('btn-primary')
           .addClass('btn-warning')
           .end()
-          .find('.btn-history')
+          .find('.btn-history,.btn-custom')
           .hide();
 
 
@@ -612,7 +612,7 @@
           .removeClass('btn-warning')
           .addClass('btn-primary')
           .end()
-          .find('.btn-history')
+          .find('.btn-history,.btn-custom')
           .show();
       }
 
@@ -960,9 +960,9 @@
               }
 
               if (type == 'buttons') {
-                jUtility.DOM.createMenuButton( oo ).appendTo( target );
+                jUtility.DOM.createMenuButton( oo, 'custom' ).appendTo( target );
               } else {
-                jUtility.DOM.createMenuLink( oo ).appendTo( target );
+                jUtility.DOM.createMenuLink( oo, 'custom' ).appendTo( target );
               }
             });
           } else {
@@ -1081,12 +1081,12 @@
      * @param  {obj} o html parameters of the button
      * @return {jQuery obj}
      */
-    createMenuButton : function( params ) {
+    createMenuButton : function( params, custom ) {
       var $btn, $btn_a, $btn_choice, $ul;
 
 
       if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
-        $btn = $('<div/>', { class : 'btn-group btn-group-sm'});
+        $btn = $('<div/>', { class : ( !! custom ) ? 'btn-group btn-group-sm btn-custom' : 'btn-group btn-group-sm' });
         // params[0] will contain the dropdown toggle button
         $btn_a = $('<a/>', {
                   type : 'button',
@@ -1163,6 +1163,10 @@
         var signature = 'btn_' + Array(26).join((Math.random().toString(36)+'000000000000000000000').slice(2, 18)).slice(0, 25);
 
         $btn = $('<button/>', _.omit(params, ['fn']) ).attr('data-signature',signature);
+
+        if ( !! custom ) {
+          $btn.addClass('btn-custom');
+        }
 
         //add ignore flag for toggle buttons
         if ( $btn.hasClass('btn-toggle') ) {
