@@ -25,6 +25,17 @@
     },
 
     /**
+     * Inspect the selected model
+     * @method function
+     * @param  {[type]} model [description]
+     * @param  {[type]} id    [description]
+     * @return {[type]}       [description]
+     */
+    inspect : function(model, id) {
+      return model + '/' + id + '/_inspect';
+    }, // end fn
+
+    /**
      * Checked out records route
      * @method function
      * @param  {[type]} model [description]

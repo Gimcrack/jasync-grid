@@ -13,6 +13,12 @@
    **  **  **  **  **  **  **  **  **  **/
   callback : {
 
+    inspectSelected : function(response) {
+      $('#div_inspect').find('.panel-body .target').html(response);
+      jUtility.maximizeCurrentForm();
+      console.log('loaded');
+    }, // end fn
+
     /**
      * Process the result of the form submission
      * @method function

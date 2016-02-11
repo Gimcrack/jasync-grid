@@ -64,7 +64,24 @@
                       </div>
                       <!-- /.col-lg-12 -->
                     </div>
-                    <!-- /.row -->`,
+                    <!-- /.row -->
+                    <div id="div_inspect" class="div-btn-edit min div-form-panel-wrapper">
+                      <div class="frm_wrapper">
+                        <form>
+                          <div class="panel panel-info">
+                            <div class="panel-heading"> <button type="button" class="close" aria-hidden="true" data-original-title="" title="">×</button> <i class="fa fa-info fa-fw"></i> <span class="spn_editFriendlyName">{@Name}</span> [Inspecting] </div>
+                            <div class="panel-overlay" style="display:none"></div>
+                            <div class="panel-body">
+                                <div class="target"></div>
+                            </div>
+                            <div class="panel-btns footer">
+                              <button type="button" class="btn btn-primary btn-formMenu" id="btn_form_menu_heading"><i class="fa fa-fw fa-bars"></i></button>
+                              <button type="button" class="btn btn-primary btn-cancel" id="btn_cancel"><i class="fa fa-fw fa-times"></i> Close</button>
+                            </div>
+                          </div>
+                        </form>
+                      </div>
+                    </div>`,
 
   // check all checkbox template
   tmpCheckAll	: `<label for="chk_all" class="btn btn-default pull-right"> <input id="chk_all" type="checkbox" class="chk_all" name="chk_all"> </label>`,

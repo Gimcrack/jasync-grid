@@ -344,11 +344,11 @@
       model = jUtility.getActionModel();
 
       jUtility.checkout( id, model  );
-    } else {
-      jUtility.setupFormContainer();
     }
-  }, // end fn
 
+    jUtility.setupFormContainer();
+    
+  }, // end fn
 
   /**
    * Get error message from response

@@ -128,10 +128,10 @@
       } else { // open a new form
         jApp.openForms.push({
           wrapper : jUtility.$currentFormWrapper(),
-          obj : jUtility.oCurrentForm(),
+          obj : jUtility.oCurrentForm() || {},
           $ : jUtility.$currentForm(),
           action : jApp.aG().action,
-          model : jUtility.oCurrentForm().model
+          model : ( !! jUtility.oCurrentForm() ) ? jUtility.oCurrentForm().model : jUtility.getActionModel()
         });
       }
 
@@ -374,6 +374,8 @@
   oCurrentForm : function() {
     var key, tmpForms, tmpIndex, action = jApp.aG().action, model;
 
+    if ( ! jUtility.needsForm() ) return {};
+
     jApp.log(' Getting current form for action: ' + action, true );
 
     switch ( jApp.aG().action ) {
@@ -428,7 +430,11 @@
    **  **  **  **  **  **  **  **  **  **/
   $currentForm : function() {
     try {
-      return jUtility.oCurrentForm().$();
+      if ( jUtility.needsForm() ) {
+        return jUtility.oCurrentForm().$();
+      }
+      return $('#div_inspect').find('.target');
+
     } catch(e) {
       console.warn('No current form object found');
       return false;
@@ -465,12 +471,17 @@
    **  **  **  **  **  **  **  **  **  **/
   setupFormContainer : function() {
     jUtility.DOM.overlay(2,'on');
-    jApp.aG().hideOverlayOnError = false;
-    jUtility.resetCurrentForm();
-    jUtility.maximizeCurrentForm();
-    jUtility.setCurrentFormFocus();
-    jUtility.formBootup();
-    jUtility.getCurrentFormRowData();
+
+    if ( jUtility.needsForm() ) {
+      jApp.aG().hideOverlayOnError = false;
+      jUtility.resetCurrentForm();
+      jUtility.maximizeCurrentForm();
+      jUtility.setCurrentFormFocus();
+      jUtility.formBootup();
+      jUtility.getCurrentFormRowData();
+    } else {
+      jUtility.DOM.inspectSelected();
+    }
   }, // end fn
 
   /**

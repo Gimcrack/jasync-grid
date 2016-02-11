@@ -578,6 +578,9 @@
 
         $row
           .addClass('other')
+          .find('[data-custom]')
+          .hide()
+          .end()
           .find('.btn-rowMenu')
           .addClass('other')
           .find('i')
@@ -593,8 +596,7 @@
           .find('.btn-history')
           .hide()
           .end()
-          .find('.btn-custom')
-          .hide();
+
 
           jUtility.DOM.toggleRowMenuItems( false );
       }
@@ -603,6 +605,9 @@
 
         $row
           .removeClass('other')
+          .find('[data-custom]')
+          .hide()
+          .end()
           .find('.btn-rowMenu')
           .removeClass('other')
           .find('i')
@@ -617,12 +622,24 @@
           .find('.btn-history')
           .show()
           .end()
-          .find('.btn-custom')
-          .show();
       }
 
 
 
+    }, // end fn
+
+    /**
+     * Inspect the selected item
+     * @method function
+     * @return {[type]} [description]
+     */
+    inspectSelected : function() {
+      console.log('loading...');
+
+      jUtility.get( {
+        url : jUtility.getCurrentRowInspectUrl(),
+        success : jUtility.callback.inspectSelected,
+      });
     }, // end fn
 
     /**
@@ -964,10 +981,13 @@
                 oo.disabled = true;
               }
 
+              // mark this as a custom button
+              oo['data-custom'] = true;
+
               if (type == 'buttons') {
-                jUtility.DOM.createMenuButton( oo, 'custom' ).appendTo( target );
+                jUtility.DOM.createMenuButton( oo ).appendTo( target );
               } else {
-                jUtility.DOM.createMenuLink( oo, 'custom' ).appendTo( target );
+                jUtility.DOM.createMenuLink( oo ).appendTo( target );
               }
             });
           } else {

@@ -46,6 +46,10 @@
     boot : jUtility.DOM.applyHeaderFilters
   },
 
+  "button.close, .btn-cancel" : {
+    click : jUtility.exitCurrentForm
+  },
+
   ".tbl-sort" : {
     click : function() {
       var $btn, $btnIndex, $desc;
@@ -176,6 +180,12 @@
 
   ".btn-editOther" : {
     click : jUtility.DOM.editOtherButtonHandler
+  },
+
+  ".btn-inspect" : {
+    click : function() {
+      jUtility.actionHelper('inspect');
+    }
   },
 
   ".btn-headerFilters" : {

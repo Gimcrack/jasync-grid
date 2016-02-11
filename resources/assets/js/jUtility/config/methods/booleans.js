@@ -179,6 +179,16 @@
   }, // end fn
 
   /**
+   * Does the current action require a form?
+   * @method function
+   * @return {[type]} [description]
+   */
+  needsForm : function() {
+    if ( jApp.aG().action !== 'inspect' ) return true;
+    return false;
+  }, // end fn
+
+  /**
    * The row needs to be checked out
    * @method function
    * @return {[type]} [description]

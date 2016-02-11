@@ -6744,6 +6744,17 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     },
 
     /**
+     * Inspect the selected model
+     * @method function
+     * @param  {[type]} model [description]
+     * @param  {[type]} id    [description]
+     * @return {[type]}       [description]
+     */
+    inspect: function inspect(model, id) {
+      return model + '/' + id + '/_inspect';
+    }, // end fn
+
+    /**
      * Checked out records route
      * @method function
      * @param  {[type]} model [description]
@@ -12420,6 +12431,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     boot: jUtility.DOM.applyHeaderFilters
   },
 
+  "button.close, .btn-cancel": {
+    click: jUtility.exitCurrentForm
+  },
+
   ".tbl-sort": {
     click: function click() {
       var $btn, $btnIndex, $desc;
@@ -12540,6 +12555,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
   ".btn-editOther": {
     click: jUtility.DOM.editOtherButtonHandler
+  },
+
+  ".btn-inspect": {
+    click: function click() {
+      jUtility.actionHelper('inspect');
+    }
   },
 
   ".btn-headerFilters": {
@@ -12956,6 +12977,16 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, // end fn
 
   /**
+   * Does the current action require a form?
+   * @method function
+   * @return {[type]} [description]
+   */
+  needsForm: function needsForm() {
+    if (jApp.aG().action !== 'inspect') return true;
+    return false;
+  }, // end fn
+
+  /**
    * The row needs to be checked out
    * @method function
    * @return {[type]} [description]
@@ -13002,6 +13033,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    *  used by the various AJAX calls
    **  **  **  **  **  **  **  **  **  **/
   callback: {
+
+    inspectSelected: function inspectSelected(response) {
+      $('#div_inspect').find('.panel-body .target').html(response);
+      jUtility.maximizeCurrentForm();
+      console.log('loaded');
+    }, // end fn
 
     /**
      * Process the result of the form submission
@@ -13792,13 +13829,27 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       if (!!options) {
         $('.chk_cid:checked,.chk_all').prop('checked', false).prop('indeterminate', false);
 
-        $row.addClass('other').find('.btn-rowMenu').addClass('other').find('i').attr('data-tmpClass', options.icon).removeClass(iconClass).removeClass('fa-check-square-o').addClass(options.icon).end().end().find('.btn-primary').removeClass('btn-primary').addClass('btn-warning').end().find('.btn-history').hide().end().find('.btn-custom').hide();
+        $row.addClass('other').find('[data-custom]').hide().end().find('.btn-rowMenu').addClass('other').find('i').attr('data-tmpClass', options.icon).removeClass(iconClass).removeClass('fa-check-square-o').addClass(options.icon).end().end().find('.btn-primary').removeClass('btn-primary').addClass('btn-warning').end().find('.btn-history').hide().end();
 
         jUtility.DOM.toggleRowMenuItems(false);
       } else {
 
-        $row.removeClass('other').find('.btn-rowMenu').removeClass('other').find('i').removeClass(iconClass).addClass('fa-check-square-o').removeAttr('data-tmpClass').end().end().find('.btn-warning').removeClass('btn-warning').addClass('btn-primary').end().find('.btn-history').show().end().find('.btn-custom').show();
+        $row.removeClass('other').find('[data-custom]').hide().end().find('.btn-rowMenu').removeClass('other').find('i').removeClass(iconClass).addClass('fa-check-square-o').removeAttr('data-tmpClass').end().end().find('.btn-warning').removeClass('btn-warning').addClass('btn-primary').end().find('.btn-history').show().end();
       }
+    }, // end fn
+
+    /**
+     * Inspect the selected item
+     * @method function
+     * @return {[type]} [description]
+     */
+    inspectSelected: function inspectSelected() {
+      console.log('loading...');
+
+      jUtility.get({
+        url: jUtility.getCurrentRowInspectUrl(),
+        success: jUtility.callback.inspectSelected
+      });
     }, // end fn
 
     /**
@@ -14106,10 +14157,13 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
                 oo.disabled = true;
               }
 
+              // mark this as a custom button
+              oo['data-custom'] = true;
+
               if (type == 'buttons') {
-                jUtility.DOM.createMenuButton(oo, 'custom').appendTo(target);
+                jUtility.DOM.createMenuButton(oo).appendTo(target);
               } else {
-                jUtility.DOM.createMenuLink(oo, 'custom').appendTo(target);
+                jUtility.DOM.createMenuLink(oo).appendTo(target);
               }
             });
           } else {
@@ -14830,10 +14884,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
           // open a new form
           jApp.openForms.push({
             wrapper: jUtility.$currentFormWrapper(),
-            obj: jUtility.oCurrentForm(),
+            obj: jUtility.oCurrentForm() || {},
             $: jUtility.$currentForm(),
             action: jApp.aG().action,
-            model: jUtility.oCurrentForm().model
+            model: !!jUtility.oCurrentForm() ? jUtility.oCurrentForm().model : jUtility.getActionModel()
           });
         }
 
@@ -15070,6 +15124,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         action = jApp.aG().action,
         model;
 
+    if (!jUtility.needsForm()) return {};
+
     jApp.log(' Getting current form for action: ' + action, true);
 
     switch (jApp.aG().action) {
@@ -15128,7 +15184,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    **  **  **  **  **  **  **  **  **  **/
   $currentForm: function $currentForm() {
     try {
-      return jUtility.oCurrentForm().$();
+      if (jUtility.needsForm()) {
+        return jUtility.oCurrentForm().$();
+      }
+      return $('#div_inspect').find('.target');
     } catch (e) {
       console.warn('No current form object found');
       return false;
@@ -15164,12 +15223,17 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    **  **  **  **  **  **  **  **  **  **/
   setupFormContainer: function setupFormContainer() {
     jUtility.DOM.overlay(2, 'on');
-    jApp.aG().hideOverlayOnError = false;
-    jUtility.resetCurrentForm();
-    jUtility.maximizeCurrentForm();
-    jUtility.setCurrentFormFocus();
-    jUtility.formBootup();
-    jUtility.getCurrentFormRowData();
+
+    if (jUtility.needsForm()) {
+      jApp.aG().hideOverlayOnError = false;
+      jUtility.resetCurrentForm();
+      jUtility.maximizeCurrentForm();
+      jUtility.setCurrentFormFocus();
+      jUtility.formBootup();
+      jUtility.getCurrentFormRowData();
+    } else {
+      jUtility.DOM.inspectSelected();
+    }
   }, // end fn
 
   /**
@@ -15553,9 +15617,9 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       model = jUtility.getActionModel();
 
       jUtility.checkout(id, model);
-    } else {
-      jUtility.setupFormContainer();
     }
+
+    jUtility.setupFormContainer();
   }, // end fn
 
   /**
@@ -16171,6 +16235,15 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, //end fn
 
   /**
+   * Get the inspect url of the current row
+   * @method function
+   * @return {[type]} [description]
+   */
+  getCurrentRowInspectUrl: function getCurrentRowInspectUrl() {
+    return jApp.routing.get('inspect', jUtility.getActionModel(), jUtility.getCurrentRowId());
+  }, //end fn
+
+  /**
    * Kill pending ajax request
    * @method function
    * @param  {[type]} requestName [description]
@@ -16183,6 +16256,26 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       // nothing to abort
     }
   }, //end fn
+
+  /**
+   * get the requested url
+   * @method function
+   * @param  {[type]} requestOptions [description]
+   * @return {[type]}                [description]
+   */
+  get: function get(requestOptions) {
+    var opts = $.extend(true, {
+      url: null,
+      data: {},
+      success: function success() {},
+      fail: function fail() {},
+      always: jUtility.callback.displayResponseErrors,
+      complete: function complete() {}
+    }, requestOptions);
+
+    jApp.log('6.5 ajax options set, executing ajax request');
+    return $.get(opts.url, opts.data, opts.success).fail(opts.fail).always(opts.always).complete(opts.complete);
+  }, // end fn
 
   /**
    * get JSON
@@ -16340,7 +16433,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 ;module.exports = {
 
   // main grid body
-  tmpMainGridBody: "<div class=\"row\">\n                      <div class=\"col-lg-12\">\n                        <div class=\"panel panel-info panel-grid panel-grid1\">\n                          <div class=\"panel-heading\">\n                            <h1 class=\"page-header\"><i class=\"fa {@icon} fa-fw\"></i><span class=\"header-title\"> {@headerTitle} </span></h1>\n                            <div class=\"alert alert-warning alert-dismissible helpText\" role=\"alert\"> <button type=\"button\" class=\"close\" data-dismiss=\"alert\"><span aria-hidden=\"true\">&times;</span><span class=\"sr-only\">Close</span></button> {@helpText} </div>\n                          </div>\n                          <div class=\"panel-body grid-panel-body\">\n                            <div class=\"table-responsive\">\n                              <div class=\"table table-bordered table-grid\">\n                                <div class=\"table-head\">\n                                  <div class=\"table-row table-menu-row\">\n                                    <div class=\"table-header table-menu-header\" style=\"width:100%\">\n                                      <div class=\"btn-group btn-group-sm table-btn-group\">  </div>\n                                    </div>\n                                  </div>\n                                  <div style=\"display:none\" class=\"table-row table-rowMenu-row\"></div>\n                                  <div style=\"display:none\" class=\"table-row table-otherMenu-row\"></div>\n                                  <div class=\"table-row tfilters\" style=\"display:none\">\n                                    <div style=\"width:10px;\" class=\"table-header\">&nbsp;</div>\n                                    <div style=\"width:175px;\" class=\"table-header\" align=\"right\"> <span class=\"label label-info filter-showing\"></span> </div>\n                                  </div>\n                                </div>\n                                <div class=\"table-body\" id=\"tbl_grid_body\">\n                                  <!--{$tbody}-->\n                                </div>\n                                <div class=\"table-foot\">\n                                  <div class=\"row\">\n                                    <div class=\"col-md-3\">\n                                      <div style=\"display:none\" class=\"ajax-activity-preloader pull-left\"></div>\n                                      <div class=\"divRowsPerPage pull-right\">\n                                        <select style=\"width:180px;display:inline-block\" type=\"select\" name=\"RowsPerPage\" id=\"RowsPerPage\" class=\"form-control\">\n                                          <option value=\"10\">10</option>\n                                          <option value=\"15\">15</option>\n                                          <option value=\"25\">25</option>\n                                          <option value=\"50\">50</option>\n                                          <option value=\"100\">100</option>\n                                          <option value=\"10000\">All</option>\n                                        </select>\n                                      </div>\n                                    </div>\n                                    <div class=\"col-md-9\">\n                                      <div class=\"paging\"></div>\n                                    </div>\n                                  </div>\n                                </div>\n                                <!-- /. table-foot -->\n                              </div>\n                            </div>\n                            <!-- /.table-responsive -->\n                          </div>\n                          <!-- /.panel-body -->\n                        </div>\n                        <!-- /.panel -->\n                      </div>\n                      <!-- /.col-lg-12 -->\n                    </div>\n                    <!-- /.row -->",
+  tmpMainGridBody: "<div class=\"row\">\n                      <div class=\"col-lg-12\">\n                        <div class=\"panel panel-info panel-grid panel-grid1\">\n                          <div class=\"panel-heading\">\n                            <h1 class=\"page-header\"><i class=\"fa {@icon} fa-fw\"></i><span class=\"header-title\"> {@headerTitle} </span></h1>\n                            <div class=\"alert alert-warning alert-dismissible helpText\" role=\"alert\"> <button type=\"button\" class=\"close\" data-dismiss=\"alert\"><span aria-hidden=\"true\">&times;</span><span class=\"sr-only\">Close</span></button> {@helpText} </div>\n                          </div>\n                          <div class=\"panel-body grid-panel-body\">\n                            <div class=\"table-responsive\">\n                              <div class=\"table table-bordered table-grid\">\n                                <div class=\"table-head\">\n                                  <div class=\"table-row table-menu-row\">\n                                    <div class=\"table-header table-menu-header\" style=\"width:100%\">\n                                      <div class=\"btn-group btn-group-sm table-btn-group\">  </div>\n                                    </div>\n                                  </div>\n                                  <div style=\"display:none\" class=\"table-row table-rowMenu-row\"></div>\n                                  <div style=\"display:none\" class=\"table-row table-otherMenu-row\"></div>\n                                  <div class=\"table-row tfilters\" style=\"display:none\">\n                                    <div style=\"width:10px;\" class=\"table-header\">&nbsp;</div>\n                                    <div style=\"width:175px;\" class=\"table-header\" align=\"right\"> <span class=\"label label-info filter-showing\"></span> </div>\n                                  </div>\n                                </div>\n                                <div class=\"table-body\" id=\"tbl_grid_body\">\n                                  <!--{$tbody}-->\n                                </div>\n                                <div class=\"table-foot\">\n                                  <div class=\"row\">\n                                    <div class=\"col-md-3\">\n                                      <div style=\"display:none\" class=\"ajax-activity-preloader pull-left\"></div>\n                                      <div class=\"divRowsPerPage pull-right\">\n                                        <select style=\"width:180px;display:inline-block\" type=\"select\" name=\"RowsPerPage\" id=\"RowsPerPage\" class=\"form-control\">\n                                          <option value=\"10\">10</option>\n                                          <option value=\"15\">15</option>\n                                          <option value=\"25\">25</option>\n                                          <option value=\"50\">50</option>\n                                          <option value=\"100\">100</option>\n                                          <option value=\"10000\">All</option>\n                                        </select>\n                                      </div>\n                                    </div>\n                                    <div class=\"col-md-9\">\n                                      <div class=\"paging\"></div>\n                                    </div>\n                                  </div>\n                                </div>\n                                <!-- /. table-foot -->\n                              </div>\n                            </div>\n                            <!-- /.table-responsive -->\n                          </div>\n                          <!-- /.panel-body -->\n                        </div>\n                        <!-- /.panel -->\n                      </div>\n                      <!-- /.col-lg-12 -->\n                    </div>\n                    <!-- /.row -->\n                    <div id=\"div_inspect\" class=\"div-btn-edit min div-form-panel-wrapper\">\n                      <div class=\"frm_wrapper\">\n                        <form>\n                          <div class=\"panel panel-info\">\n                            <div class=\"panel-heading\"> <button type=\"button\" class=\"close\" aria-hidden=\"true\" data-original-title=\"\" title=\"\">×</button> <i class=\"fa fa-info fa-fw\"></i> <span class=\"spn_editFriendlyName\">{@Name}</span> [Inspecting] </div>\n                            <div class=\"panel-overlay\" style=\"display:none\"></div>\n                            <div class=\"panel-body\">\n                                <div class=\"target\"></div>\n                            </div>\n                            <div class=\"panel-btns footer\">\n                              <button type=\"button\" class=\"btn btn-primary btn-formMenu\" id=\"btn_form_menu_heading\"><i class=\"fa fa-fw fa-bars\"></i></button>\n                              <button type=\"button\" class=\"btn btn-primary btn-cancel\" id=\"btn_cancel\"><i class=\"fa fa-fw fa-times\"></i> Close</button>\n                            </div>\n                          </div>\n                        </form>\n                      </div>\n                    </div>",
 
   // check all checkbox template
   tmpCheckAll: "<label for=\"chk_all\" class=\"btn btn-default pull-right\"> <input id=\"chk_all\" type=\"checkbox\" class=\"chk_all\" name=\"chk_all\"> </label>",

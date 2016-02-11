@@ -18,6 +18,15 @@
   }, //end fn
 
   /**
+   * Get the inspect url of the current row
+   * @method function
+   * @return {[type]} [description]
+   */
+  getCurrentRowInspectUrl : function() {
+    return jApp.routing.get('inspect', jUtility.getActionModel(), jUtility.getCurrentRowId() );
+  }, //end fn
+
+  /**
    * Kill pending ajax request
    * @method function
    * @param  {[type]} requestName [description]
@@ -30,6 +39,30 @@
       // nothing to abort
     }
   }, //end fn
+
+  /**
+   * get the requested url
+   * @method function
+   * @param  {[type]} requestOptions [description]
+   * @return {[type]}                [description]
+   */
+  get : function( requestOptions ) {
+    var opts = $.extend(true,
+      {
+        url : null,
+        data : {},
+        success : function() { },
+        fail : function() { },
+        always : jUtility.callback.displayResponseErrors,
+        complete : function() {}
+      } , requestOptions );
+
+    jApp.log('6.5 ajax options set, executing ajax request');
+    return $.get(opts.url, opts.data, opts.success )
+      .fail( opts.fail )
+      .always( opts.always )
+      .complete( opts.complete );
+  }, // end fn
 
   /**
    * get JSON
