@@ -46,6 +46,19 @@
     return text.link( 'mailto:' + value  );
   }
 
+  _.getTags = function( arr ) {
+    return _.map( arr, function(o,i) {
+      return ('<div class="label label-primary" style="margin-right:3px">' + o.name + '</div>')
+    }).join(' ');
+  }
+
+  _.getFlag = function( value, trueLabel, falseLabel, trueClass, falseClass ) {
+    var label = ( !! +value ) ? trueLabel || 'Yes' : falseLabel || 'No',
+        className = ( !! +value ) ? trueClass || 'success' : falseClass || 'danger';
+
+    return ('<span style="margin:3px;" class="label label-' + className + '">' + label + '</span>');
+  }
+
   _.get = function(key, target, callback, icon, model) {
     var tmpKeyArr = key.split('.'),
         tmpKeyNext,
@@ -71,7 +84,12 @@
     if (target != null ) {
       return _.map(target,function(row,i) {
         var iconString = (!!icon) ? '<i class="fa fa-fw ' + icon + '"></i>' : '';
-        return ('<button style="padding:4px" class="btn btn-link btn-editOther" data-id="' + row.id + '" data-model="' + model + '">' + iconString + row[key] + '</button>')
+
+        if ( model != null ) {
+          return ('<button style="padding:4px" class="btn btn-link btn-editOther" data-id="' + row.id + '" data-model="' + model + '">' + iconString + row[key] + '</button>')
+        } else {
+          return ('<div style="padding:4px">' + iconString + row[key] + '</div>' );
+        }
       });
     } else {
 
@@ -177,6 +195,24 @@
         return _.nameButton(value, 'fa-server');
       },
 
+      databaseName : function(value) {
+				var r = jApp.aG().currentRow, flags = [];
+
+				if ( +r.inactive_flag == 1 ) {
+					flags.push('<div class="label label-danger label-sm" style="margin-right:3px">Inactive</div>');
+				}
+
+				if ( +r.ignore_flag == 1 ) {
+					flags.push('<div class="label label-warning label-sm" style="margin-right:3px">Ignored</div>');
+				}
+
+				if ( +r.production_flag == 1 ) {
+					flags.push('<div class="label label-primary label-sm" style="margin-right:3px">Prod</div>');
+				}
+
+				return _.nameButton( r.name, 'fa-database' ) + flags.join(' ');
+      },
+
       username : function(value) {
         return _.nameButton(value, 'fa-user');
       },
@@ -201,9 +237,27 @@
         return _.get('name', arr, 'fa-users', 'Group');
       },
 
+      people : function(arr) {
+				return _.get('name', arr, 'fa-user', 'Person');
+			},
+
+      tags : function(arr) {
+        return _.getTags(arr);
+      },
+
+      profile_groups : function(arr) {
+        return _.get('name', arr, 'fa-users');
+      },
+
       group_roles : function(arr) {
 				return  _.pivotExtract( 'groups', function(row, i) {
           return (row.roles.length) ? _.get('name',row.roles,'fa-briefcase','Role') : false
+        });
+			},
+
+      profile_group_roles : function(arr) {
+				return  _.pivotExtract( 'groups', function(row, i) {
+          return (row.roles.length) ? _.get('name',row.roles,'fa-briefcase') : false
         });
 			},
 

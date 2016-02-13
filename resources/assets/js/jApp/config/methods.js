@@ -91,6 +91,32 @@
     }, // end fn
 
     /**
+     * Get url relative to current url
+     * @method function
+     * @param  {[type]} url [description]
+     * @return {[type]}     [description]
+     */
+    getRelativeUrl : function(url) {
+      var parser,
+          path = url;
+
+      // handle well-formed urls
+      if (url.indexOf('http:') === 0) {
+        parser = document.createElement('a');
+        parser.href = url;
+        path = parser.pathname;
+      }
+      // remove the route prefix
+      path = path.toString().replace(self.apiRoutePrefix,'');
+
+      // trim trailing and leading slashes and remove any double slashes
+      path = path.split('/').filter( function(str) { if (!!str) return str; } ).join('/');
+
+      // add the location origin and return it
+      return location.origin + '/' + path;
+    }, // end fn
+
+    /**
      * Get the table from the corresponding model
      * @param  {[type]} model [description]
      * @return {[type]}       [description]

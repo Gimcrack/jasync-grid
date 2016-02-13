@@ -78,8 +78,8 @@
       // get the external options
       self.fn.getExtOptions();
 
-      var atts = $.extend(true,
-        self.fn.getAtts(),
+      var runtime = self.fn.getAtts(),
+          atts = $.extend(true, runtime,
         {
           type : 'text',
           'data-tokens' : true,

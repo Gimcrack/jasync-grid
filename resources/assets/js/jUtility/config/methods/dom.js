@@ -581,6 +581,9 @@
           .find('[data-custom]')
           .hide()
           .end()
+          .find('[data-custom-menu] .btn')
+          .hide()
+          .end()
           .find('.btn-rowMenu')
           .addClass('other')
           .find('i')
@@ -606,7 +609,10 @@
         $row
           .removeClass('other')
           .find('[data-custom]')
-          .hide()
+          .show()
+          .end()
+          .find('[data-custom-menu] .btn')
+          .show()
           .end()
           .find('.btn-rowMenu')
           .removeClass('other')
@@ -874,7 +880,7 @@
           // prepare the value
           value = jUtility.prepareValue(value,key);
 
-          if ( td.html().trim() !== value.trim() ) {
+          if ( td.html().trim() !== value.toString().trim() ) {
             // set the cell value
             td
              .html(value)
@@ -1106,17 +1112,13 @@
      * @param  {obj} o html parameters of the button
      * @return {jQuery obj}
      */
-    createMenuButton : function( params, custom ) {
+    createMenuButton : function( params ) {
       var $btn, $btn_a, $btn_choice, $ul;
 
 
       if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
 
-        $btn = $('<div/>', { class : 'btn-group btn-group-sm' });
-
-        if ( !! custom ) {
-          $btn.addClass('btn-custom');
-        }
+        $btn = $('<div/>', { class : 'btn-group btn-group-sm', 'data-custom-menu' : true });
 
         // params[0] will contain the dropdown toggle button
         $btn_a = $('<a/>', {
@@ -1195,8 +1197,8 @@
 
         $btn = $('<button/>', _.omit(params, ['fn']) ).attr('data-signature',signature);
 
-        if ( !! custom ) {
-          $btn.addClass('btn-custom');
+        if ( !! params['data-custom'] ) {
+          $btn.attr('btn-custom',true);
         }
 
         //add ignore flag for toggle buttons

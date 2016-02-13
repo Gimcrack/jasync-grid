@@ -6231,6 +6231,19 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     return text.link('mailto:' + value);
   };
 
+  _.getTags = function (arr) {
+    return _.map(arr, function (o, i) {
+      return '<div class="label label-primary" style="margin-right:3px">' + o.name + '</div>';
+    }).join(' ');
+  };
+
+  _.getFlag = function (value, trueLabel, falseLabel, trueClass, falseClass) {
+    var label = !! +value ? trueLabel || 'Yes' : falseLabel || 'No',
+        className = !! +value ? trueClass || 'success' : falseClass || 'danger';
+
+    return '<span style="margin:3px;" class="label label-' + className + '">' + label + '</span>';
+  };
+
   _.get = function (key, target, callback, icon, model) {
     var tmpKeyArr = key.split('.'),
         tmpKeyNext,
@@ -6256,7 +6269,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     if (target != null) {
       return _.map(target, function (row, i) {
         var iconString = !!icon ? '<i class="fa fa-fw ' + icon + '"></i>' : '';
-        return '<button style="padding:4px" class="btn btn-link btn-editOther" data-id="' + row.id + '" data-model="' + model + '">' + iconString + row[key] + '</button>';
+
+        if (model != null) {
+          return '<button style="padding:4px" class="btn btn-link btn-editOther" data-id="' + row.id + '" data-model="' + model + '">' + iconString + row[key] + '</button>';
+        } else {
+          return '<div style="padding:4px">' + iconString + row[key] + '</div>';
+        }
       });
     } else {
 
@@ -6356,6 +6374,25 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         return _.nameButton(value, 'fa-server');
       },
 
+      databaseName: function databaseName(value) {
+        var r = jApp.aG().currentRow,
+            flags = [];
+
+        if (+r.inactive_flag == 1) {
+          flags.push('<div class="label label-danger label-sm" style="margin-right:3px">Inactive</div>');
+        }
+
+        if (+r.ignore_flag == 1) {
+          flags.push('<div class="label label-warning label-sm" style="margin-right:3px">Ignored</div>');
+        }
+
+        if (+r.production_flag == 1) {
+          flags.push('<div class="label label-primary label-sm" style="margin-right:3px">Prod</div>');
+        }
+
+        return _.nameButton(r.name, 'fa-database') + flags.join(' ');
+      },
+
       username: function username(value) {
         return _.nameButton(value, 'fa-user');
       },
@@ -6380,9 +6417,27 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         return _.get('name', arr, 'fa-users', 'Group');
       },
 
+      people: function people(arr) {
+        return _.get('name', arr, 'fa-user', 'Person');
+      },
+
+      tags: function tags(arr) {
+        return _.getTags(arr);
+      },
+
+      profile_groups: function profile_groups(arr) {
+        return _.get('name', arr, 'fa-users');
+      },
+
       group_roles: function group_roles(arr) {
         return _.pivotExtract('groups', function (row, i) {
           return row.roles.length ? _.get('name', row.roles, 'fa-briefcase', 'Role') : false;
+        });
+      },
+
+      profile_group_roles: function profile_group_roles(arr) {
+        return _.pivotExtract('groups', function (row, i) {
+          return row.roles.length ? _.get('name', row.roles, 'fa-briefcase') : false;
         });
       },
 
@@ -6643,6 +6698,34 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
       // add the route prefix
       path = self.apiRoutePrefix + '/' + path;
+
+      // trim trailing and leading slashes and remove any double slashes
+      path = path.split('/').filter(function (str) {
+        if (!!str) return str;
+      }).join('/');
+
+      // add the location origin and return it
+      return location.origin + '/' + path;
+    }, // end fn
+
+    /**
+     * Get url relative to current url
+     * @method function
+     * @param  {[type]} url [description]
+     * @return {[type]}     [description]
+     */
+    getRelativeUrl: function getRelativeUrl(url) {
+      var parser,
+          path = url;
+
+      // handle well-formed urls
+      if (url.indexOf('http:') === 0) {
+        parser = document.createElement('a');
+        parser.href = url;
+        path = parser.pathname;
+      }
+      // remove the route prefix
+      path = path.toString().replace(self.apiRoutePrefix, '');
 
       // trim trailing and leading slashes and remove any double slashes
       path = path.split('/').filter(function (str) {
@@ -8310,7 +8393,7 @@ module.exports = function (options) {
 
       inpt = new jInput({ atts: params, form: self });
       jApp.log(inpt);
-      if (!isArrayFormField) self.oInpts[params.name] = inpt;
+      if (!isArrayFormField) self.oInpts[params.name.replace('[]', '')] = inpt;
       inpt.fn.val(value);
       target.append(inpt.fn.handle());
       //if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
@@ -9364,7 +9447,8 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
       // get the external options
       self.fn.getExtOptions();
 
-      var atts = $.extend(true, self.fn.getAtts(), {
+      var runtime = self.fn.getAtts(),
+          atts = $.extend(true, runtime, {
         type: 'text',
         'data-tokens': true,
         'data-url': self.fn.getExtUrl('tokens')
@@ -9603,7 +9687,9 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
           return self.fn;
 
         case 'tokens':
+          console.log(' --tokens', _.pluck(value, 'name'));
           self.DOM.$inpt.tokenfield('setTokens', _.pluck(value, 'name'));
+
           return self.fn;
 
         case 'array':
@@ -13829,12 +13915,12 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       if (!!options) {
         $('.chk_cid:checked,.chk_all').prop('checked', false).prop('indeterminate', false);
 
-        $row.addClass('other').find('[data-custom]').hide().end().find('.btn-rowMenu').addClass('other').find('i').attr('data-tmpClass', options.icon).removeClass(iconClass).removeClass('fa-check-square-o').addClass(options.icon).end().end().find('.btn-primary').removeClass('btn-primary').addClass('btn-warning').end().find('.btn-history').hide().end();
+        $row.addClass('other').find('[data-custom]').hide().end().find('[data-custom-menu] .btn').hide().end().find('.btn-rowMenu').addClass('other').find('i').attr('data-tmpClass', options.icon).removeClass(iconClass).removeClass('fa-check-square-o').addClass(options.icon).end().end().find('.btn-primary').removeClass('btn-primary').addClass('btn-warning').end().find('.btn-history').hide().end();
 
         jUtility.DOM.toggleRowMenuItems(false);
       } else {
 
-        $row.removeClass('other').find('[data-custom]').hide().end().find('.btn-rowMenu').removeClass('other').find('i').removeClass(iconClass).addClass('fa-check-square-o').removeAttr('data-tmpClass').end().end().find('.btn-warning').removeClass('btn-warning').addClass('btn-primary').end().find('.btn-history').show().end();
+        $row.removeClass('other').find('[data-custom]').show().end().find('[data-custom-menu] .btn').show().end().find('.btn-rowMenu').removeClass('other').find('i').removeClass(iconClass).addClass('fa-check-square-o').removeAttr('data-tmpClass').end().end().find('.btn-warning').removeClass('btn-warning').addClass('btn-primary').end().find('.btn-history').show().end();
       }
     }, // end fn
 
@@ -14062,7 +14148,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
           // prepare the value
           value = jUtility.prepareValue(value, key);
 
-          if (td.html().trim() !== value.trim()) {
+          if (td.html().trim() !== value.toString().trim()) {
             // set the cell value
             td.html(value).addClass('changed');
           }
@@ -14280,17 +14366,13 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      * @param  {obj} o html parameters of the button
      * @return {jQuery obj}
      */
-    createMenuButton: function createMenuButton(params, custom) {
+    createMenuButton: function createMenuButton(params) {
       var $btn, $btn_a, $btn_choice, $ul;
 
       if (_typeof(params[0]) === 'object') {
         // determine if button is a dropdown menu
 
-        $btn = $('<div/>', { class: 'btn-group btn-group-sm' });
-
-        if (!!custom) {
-          $btn.addClass('btn-custom');
-        }
+        $btn = $('<div/>', { class: 'btn-group btn-group-sm', 'data-custom-menu': true });
 
         // params[0] will contain the dropdown toggle button
         $btn_a = $('<a/>', {
@@ -14366,8 +14448,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
         $btn = $('<button/>', _.omit(params, ['fn'])).attr('data-signature', signature);
 
-        if (!!custom) {
-          $btn.addClass('btn-custom');
+        if (!!params['data-custom']) {
+          $btn.attr('btn-custom', true);
         }
 
         //add ignore flag for toggle buttons
