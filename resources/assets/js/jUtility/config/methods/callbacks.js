@@ -64,10 +64,6 @@
         return jUtility.DOM.dataErrorHandler();
       }
 
-      if ($.isEmptyObject(response)) {
-        return jUtility.DOM.dataEmptyHandler();
-      }
-
       // init vars
       self = jApp.aG();
 
@@ -81,12 +77,16 @@
         jUtility.deltaData(self.dataGrid.data,responseData) :
         responseData;
 
-      // merge the changes into self.dataGrid.data
-      if (!!self.dataGrid.delta) {
-        self.dataGrid.data = responseData;
-      } else { // abort if no changes in the data
-        return false;
+      self.dataGrid.data = responseData;
+
+      if ( jUtility.isDataEmpty(response) ) {
+        return jUtility.DOM.dataEmptyHandler();
       }
+
+      // abort if no changes to the data
+      if ( ! self.dataGrid.delta ) {
+        return false;
+      } 
 
       // remove all rows, if needed
       if (self.options.removeAllRows) {

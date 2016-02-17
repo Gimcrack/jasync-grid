@@ -72,6 +72,7 @@
 
     dataEmptyHandler : function() {
       $('.table-cell.no-data').remove();
+      jApp.aG().$().find('.table-body .table-row').remove();
       $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
       jUtility.DOM.updateColWidths();
     }, // end fn

@@ -6266,9 +6266,17 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       callback = null;
     }
 
-    if (target != null) {
-      return _.map(target, function (row, i) {
+    if (typeof target !== 'undefined') {
+      if (target === null) return '';
+
+      var target_array = typeof target.push === 'function' ? target : [target];
+
+      return _.map(target_array, function (row, i) {
         var iconString = !!icon ? '<i class="fa fa-fw ' + icon + '"></i>' : '';
+
+        if (row[key] == null) {
+          return '';
+        }
 
         if (model != null) {
           return '<button style="padding:4px" class="btn btn-link btn-editOther" data-id="' + row.id + '" data-model="' + model + '">' + iconString + row[key] + '</button>';
@@ -6391,6 +6399,26 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         }
 
         return _.nameButton(r.name, 'fa-database') + flags.join(' ');
+      },
+
+      serverName: function serverName(value) {
+        var r = jApp.aG().currentRow,
+            flags = [],
+            cname = '';
+
+        if (r.cname != null && r.cname.trim() != '') {
+          cname = ' (' + r.cname + ') ';
+        }
+
+        if (+r.inactive_flag == 1) {
+          flags.push('<div class="label label-danger label-sm" style="margin:0 3px">Inactive</div>');
+        }
+
+        if (+r.production_flag == 1) {
+          flags.push('<div class="label label-primary label-sm" style="margin:0 3px">Prod</div>');
+        }
+
+        return _.nameButton(r.name.toUpperCase(), 'fa-server') + cname + flags.join(' ');
       },
 
       username: function username(value) {
@@ -6550,7 +6578,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * Debug mode, set to false to supress messages
    * @type {Boolean}
    */
-  debug: true,
+  debug: false,
 
   /**
    * Placeholder for the activeGrid object
@@ -13043,6 +13071,15 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, // end fn
 
   /**
+   * Is the data
+   * @method function
+   * @return {[type]} [description]
+   */
+  isDataEmpty: function isDataEmpty(response) {
+    return typeof response.data === 'undefined' || typeof response.data.length === 'undefined' || response.data.length == 0;
+  }, // end fn
+
+  /**
    * Does the form exist
    * @param  {[type]} key [description]
    * @return {[type]}          [description]
@@ -13171,10 +13208,6 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         return jUtility.DOM.dataErrorHandler();
       }
 
-      if ($.isEmptyObject(response)) {
-        return jUtility.DOM.dataEmptyHandler();
-      }
-
       // init vars
       self = jApp.aG();
 
@@ -13186,11 +13219,14 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       // detect changes in data;
       self.dataGrid.delta = !$.isEmptyObject(self.dataGrid.data) ? jUtility.deltaData(self.dataGrid.data, responseData) : responseData;
 
-      // merge the changes into self.dataGrid.data
-      if (!!self.dataGrid.delta) {
-        self.dataGrid.data = responseData;
-      } else {
-        // abort if no changes in the data
+      self.dataGrid.data = responseData;
+
+      if (jUtility.isDataEmpty(response)) {
+        return jUtility.DOM.dataEmptyHandler();
+      }
+
+      // abort if no changes to the data
+      if (!self.dataGrid.delta) {
         return false;
       }
 
@@ -13442,6 +13478,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
     dataEmptyHandler: function dataEmptyHandler() {
       $('.table-cell.no-data').remove();
+      jApp.aG().$().find('.table-body .table-row').remove();
       $('<div/>', { class: 'table-cell no-data' }).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo(jApp.tbl().find('#tbl_grid_body'));
       jUtility.DOM.updateColWidths();
     }, // end fn

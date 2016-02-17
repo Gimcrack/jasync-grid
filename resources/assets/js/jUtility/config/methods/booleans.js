@@ -157,6 +157,17 @@
   }, // end fn
 
   /**
+   * Is the data
+   * @method function
+   * @return {[type]} [description]
+   */
+  isDataEmpty : function(response) {
+     return (typeof response.data === 'undefined' ||
+             typeof response.data.length === 'undefined' ||
+              response.data.length == 0);
+  }, // end fn
+
+  /**
    * Does the form exist
    * @param  {[type]} key [description]
    * @return {[type]}          [description]
