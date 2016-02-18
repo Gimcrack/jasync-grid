@@ -59,6 +59,13 @@
     return ('<span style="margin:3px;" class="label label-' + className + '">' + label + '</span>');
   }
 
+  _.getLabel = function( value, icon, bgColor, color ) {
+    var iconString = (!!icon) ? '<i class="fa fa-fw ' + icon + '"></i> ' : '',
+        style = 'style="padding:2px 4px; color:' + (color || 'black') + ' ; background:' + ( bgColor || 'white') + '"';
+
+    return ('<div ' + style + '>' + iconString + value + '</div>' );
+  }
+
   _.get = function(key, target, callback, icon, model) {
     var tmpKeyArr = key.split('.'),
         tmpKeyNext,
@@ -86,7 +93,7 @@
 
       var target_array = ( typeof target.push === 'function' ) ? target : [target];
 
-      
+
       return _.map(target_array,function(row,i) {
         var iconString = (!!icon) ? '<i class="fa fa-fw ' + icon + '"></i>' : '';
 

@@ -6244,6 +6244,13 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     return '<span style="margin:3px;" class="label label-' + className + '">' + label + '</span>';
   };
 
+  _.getLabel = function (value, icon, bgColor, color) {
+    var iconString = !!icon ? '<i class="fa fa-fw ' + icon + '"></i> ' : '',
+        style = 'style="padding:2px 4px; color:' + (color || 'black') + ' ; background:' + (bgColor || 'white') + '"';
+
+    return '<div ' + style + '>' + iconString + value + '</div>';
+  };
+
   _.get = function (key, target, callback, icon, model) {
     var tmpKeyArr = key.split('.'),
         tmpKeyNext,
@@ -8969,7 +8976,7 @@ module.exports = function (options) {
 		_init: function _init() {
 
 			jApp.log('1. Setting Options');
-			jUtility.setOptions($.extend(true, {}, jUtility.getDefaultOptions(), { tableBtns: { new: { label: 'New ' + options.model } } }, options));
+			jUtility.setOptions($.extend(true, {}, jUtility.getDefaultOptions(), { tableBtns: { new: { label: 'New ' + (options.model_display || options.model) } } }, options));
 
 			jApp.log('2. Setting up html templates');
 			jUtility.setupHtmlTemplates();

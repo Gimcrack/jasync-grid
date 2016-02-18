@@ -79,7 +79,7 @@
 		_init : function() {
 
 			jApp.log('1. Setting Options');
-			jUtility.setOptions( $.extend(true, {}, jUtility.getDefaultOptions(), { tableBtns : { new : { label : 'New ' + options.model }} }, options) );
+			jUtility.setOptions( $.extend(true, {}, jUtility.getDefaultOptions(), { tableBtns : { new : { label : 'New ' + (options.model_display || options.model) }} }, options) );
 
 			jApp.log('2. Setting up html templates');
 			jUtility.setupHtmlTemplates();
