@@ -117,8 +117,43 @@
           success : opts.success,
           type : 'POST',
           dataType : 'json',
-          //processData : false,
-          //contentType : false
+        })
+        .fail( opts.fail )
+        .always( opts.always )
+        .complete( opts.complete );
+  }, // end fn
+
+  /**
+   * post JSON to upload a file
+   * @method function
+   * @param  {[type]} requestOptions [description]
+   * @return {[type]}                [description]
+   */
+  postJSONfile : function( requestOptions ) {
+
+      // if ( typeof requestOptions.data.append !== 'function' ) {
+      //   requestOptions.data = jUtility.prepareFormData( requestOptions.data || {} );
+      // }
+
+      var opts = $.extend(true,
+        {
+          url : null,
+          data : {},
+          success : function() { },
+          fail : function() { },
+          always : jUtility.callback.displayResponseErrors,
+          complete : function() {}
+        } , requestOptions );
+
+      return $.ajax({
+          url: opts.url,
+          data : opts.data,
+          success : opts.success,
+          type : 'POST',
+          dataType : 'json',
+          processData : false,
+          contentType : false,
+          cache : false
         })
         .fail( opts.fail )
         .always( opts.always )

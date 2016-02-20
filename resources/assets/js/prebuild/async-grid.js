@@ -8110,6 +8110,9 @@ module.exports = function (options) {
     serialize: function serialize() {
       var ret = {};
       _.each(self.oInpts, function (o, i) {
+        // ignore disabled elements
+        if (!!(o.$().prop('disabled') || o.$().hasClass('disabled'))) return false;
+
         ret[i] = o.fn.serialize();
       });
       return ret;
@@ -8877,6 +8880,11 @@ module.exports = function (options) {
 
       // iterate through each row and the the corresponding input value
       _.each(response, self.fn.setInputValue);
+
+      // if there is a custom callback, then call it.
+      if (typeof jApp.aG().fn.getRowDataCallback === 'function') {
+        jApp.aG().fn.getRowDataCallback();
+      }
 
       //self.DOM.$frm.find('.bsms').multiselect('refresh').change();
       $('.panel-overlay').hide();
@@ -12421,6 +12429,13 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     }
   },
 
+  "input[type=file]": {
+    change: function change(e) {
+      e.preventDefault();
+      jUtility.uploadFile(this);
+    }
+  },
+
   "#confirmation": {
     keyup: function keyup() {
       if ($(this).val().toString().toLowerCase() === 'yes') {
@@ -13741,7 +13756,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
       //col
       $col = jApp.tbl().find('.table-body .table-row .table-cell:nth-child(' + colNum + ')').map(function (i, elm) {
-        return [[$(elm).clone().find('button').remove().end().text().toLowerCase(), $(elm).parent()]];
+        return [[$(elm).clone().text().toLowerCase(), $(elm).parent()]];
       }).sort(function (a, b) {
 
         if ($.isNumeric(a[0]) && $.isNumeric(b[0])) {
@@ -14901,6 +14916,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @return {[type]} [description]
    */
   formBootup: function formBootup() {
+    if (typeof jApp.aG().fn.formBootup === 'function') {
+      jApp.aG().fn.formBootup();
+    }
+
     jUtility.$currentFormWrapper()
     //reset validation stuff
     .find('.has-error').removeClass('has-error').end().find('.has-success').removeClass('has-success').end().find('.help-block').hide().end().find('.form-control-feedback').hide().end()
@@ -15095,6 +15114,39 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     jApp.opts().closeOnSave = true;
     jUtility.submitCurrentForm($(this));
     //jUtility.toggleRowMenu;
+  }, // end fn
+
+  /**
+   * Upload the file
+   * @method function
+   * @param  {[type]} $inpt [description]
+   * @return {[type]}       [description]
+   */
+  uploadFile: function uploadFile(inpt) {
+    var formData = new FormData(),
+        $btn,
+        requestOptions;
+
+    _.each(inpt.files, function (file, index) {
+      formData.append(inpt.name, file, file.name);
+    });
+
+    console.log('formData', formData);
+
+    $btn = jUtility.$currentFormWrapper().find('.btn-go');
+
+    requestOptions = {
+      url: jUtility.getCurrentFormAction(),
+      data: formData,
+      //fail : console.warn,
+      always: function always() {
+        jUtility.toggleButton($btn);
+      }
+    };
+
+    jUtility.postJSONfile(requestOptions);
+
+    jUtility.toggleButton($btn);
   }, // end fn
 
   /**
@@ -16451,9 +16503,40 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       success: opts.success,
       type: 'POST',
       dataType: 'json'
-    }). //processData : false,
-    //contentType : false
-    fail(opts.fail).always(opts.always).complete(opts.complete);
+    }).fail(opts.fail).always(opts.always).complete(opts.complete);
+  }, // end fn
+
+  /**
+   * post JSON to upload a file
+   * @method function
+   * @param  {[type]} requestOptions [description]
+   * @return {[type]}                [description]
+   */
+  postJSONfile: function postJSONfile(requestOptions) {
+
+    // if ( typeof requestOptions.data.append !== 'function' ) {
+    //   requestOptions.data = jUtility.prepareFormData( requestOptions.data || {} );
+    // }
+
+    var opts = $.extend(true, {
+      url: null,
+      data: {},
+      success: function success() {},
+      fail: function fail() {},
+      always: jUtility.callback.displayResponseErrors,
+      complete: function complete() {}
+    }, requestOptions);
+
+    return $.ajax({
+      url: opts.url,
+      data: opts.data,
+      success: opts.success,
+      type: 'POST',
+      dataType: 'json',
+      processData: false,
+      contentType: false,
+      cache: false
+    }).fail(opts.fail).always(opts.always).complete(opts.complete);
   }, // end fn
 
   /**

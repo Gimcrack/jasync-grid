@@ -11,6 +11,10 @@
    * @return {[type]} [description]
    */
   formBootup : function() {
+    if ( typeof jApp.aG().fn.formBootup === 'function' ) {
+      jApp.aG().fn.formBootup();
+    }
+
     jUtility.$currentFormWrapper()
       //reset validation stuff
       .find('.has-error').removeClass('has-error').end()
@@ -43,6 +47,8 @@
       }).end()
 
       .find('[_linkedElmID]').change();
+
+
 
   }, //end fn
 
@@ -221,6 +227,37 @@
     jApp.opts().closeOnSave = true;
     jUtility.submitCurrentForm( $(this) );
     //jUtility.toggleRowMenu;
+  }, // end fn
+
+  /**
+   * Upload the file
+   * @method function
+   * @param  {[type]} $inpt [description]
+   * @return {[type]}       [description]
+   */
+  uploadFile : function( inpt ) {
+    var formData = new FormData(), $btn, requestOptions;
+
+    _.each( inpt.files, function(file, index) {
+      formData.append(inpt.name, file, file.name);
+    });
+
+    console.log('formData',formData);
+
+    $btn = jUtility.$currentFormWrapper().find('.btn-go');
+
+    requestOptions = {
+      url : jUtility.getCurrentFormAction(),
+      data : formData,
+      //fail : console.warn,
+      always : function() {
+        jUtility.toggleButton($btn);
+      },
+    };
+
+    jUtility.postJSONfile( requestOptions );
+
+    jUtility.toggleButton( $btn );
   }, // end fn
 
   /**

@@ -347,7 +347,7 @@
       $col = jApp.tbl().find('.table-body .table-row .table-cell:nth-child(' + colNum + ')')
         .map( function(i,elm) {
           return [[
-                $(elm).clone().find('button').remove().end().text().toLowerCase(),
+                $(elm).clone().text().toLowerCase(),
                 $(elm).parent()
               ]];
         })

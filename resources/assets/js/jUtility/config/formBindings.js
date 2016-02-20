@@ -94,6 +94,13 @@
     }
   },
 
+  "input[type=file]" : {
+    change : function(e) {
+      e.preventDefault();
+      jUtility.uploadFile( this );
+    }
+  },
+
   "#confirmation" : {
     keyup : function() {
       if( $(this).val().toString().toLowerCase() === 'yes' ) {

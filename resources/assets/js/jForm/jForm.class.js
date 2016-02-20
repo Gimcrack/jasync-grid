@@ -68,6 +68,9 @@ module.exports = function( options ) {
       serialize : function() {
         var ret = {};
         _.each( self.oInpts, function( o, i ) {
+          // ignore disabled elements
+          if ( !! ( o.$().prop('disabled') || o.$().hasClass('disabled') ) ) return false;
+          
           ret[i] = o.fn.serialize();
         });
         return ret;
@@ -857,9 +860,13 @@ module.exports = function( options ) {
         // iterate through each row and the the corresponding input value
 				_.each( response, self.fn.setInputValue );
 
+        // if there is a custom callback, then call it.
+        if ( typeof jApp.aG().fn.getRowDataCallback === 'function' ) {
+          jApp.aG().fn.getRowDataCallback();
+        }
+
 				//self.DOM.$frm.find('.bsms').multiselect('refresh').change();
 				$('.panel-overlay').hide();
-
 			},
 
       // do something with the response
