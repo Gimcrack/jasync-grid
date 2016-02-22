@@ -163,7 +163,7 @@
    * @return {[type]} [description]
    */
   updateCountdown : function() {
-    if (jUtility.isFormOpen()) { return false; }
+    if (jUtility.isFormOpen() || jUtility.isRowMenuOpen()) { return false; }
 
     var txt = 'Refreshing in ';
     txt += (jApp.aG().dataGrid.intervals.countdownTimer > 0) ? Math.floor( jApp.aG().dataGrid.intervals.countdownTimer / 1000) : 0;
@@ -347,7 +347,7 @@
     }
 
     jUtility.setupFormContainer();
-    
+
   }, // end fn
 
   /**

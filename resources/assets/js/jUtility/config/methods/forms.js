@@ -355,15 +355,6 @@
   },
 
   /**
-   * Is a form container maximized
-   * @method function
-   * @return {[type]} [description]
-   */
-  isFormOpen : function() {
-    return !!jApp.aG().$().find('.div-form-panel-wrapper.max').length;
-  }, // end fn
-
-  /**
    * formFactory
    *
    * build a new form for the model

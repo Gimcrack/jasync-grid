@@ -179,6 +179,24 @@
   }, // end fn
 
   /**
+   * Is a form container maximized
+   * @method function
+   * @return {[type]} [description]
+   */
+  isFormOpen : function() {
+    return !!jApp.aG().$().find('.div-form-panel-wrapper.max').length;
+  }, // end fn
+
+  /**
+   * Is row menu open
+   * @method function
+   * @return {[type]} [description]
+   */
+  isRowMenuOpen : function() {
+    return !!$('.table-rowMenu-row:visible').length;
+  }, // end fn
+
+  /**
    * Check permission on the button parameters
    * @method function
    * @param  {[type]} params [description]

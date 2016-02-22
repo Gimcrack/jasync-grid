@@ -13111,6 +13111,24 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   }, // end fn
 
   /**
+   * Is a form container maximized
+   * @method function
+   * @return {[type]} [description]
+   */
+  isFormOpen: function isFormOpen() {
+    return !!jApp.aG().$().find('.div-form-panel-wrapper.max').length;
+  }, // end fn
+
+  /**
+   * Is row menu open
+   * @method function
+   * @return {[type]} [description]
+   */
+  isRowMenuOpen: function isRowMenuOpen() {
+    return !!$('.table-rowMenu-row:visible').length;
+  }, // end fn
+
+  /**
    * Check permission on the button parameters
    * @method function
    * @param  {[type]} params [description]
@@ -15242,15 +15260,6 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   },
 
   /**
-   * Is a form container maximized
-   * @method function
-   * @return {[type]} [description]
-   */
-  isFormOpen: function isFormOpen() {
-    return !!jApp.aG().$().find('.div-form-panel-wrapper.max').length;
-  }, // end fn
-
-  /**
    * formFactory
    *
    * build a new form for the model
@@ -15594,7 +15603,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
    * @return {[type]} [description]
    */
   updateCountdown: function updateCountdown() {
-    if (jUtility.isFormOpen()) {
+    if (jUtility.isFormOpen() || jUtility.isRowMenuOpen()) {
       return false;
     }
 
