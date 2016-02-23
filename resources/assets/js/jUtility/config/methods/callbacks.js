@@ -86,7 +86,7 @@
       // abort if no changes to the data
       if ( ! self.dataGrid.delta ) {
         return false;
-      } 
+      }
 
       // remove all rows, if needed
       if (self.options.removeAllRows) {
@@ -146,6 +146,7 @@
     checkout : function(response) {
       if ( !jUtility.isResponseErrors(response) ) {
         jUtility.msg.success('Record checked out for editing.');
+        jApp.activeGrid.temp.checkedOut = true;
         jUtility.setupFormContainer();
         jUtility.getCheckedOutRecords();
       }
@@ -158,7 +159,7 @@
      */
     checkin : function(response) {
       if ( jUtility.isResponseErrors(response) ) {
-        jUtility.msg.warning( jUtility.getErrorMessage(response) );
+        console.warn( jUtility.getErrorMessage(response) );
       }
       jUtility.getCheckedOutRecords();
       jUtility.closeCurrentForm();
@@ -170,10 +171,19 @@
      * @param  {[type]} response [description]
      * @return {[type]}          [description]
      */
-    displayResponseErrors : function(response) {
+    displayResponseErrors : function(res) {
+
+      var response = res.responseJSON || res;
+
+      console.log('response',response );
+      jApp.log('Checking is response has errors.');
       if ( jUtility.isResponseErrors(response) ) {
+        jApp.log('Response has errors. Displaying error.')
+        console.warn(jUtility.getErrorMessage(response));
         jUtility.msg.clear();
         jUtility.msg.error( jUtility.getErrorMessage(response) );
+      } else {
+        jApp.log('Response does not have errors.')
       }
     }, //end fn
 

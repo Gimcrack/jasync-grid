@@ -11,6 +11,17 @@
   var oAtts = function() { return self.options.atts };
 
   return {
+
+    /**
+     * Is the form field an array input
+     * @param  {[type]} oInpt [description]
+     * @return {[type]}       [description]
+     */
+    isArrayFormField : function( ) {
+      return ( !!self.arrayField );
+    }, //end fn
+
+
     /**
      * Process array field from parameters
      * @method function

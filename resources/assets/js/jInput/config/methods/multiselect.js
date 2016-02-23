@@ -19,7 +19,7 @@
      */
     multiselect : function( options ) {
       if (!!self.$().data('no-bsms')) return false;
-      
+
       self.$().multiselect( options || self.options.bsmsDefaults ).multiselect('refresh');
       self.fn.multiselectExtraButtons();
       return self;
@@ -40,6 +40,8 @@
      * @return {[type]} [description]
      */
     multiselectRefresh : function() {
+      var inpt_name = self.options.atts.name.replace('[]',''), oInpts, data;
+
       if ( !self.options.extData ) { return false; }
 
       $(this).prop('disabled',true).find('i').addClass('fa-spin');
@@ -47,23 +49,40 @@
       self.$().attr('data-tmpVal', self.$().val() || '' )
           .val('')
           .multiselect('refresh');
-          //.multiselect('disable');
 
-      self.fn.getExtOptions(true, function() {
+      if ( !!self.$().closest('.array-field-container').length ) {
+        data = self.$().closest('.array-field-container').data() || {};
+
+        if ( data['jInput']['oInpts'] !== 'undefined' ) {
+          _.each( data.jInput.oInpts, function(o) {
+              o.fn.getExtOptions(true);
+          });
+        }
+      }
+
+      self.fn.getExtOptions(true, function( newOptions ) {
         jUtility.$currentForm()
            .find('.btn.btn-refresh').prop('disabled',false)
              .find('i').removeClass('fa-spin').end()
            .end()
-          .find('[data-tmpVal]').each( function(i,elm) {
-            $(elm).val( $(elm).attr('data-tmpVal') )
-              .multiselect('enable')
-              .multiselect('refresh')
-              .multiselect('rebuild')
-              .removeAttr('data-tmpVal');
-
-              //.data('jInput').fn.multiselect();
-            });
+          .find('[data-tmpVal]')
+            .each( self.fn.multiselectRefreshCallback );
       });
+    }, // end fn
+
+    /**
+     * Refresh the multiselect callback
+     * @method function
+     * @param  {[type]} i   [description]
+     * @param  {[type]} elm [description]
+     * @return {[type]}     [description]
+     */
+    multiselectRefreshCallback : function(i, elm) {
+      $(elm).val( $(elm).attr('data-tmpVal') )
+        .multiselect('enable')
+        .multiselect('refresh')
+        .multiselect('rebuild')
+        .removeAttr('data-tmpVal');
     }, // end fn
 
     /**

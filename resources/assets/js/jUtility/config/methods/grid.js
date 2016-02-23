@@ -561,7 +561,7 @@
    * @return {[type]}    [description]
    */
   checkin : function(id, model) {
-
+    
     if (!model) {
       model = jUtility.getActionModel();
     }

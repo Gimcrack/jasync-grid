@@ -27,13 +27,13 @@
      * @param  {[type]} type    [description]
      * @return {[type]}         [description]
      */
-    show : function(message, type) {
+    show : function(message, type, timeout) {
       return noty({
         layout: 'bottomLeft',
         text : message,
         type : type || 'info',
         dismissQueue: true,
-        timeout : 3000
+        timeout : timeout || 3000
       });
     },
 
@@ -54,7 +54,7 @@
      * @return {[type]}         [description]
      */
     error : function(message) {
-      jUtility.msg.show(message,'error');
+      jUtility.msg.show(message,'error', 10000);
     }, // end fn
 
     /**

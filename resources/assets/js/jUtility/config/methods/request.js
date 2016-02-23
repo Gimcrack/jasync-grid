@@ -52,8 +52,8 @@
         url : null,
         data : {},
         success : function() { },
-        fail : function() { },
-        always : jUtility.callback.displayResponseErrors,
+        always : function() { },
+        fail : jUtility.callback.displayResponseErrors,
         complete : function() {}
       } , requestOptions );
 
@@ -77,8 +77,8 @@
           url : null,
           data : {},
           success : function() { },
-          fail : function() { },
-          always : jUtility.callback.displayResponseErrors,
+          fail : jUtility.callback.displayResponseErrors,
+          always : function() { },
           complete : function() {}
         } , requestOptions );
 
@@ -106,8 +106,8 @@
           url : null,
           data : {},
           success : function() { },
-          fail : function() { },
-          always : jUtility.callback.displayResponseErrors,
+          always : function() { },
+          fail : jUtility.callback.displayResponseErrors,
           complete : function() {}
         } , requestOptions );
 
@@ -140,8 +140,8 @@
           url : null,
           data : {},
           success : function() { },
-          fail : function() { },
-          always : jUtility.callback.displayResponseErrors,
+          always : function() { },
+          fail : jUtility.callback.displayResponseErrors,
           complete : function() {}
         } , requestOptions );
 

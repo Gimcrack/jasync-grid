@@ -70,7 +70,7 @@ module.exports = function( options ) {
         _.each( self.oInpts, function( o, i ) {
           // ignore disabled elements
           if ( !! ( o.$().prop('disabled') || o.$().hasClass('disabled') ) ) return false;
-          
+
           ret[i] = o.fn.serialize();
         });
         return ret;
@@ -393,19 +393,20 @@ module.exports = function( options ) {
        * @return {[type]}        [description]
        */
       processField : function( params, target, value, isArrayFormField ) {
-        var inpt;
+        var inpt, inpt_name = params.name.replace('[]','');
 
         jApp.log('B. Processing Field');
-        jApp.log(params);
-
-        // check if the type is array
-        //if (params.type == 'array') return self.fn.processArrayField(params, target);
-
-        jApp.log(params);
-
         inpt = new jInput( { atts : params, form : self} );
-        jApp.log(inpt);
-        if ( ! isArrayFormField ) self.oInpts[params.name.replace('[]','')] = inpt;
+
+        if ( ! isArrayFormField ) {
+          self.oInpts[inpt_name] = inpt;
+        } else if ( typeof self.oInpts[inpt_name] !== 'undefined' ) {
+
+          if ( typeof self.oInpts[inpt_name].oInpts === 'undefined' ) {
+            self.oInpts[inpt_name].oInpts = [];
+          }
+          self.oInpts[inpt_name].oInpts.push(inpt);
+        }
         inpt.fn.val( value );
         target.append( inpt.fn.handle() );
         //if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
@@ -532,7 +533,8 @@ module.exports = function( options ) {
           btnFooter.append( inpt.clone() );
 				});
 
-        self.DOM.$Inpts.append([btnPanel, btnFooter]);
+        //self.DOM.$Inpts.append([btnPanel, btnFooter]);
+        self.DOM.$Inpts.append(btnFooter);
 			}, //end fn
 
       /**

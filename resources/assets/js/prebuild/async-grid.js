@@ -8419,19 +8419,21 @@ module.exports = function (options) {
      * @return {[type]}        [description]
      */
     processField: function processField(params, target, value, isArrayFormField) {
-      var inpt;
+      var inpt,
+          inpt_name = params.name.replace('[]', '');
 
       jApp.log('B. Processing Field');
-      jApp.log(params);
-
-      // check if the type is array
-      //if (params.type == 'array') return self.fn.processArrayField(params, target);
-
-      jApp.log(params);
-
       inpt = new jInput({ atts: params, form: self });
-      jApp.log(inpt);
-      if (!isArrayFormField) self.oInpts[params.name.replace('[]', '')] = inpt;
+
+      if (!isArrayFormField) {
+        self.oInpts[inpt_name] = inpt;
+      } else if (typeof self.oInpts[inpt_name] !== 'undefined') {
+
+        if (typeof self.oInpts[inpt_name].oInpts === 'undefined') {
+          self.oInpts[inpt_name].oInpts = [];
+        }
+        self.oInpts[inpt_name].oInpts.push(inpt);
+      }
       inpt.fn.val(value);
       target.append(inpt.fn.handle());
       //if (params.readonly === 'readonly') self.readonlyFields.push(params.name);
@@ -8563,7 +8565,8 @@ module.exports = function (options) {
         btnFooter.append(inpt.clone());
       });
 
-      self.DOM.$Inpts.append([btnPanel, btnFooter]);
+      //self.DOM.$Inpts.append([btnPanel, btnFooter]);
+      self.DOM.$Inpts.append(btnFooter);
     }, //end fn
 
     /**
@@ -9199,6 +9202,16 @@ module.exports = ['_enabled', '_label', 'data-fieldset', 'data-ordering', 'data-
       };
 
       return {
+
+            /**
+             * Is the form field an array input
+             * @param  {[type]} oInpt [description]
+             * @return {[type]}       [description]
+             */
+            isArrayFormField: function isArrayFormField() {
+                  return !!self.arrayField;
+            }, //end fn
+
             /**
              * Process array field from parameters
              * @method function
@@ -10054,6 +10067,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      * @return {[type]} [description]
      */
     multiselectRefresh: function multiselectRefresh() {
+      var inpt_name = self.options.atts.name.replace('[]', ''),
+          oInpts,
+          data;
+
       if (!self.options.extData) {
         return false;
       }
@@ -10061,15 +10078,31 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       $(this).prop('disabled', true).find('i').addClass('fa-spin');
 
       self.$().attr('data-tmpVal', self.$().val() || '').val('').multiselect('refresh');
-      //.multiselect('disable');
 
-      self.fn.getExtOptions(true, function () {
-        jUtility.$currentForm().find('.btn.btn-refresh').prop('disabled', false).find('i').removeClass('fa-spin').end().end().find('[data-tmpVal]').each(function (i, elm) {
-          $(elm).val($(elm).attr('data-tmpVal')).multiselect('enable').multiselect('refresh').multiselect('rebuild').removeAttr('data-tmpVal');
+      if (!!self.$().closest('.array-field-container').length) {
+        data = self.$().closest('.array-field-container').data() || {};
 
-          //.data('jInput').fn.multiselect();
-        });
+        if (data['jInput']['oInpts'] !== 'undefined') {
+          _.each(data.jInput.oInpts, function (o) {
+            o.fn.getExtOptions(true);
+          });
+        }
+      }
+
+      self.fn.getExtOptions(true, function (newOptions) {
+        jUtility.$currentForm().find('.btn.btn-refresh').prop('disabled', false).find('i').removeClass('fa-spin').end().end().find('[data-tmpVal]').each(self.fn.multiselectRefreshCallback);
       });
+    }, // end fn
+
+    /**
+     * Refresh the multiselect callback
+     * @method function
+     * @param  {[type]} i   [description]
+     * @param  {[type]} elm [description]
+     * @return {[type]}     [description]
+     */
+    multiselectRefreshCallback: function multiselectRefreshCallback(i, elm) {
+      $(elm).val($(elm).attr('data-tmpVal')).multiselect('enable').multiselect('refresh').multiselect('rebuild').removeAttr('data-tmpVal');
     }, // end fn
 
     /**
@@ -13327,6 +13360,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     checkout: function checkout(response) {
       if (!jUtility.isResponseErrors(response)) {
         jUtility.msg.success('Record checked out for editing.');
+        jApp.activeGrid.temp.checkedOut = true;
         jUtility.setupFormContainer();
         jUtility.getCheckedOutRecords();
       }
@@ -13339,7 +13373,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      */
     checkin: function checkin(response) {
       if (jUtility.isResponseErrors(response)) {
-        jUtility.msg.warning(jUtility.getErrorMessage(response));
+        console.warn(jUtility.getErrorMessage(response));
       }
       jUtility.getCheckedOutRecords();
       jUtility.closeCurrentForm();
@@ -13351,10 +13385,19 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      * @param  {[type]} response [description]
      * @return {[type]}          [description]
      */
-    displayResponseErrors: function displayResponseErrors(response) {
+    displayResponseErrors: function displayResponseErrors(res) {
+
+      var response = res.responseJSON || res;
+
+      console.log('response', response);
+      jApp.log('Checking is response has errors.');
       if (jUtility.isResponseErrors(response)) {
+        jApp.log('Response has errors. Displaying error.');
+        console.warn(jUtility.getErrorMessage(response));
         jUtility.msg.clear();
         jUtility.msg.error(jUtility.getErrorMessage(response));
+      } else {
+        jApp.log('Response does not have errors.');
       }
     }, //end fn
 
@@ -16286,13 +16329,13 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      * @param  {[type]} type    [description]
      * @return {[type]}         [description]
      */
-    show: function show(message, type) {
+    show: function show(message, type, timeout) {
       return noty({
         layout: 'bottomLeft',
         text: message,
         type: type || 'info',
         dismissQueue: true,
-        timeout: 3000
+        timeout: timeout || 3000
       });
     },
 
@@ -16313,7 +16356,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      * @return {[type]}         [description]
      */
     error: function error(message) {
-      jUtility.msg.show(message, 'error');
+      jUtility.msg.show(message, 'error', 10000);
     }, // end fn
 
     /**
@@ -16455,8 +16498,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       url: null,
       data: {},
       success: function success() {},
-      fail: function fail() {},
-      always: jUtility.callback.displayResponseErrors,
+      always: function always() {},
+      fail: jUtility.callback.displayResponseErrors,
       complete: function complete() {}
     }, requestOptions);
 
@@ -16476,8 +16519,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       url: null,
       data: {},
       success: function success() {},
-      fail: function fail() {},
-      always: jUtility.callback.displayResponseErrors,
+      fail: jUtility.callback.displayResponseErrors,
+      always: function always() {},
       complete: function complete() {}
     }, requestOptions);
 
@@ -16501,8 +16544,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       url: null,
       data: {},
       success: function success() {},
-      fail: function fail() {},
-      always: jUtility.callback.displayResponseErrors,
+      always: function always() {},
+      fail: jUtility.callback.displayResponseErrors,
       complete: function complete() {}
     }, requestOptions);
 
@@ -16531,8 +16574,8 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       url: null,
       data: {},
       success: function success() {},
-      fail: function fail() {},
-      always: jUtility.callback.displayResponseErrors,
+      always: function always() {},
+      fail: jUtility.callback.displayResponseErrors,
       complete: function complete() {}
     }, requestOptions);
 
