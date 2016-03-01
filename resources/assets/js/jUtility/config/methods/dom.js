@@ -952,6 +952,30 @@
     },
 
     /**
+     * Update the grid footer message
+     * @method function
+     * @return {[type]} [description]
+     */
+    updateGridFooter : function() {
+      var target = $('.data-footer-message'),
+          self = jApp.activeGrid,
+          data = self.dataGrid,
+          message = '<div style="padding:6px;" class="alert-warning"><i class="fa fa-fw fa-info"></i> Records ' + data.from + ' - ' + data.to + ' of ' + data.total + ' total</div>';
+
+      target.html(message);
+
+    }, // end fn
+
+    /**
+     * Clear the grid footer
+     * @method function
+     * @return {[type]} [description]
+     */
+    clearGridFooter : function() {
+      $('.data-footer-message').html('');
+    }, // end fn
+
+    /**
      * Clear the menus so they can be rebuilt
      * @method function
      * @return {[type]} [description]
@@ -1020,7 +1044,7 @@
 
       //sort buttons by data-order
       if (!!order) {
-        var btns = target.find('.btn');
+        var btns = target.find('[data-order]');
 
         btns.detach().sort( function(a,b) {
           var an = +a.getAttribute('data-order'),
@@ -1047,6 +1071,25 @@
      */
     buildLnkMenu : function(collection, target, order) {
       jUtility.DOM.buildMenu(collection, target, 'links', order);
+    }, // end fn
+
+    /**
+     * Create a text input for a menu
+     * @method function
+     * @param  {[type]} o [description]
+     * @return {[type]}   [description]
+     */
+    createMenuText : function( o ) {
+      var $input, $div = $('<div/>', { style : 'position:relative', 'data-order' : o['data-order'] })
+        .html('<button style="display:none;" class="btn btn-link btn-clear-search btn-toggle">Reset</button>');
+
+      $input = $('<input/>', _.omit(o,'data-order') );
+
+      $div.prepend($input);
+
+      o.ignore = true;
+
+      return $div;
     }, // end fn
 
     /**
@@ -1116,6 +1159,9 @@
     createMenuButton : function( params ) {
       var $btn, $btn_a, $btn_choice, $ul;
 
+      if ( !! params.type && params.type == 'text' ) {
+        return jUtility.DOM.createMenuText(params);
+      }
 
       if ( typeof params[0] === 'object') { // determine if button is a dropdown menu
 

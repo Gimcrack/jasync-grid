@@ -132,17 +132,17 @@
     var template,
         templateFunctions = $.extend(true, {}, jApp.cellTemplates, jApp.opts().templates);
 
+    if (typeof templateFunctions[column] === 'function') {
+      template = templateFunctions[column];
+      value = template(value);
+    }
+
     if (value == null) {
       value = '';
     }
 
     if (value.toString().toLowerCase() === 'null') {
       return '';
-    }
-
-    if (typeof templateFunctions[column] === 'function') {
-      template = templateFunctions[column];
-      value = template(value);
     }
 
     if (value.toString().trim() === '') {

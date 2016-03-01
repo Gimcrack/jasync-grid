@@ -46,10 +46,6 @@
     boot : jUtility.DOM.applyHeaderFilters
   },
 
-  "button.close, .btn-cancel" : {
-    click : jUtility.exitCurrentForm
-  },
-
   ".tbl-sort" : {
     click : function() {
       var $btn, $btnIndex, $desc;
@@ -89,6 +85,59 @@
 
       // perform the sort on the table rows
       jUtility.DOM.sortByCol( $btnIndex, $desc );
+    }
+  },
+
+  ".btn-clear-search" : {
+    click : function() {
+      var $search = $(this).closest('div').find('#search');
+
+      $search.val('').keyup();
+
+    }
+  },
+
+  "#search" : {
+
+    blur : function() {
+      var val = $(this).val();
+
+      if ( !! val.length ) {
+        $(this)
+          .closest('div').find('.btn-clear-search')
+          .show();
+      } else {
+        $(this).animate({ width: 100}, 'slow')
+          .closest('div').find('.btn-clear-search')
+          .hide();
+      }
+    },
+
+    keyup : function(e) {
+      var delay = ( e.which === 13 ) ? 70 : 700,
+          val = $(this).val();
+
+      jApp.activeGrid.dataGrid.requestOptions.data['q'] = val;
+
+      if ( !! val.length ) {
+        $(this).animate({ width: 300}, 'slow')
+          .closest('div').find('.btn-clear-search')
+          .show();
+      } else {
+        $(this).animate({ width: 100}, 'slow')
+          .closest('div').find('.btn-clear-search')
+          .hide();
+      }
+
+      jUtility.timeout({
+        key : 'updateGridSearch',
+        delay : delay,
+        fn : function() {
+          $(this).focus();
+          jUtility.executeGridDataRequest(true);
+        }
+      });
+
     }
   },
 

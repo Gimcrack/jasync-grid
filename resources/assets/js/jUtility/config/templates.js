@@ -36,6 +36,7 @@
                                 <div class="table-foot">
                                   <div class="row">
                                     <div class="col-md-3">
+                                      <div class="data-footer-message pull-left"></div>
                                       <div style="display:none" class="ajax-activity-preloader pull-left"></div>
                                       <div class="divRowsPerPage pull-right">
                                         <select style="width:180px;display:inline-block" type="select" name="RowsPerPage" id="RowsPerPage" class="form-control">
@@ -49,7 +50,9 @@
                                       </div>
                                     </div>
                                     <div class="col-md-9">
+
                                       <div class="paging"></div>
+
                                     </div>
                                   </div>
                                 </div>

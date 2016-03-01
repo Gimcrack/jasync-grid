@@ -533,8 +533,8 @@ module.exports = function( options ) {
           btnFooter.append( inpt.clone() );
 				});
 
-        //self.DOM.$Inpts.append([btnPanel, btnFooter]);
-        self.DOM.$Inpts.append(btnFooter);
+        self.DOM.$Inpts.append([btnPanel, btnFooter]);
+        //self.DOM.$Inpts.append(btnFooter);
 			}, //end fn
 
       /**

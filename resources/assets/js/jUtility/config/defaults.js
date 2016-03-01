@@ -334,6 +334,15 @@
 
       },
 
+      search : {
+        type : 'text',
+        id : 'search',
+        name : 'search',
+        icon : 'fa-search',
+        placeholder : 'Search...',
+        'data-order' : 9998
+      },
+
       /**
        * Table status
        * @type {Object}

@@ -64,6 +64,8 @@
         return jUtility.DOM.dataErrorHandler();
       }
 
+
+
       // init vars
       self = jApp.aG();
 
@@ -76,6 +78,14 @@
       self.dataGrid.delta = ( !$.isEmptyObject(self.dataGrid.data) ) ?
         jUtility.deltaData(self.dataGrid.data,responseData) :
         responseData;
+
+      self.dataGrid.from = response.from;
+      self.dataGrid.to = response.to;
+      self.dataGrid.total = response.total;
+      self.dataGrid.current_page = response.current_page;
+      self.dataGrid.last_page = response.last_page;
+
+      jUtility.DOM.updateGridFooter();
 
       self.dataGrid.data = responseData;
 

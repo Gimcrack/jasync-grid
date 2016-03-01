@@ -210,7 +210,7 @@
       },
 
       hostname : function(value) {
-        return _.nameButton(value, 'fa-server');
+        return _.nameButton(value, 'fa-building-o');
       },
 
       databaseName : function(value) {
@@ -246,7 +246,7 @@
 						flags.push('<div class="label label-primary label-sm" style="margin:0 3px">Prod</div>');
 					}
 
-					return _.nameButton(r.name.toUpperCase(),'fa-server') + cname + flags.join(' ');
+					return _.nameButton(r.name.toUpperCase(),'fa-building-o') + cname + flags.join(' ');
       },
 
       username : function(value) {

@@ -165,22 +165,28 @@
    * @method function
    * @return {[type]} [description]
    */
-  executeGridDataRequest : function() {
+  executeGridDataRequest : function( search ) {
     jApp.log('6.3 Setting up options for the data request');
     var params = $.extend(true,  jApp.aG().dataGrid.requestOptions,
         {
           success : jUtility.callback.update,
           fail 		: jUtility.gridDataRequestCallback.fail,
-          always 	: jUtility.gridDataRequestCallback.always,
+          always 	: ( !! search ) ? jUtility.gridDataRequestCallback.search : jUtility.gridDataRequestCallback.always,
           complete: jUtility.gridDataRequestCallback.complete
         } ),
         r = jApp.aG().dataGrid.requests;
+
+    jUtility.DOM.clearGridFooter();
 
     // show the preloader
     jUtility.DOM.activityPreloader('show');
 
     // execute the request
     jApp.log('6.4 Executing ajax request');
+
+    jUtility.killPendingRequest('gridData');
+
+
     r.gridData = jUtility.getJSON( params );
   }, //end fn
 
@@ -240,7 +246,23 @@
           jApp.aG().store.set('data_' + jApp.opts().table,response);
       }
       jUtility.DOM.togglePreloader(true);
-      jUtility.buildMenus();
+
+    }, // end fn
+
+    /**
+     * Execute after grid data search request
+     * @method function
+     * @param  {[type]} response [description]
+     * @return {[type]}          [description]
+     */
+    search : function(response) {
+      jUtility.callback.displayResponseErrors(response);
+      if (jUtility.isCaching()) {
+          jApp.aG().store.set('data_' + jApp.opts().table,response);
+      }
+      jUtility.DOM.togglePreloader(true);
+
+      $('#search').focus().val( $('#search').val() );
     }, // end fn
 
     /**
