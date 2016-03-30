@@ -9008,7 +9008,7 @@ module.exports = function (options) {
 			jUtility.getGridData();
 
 			jApp.log('7. Setting up intervals');
-			jUtility.setupIntervals();
+			//jUtility.setupIntervals();
 
 			jApp.log('8. Building Menus');
 			jUtility.buildMenus();
@@ -12722,7 +12722,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
   ".chk_all": {
     change: function change() {
-      jApp.aG().$().find('.chk_cid').prop('checked', $(this).prop('checked'));
+      var num_checked = jApp.aG().$().find('.chk_cid:visible:checked').length,
+          num_unchecked = jApp.aG().$().find('.chk_cid:visible:not(:checked)').length;
+
+      jApp.aG().$().find('.chk_cid:visible').prop('checked', num_checked <= num_unchecked);
       $('.chk_cid').eq(0).change();
     }
   },
@@ -16731,12 +16734,13 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     // show the preload if needed
     if (!!preload) {
       jUtility.DOM.togglePreloader();
-      jUtility.setupIntervals();
+      //jUtility.setupIntervals();
     }
+
+    jUtility.clearCountdownInterval();
 
     jApp.log('6.1 Starting Countdown timer');
     // start the countdown timer
-    jUtility.countdown();
 
     // kill the pending request if it's still going
     jUtility.killPendingRequest('gridData');
@@ -16802,6 +16806,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
      */
     complete: function complete() {
       jUtility.DOM.activityPreloader('hide');
+      jUtility.countdown();
     } } };
 
 },{}],79:[function(require,module,exports){

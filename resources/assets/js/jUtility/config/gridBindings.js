@@ -180,7 +180,10 @@
 
   ".chk_all" : {
     change : function() {
-      jApp.aG().$().find('.chk_cid').prop('checked',$(this).prop('checked'));
+      var num_checked   = jApp.aG().$().find('.chk_cid:visible:checked').length,
+          num_unchecked = jApp.aG().$().find('.chk_cid:visible:not(:checked)').length;
+
+      jApp.aG().$().find('.chk_cid:visible').prop('checked', ( num_checked <= num_unchecked ) );
       $('.chk_cid').eq(0).change();
     }
   },

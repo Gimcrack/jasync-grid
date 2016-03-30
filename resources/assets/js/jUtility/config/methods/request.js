@@ -200,12 +200,14 @@
     // show the preload if needed
     if (!!preload) {
       jUtility.DOM.togglePreloader();
-      jUtility.setupIntervals();
+      //jUtility.setupIntervals();
     }
+
+    jUtility.clearCountdownInterval();
 
     jApp.log('6.1 Starting Countdown timer');
     // start the countdown timer
-    jUtility.countdown();
+
 
     // kill the pending request if it's still going
     jUtility.killPendingRequest('gridData');
@@ -272,6 +274,7 @@
      */
     complete : function() {
       jUtility.DOM.activityPreloader('hide');
+      jUtility.countdown();
     }, // end fn
   }, // end callbacks
 }

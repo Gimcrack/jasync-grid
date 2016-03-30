@@ -100,7 +100,7 @@
 			jUtility.getGridData();
 
 			jApp.log('7. Setting up intervals');
-			jUtility.setupIntervals();
+			//jUtility.setupIntervals();
 
 			jApp.log('8. Building Menus');
 			jUtility.buildMenus();
