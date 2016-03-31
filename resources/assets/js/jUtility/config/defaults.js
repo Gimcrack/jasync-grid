@@ -168,6 +168,11 @@
     filter : '',										// where clause for query
 
     /**
+     * Scope of the query
+     */
+    scope : 'all',
+
+    /**
      * db columns to show
      * @type {Array}
      */

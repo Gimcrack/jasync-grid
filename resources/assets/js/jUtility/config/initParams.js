@@ -24,6 +24,7 @@
       url : jApp.prefixURL( jApp.aG().options.url ),
       data : {
         filter : jApp.aG().options.filter,
+        scope : jApp.aG().options.scope || 'all',
         filterMine : 0
       }
     },

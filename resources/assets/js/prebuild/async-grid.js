@@ -12066,6 +12066,11 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     filter: '', // where clause for query
 
     /**
+     * Scope of the query
+     */
+    scope: 'all',
+
+    /**
      * db columns to show
      * @type {Array}
      */
@@ -12841,6 +12846,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
       url: jApp.prefixURL(jApp.aG().options.url),
       data: {
         filter: jApp.aG().options.filter,
+        scope: jApp.aG().options.scope || 'all',
         filterMine: 0
       }
     },
