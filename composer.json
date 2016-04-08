@@ -1,6 +1,6 @@
 {
-    "name": "ingenious/async-grid",
-    "description": "Asynchronous JS Data Grids",
+    "name": "ingenious/terntables.js",
+    "description": "AJAX CRUD framework http://terntables.com",
     "type" : "library",
     "version" : "1.0",
     "license": "MIT",
