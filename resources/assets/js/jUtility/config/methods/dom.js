@@ -805,6 +805,9 @@
           tr = $('<div/>', { 'class' : 'table-row', 'data-identifier' : oRow[jApp.opts().pkey], 'data-jsonkey' : i } );
           appendTR = true;
 
+          // add the data to the row
+          tr.data('rowData',jApp.aG().dataGrid.data[i] );
+
           if (jUtility.isEditable()) {
 
 

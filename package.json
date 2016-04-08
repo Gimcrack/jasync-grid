@@ -1,7 +1,7 @@
 {
-  "name": "async-grid",
-  "version": "1.0.0",
-  "description": "Asynchronous Javascript Data Grids",
+  "name": "terntables.js",
+  "version": "2.1",
+  "description": "AJAX CRUD framework",
   "main": "index.js",
   "dependencies": {
     "bootstrap": "^3.3.6",
@@ -26,16 +26,17 @@
   },
   "keywords": [
     "ajax",
-    "aynchronous",
+    "asynchronous",
     "javascript",
-    "jquery"
+    "jquery",
+    "CRUD"
   ],
   "author": "Jeremy Bloomstrom",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Gimcrack/jasync-grid/issues"
+    "url": "https://github.com/Gimcrack/terntables.js/issues"
   },
-  "homepage": "https://github.com/Gimcrack/jasync-grid#readme",
+  "homepage": "http://terntables.com",
   "browserify": {
     "transform": [
       "browserify-global-shim"

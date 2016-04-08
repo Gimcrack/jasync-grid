@@ -561,7 +561,7 @@
    * @return {[type]}    [description]
    */
   checkin : function(id, model) {
-    
+
     if (!model) {
       model = jUtility.getActionModel();
     }
@@ -621,6 +621,23 @@
       return $(elm).closest('.table-row').attr('data-identifier');
     }).get();
 
+  }, // end fn
+
+  /**
+   * Get the data objects of the checked items
+   * @method function
+   * @param  {[type]} includeHidden [description]
+   * @return {[type]}               [description]
+   */
+  getCheckedObjects : function( includeHidden ){
+    var items = jUtility.getCheckedItems( includeHidden ),
+        ret = [];
+
+    _.each( items, function(val) {
+      ret.push( _.findWhere( jApp.activeGrid.dataGrid.data, { id : val } ) );
+    });
+
+    return ret;
   }, // end fn
 
   /**
