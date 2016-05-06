@@ -17,8 +17,6 @@ elixir(function(mix) {
 
     //scripts
     mix
-      .browserify('index.js', './resources/assets/js/prebuild/async-grid.js')
-      .scriptsIn('./resources/assets/js/prebuild/', './build/async-grid.js')
-      //.copy('./build/async-grid.js','../../dashboard-dev/vendor/ingenious/async-grid/build/async-grid.js');
-      .copy('./build/async-grid.js','../../dashboard-dev/public/js/async-grid.js');
+      .browserify('index.js', './resources/assets/js/prebuild/terntables-core.js')
+      .scriptsIn('./resources/assets/js/prebuild/', './build/terntables.js')
 });
