@@ -53,7 +53,7 @@
     var url, data;
 
     url = self.fn.getExtUrl();
-    data = {};
+    data = { };
 
     self.buildOptionsCallback = callback;
 

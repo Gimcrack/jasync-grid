@@ -80,7 +80,7 @@
           fail : jUtility.callback.displayResponseErrors,
           always : function() { },
           complete : function() {}
-        } , requestOptions );
+        } , requestOptions);
 
       jApp.log('6.5 ajax options set, executing ajax request');
       return $.getJSON(opts.url, opts.data, opts.success )
@@ -109,7 +109,7 @@
           always : function() { },
           fail : jUtility.callback.displayResponseErrors,
           complete : function() {}
-        } , requestOptions );
+        } , requestOptions);
 
       return $.ajax({
           url: opts.url,
@@ -143,7 +143,7 @@
           always : function() { },
           fail : jUtility.callback.displayResponseErrors,
           complete : function() {}
-        } , requestOptions );
+        } , requestOptions);
 
       return $.ajax({
           url: opts.url,

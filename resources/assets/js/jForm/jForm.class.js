@@ -73,7 +73,7 @@ module.exports = function( options ) {
 
           ret[i] = o.fn.serialize();
         });
-        return ret;
+        return $.extend(true,ret,{ api_token : $('[name=api_token]').attr('content') });
       }, // end fn
 
       /**
@@ -268,7 +268,7 @@ module.exports = function( options ) {
 
         $('.panel-overlay').show();
 
-				$.getJSON( jApp.prefixURL(url), {}, self.callback.getRowData )
+				$.getJSON( jApp.prefixURL(url), { api_token : $('[name=api_token]').attr('content') }, self.callback.getRowData )
           .fail( function() { console.error('There was a problem getting the row data');
 				})
         .always( function(response) {

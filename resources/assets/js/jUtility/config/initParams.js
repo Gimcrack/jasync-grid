@@ -23,7 +23,6 @@
     requestOptions : {
       url : jApp.prefixURL( jApp.aG().options.url ),
       data : {
-        api_token : $('[name=api_token]').attr('content'),
         filter : jApp.aG().options.filter,
         scope : jApp.aG().options.scope || 'all',
         filterMine : 0
