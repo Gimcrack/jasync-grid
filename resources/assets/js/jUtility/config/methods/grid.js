@@ -226,7 +226,7 @@
     $.ajaxSetup({
       headers: {
           'X-XSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-          'Authorization' : $('meta[name="api_token"]').attr('content')
+          'Authorization' : 'Bearer ' + $('meta[name="api_token"]').attr('content')
       }
     });
     jApp.log('4.1 Ajax Defaults Set');
