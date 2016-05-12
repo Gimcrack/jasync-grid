@@ -73,7 +73,11 @@
     dataEmptyHandler : function() {
       $('.table-cell.no-data').remove();
       jApp.aG().$().find('.table-body .table-row').remove();
-      $('<div/>', { class : 'table-cell no-data'}).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>').appendTo( jApp.tbl().find('#tbl_grid_body') );
+      $('<div/>', 
+        { class : 'table-cell no-data'}
+      ).html('<div class="alert alert-warning"> <i class="fa fa-fw fa-warning"></i> I did not find anything matching your query.</div>')
+      .appendTo( jApp.tbl().find('#tbl_grid_body') );
+
       jUtility.DOM.updateColWidths();
     }, // end fn
 
@@ -215,7 +219,7 @@
 
         jApp.tbl().find('.table-row[data-identifier]')
            .filter( function(i, row) {
-              return _.indexOf( identifiers, $(row).attr('data-identifier') ) === -1;
+              return _.indexOf( identifiers, (Number)($(row).attr('data-identifier')) ) === -1;
            }
         ).remove();
       }
@@ -641,8 +645,6 @@
      * @return {[type]} [description]
      */
     inspectSelected : function() {
-      console.log('loading...');
-
       jUtility.get( {
         url : jUtility.getCurrentRowInspectUrl(),
         success : jUtility.callback.inspectSelected,
@@ -777,82 +779,82 @@
     updateGrid : function() {
       // init vars
       var appendTR = false,
-        appendTD = false;
+        appendTD = false,
+        tr,
+        td, 
+        td_chk, 
+        chk_cid,
+        value,
+        $table = jApp.tbl();
 
-      if (!!jApp.aG().dataGrid.delta[0] && jApp.aG().dataGrid.delta[0][jApp.opts().pkey] === 'NoData') {
-        var tr = $('<div/>', { class : 'table-row tr-no-data'} ).append( $('<div/>', { class : 'table-cell'} ).html('No Data') );
-
-        jApp.tbl().find('.table-body').empty().append( tr );
-        return false;
-      }
+      jApp.log(' ---Updating The Grid--- ');
 
       // iterate through the changed data
-      $.each( jApp.aG().dataGrid.delta, function(i,oRow) {
+      $.each( jApp.activeGrid.dataGrid.delta, function(i,oRow) {
 
-        jApp.tbl().find('.table-body .tr-no-data').remove();
+        // remove the no-data placeholder
+        $table.find('.table-body .tr-no-data').remove();
 
         // save the current row.
         jApp.aG().currentRow = jApp.aG().dataGrid.data[i];
 
         // find row in the table if it exists
-        var	tr = jApp.tbl().find('.table-row[data-identifier="' + oRow[jApp.opts().pkey] + '"]');
+        tr = $table.find('.table-row[data-identifier="' + oRow[jApp.opts().pkey] + '"]');
+        console.log('find tr, attempt 1', tr )
 
         // try the json key if you can't find the row by the pkey
-        if (!tr.length) tr = jApp.tbl().find('.table-row[data-jsonkey=' + i + ']');
+        if (!tr.length) 
+        {
+          tr = $table.find('.table-row[data-jsonkey=' + i + ']');
+          console.log('find tr, attempt 2', tr)
+        }
 
         // create the row if it does not exist
-        if (!tr.length) {
+        if (!tr.length) 
+        {
           tr = $('<div/>', { 'class' : 'table-row', 'data-identifier' : oRow[jApp.opts().pkey], 'data-jsonkey' : i } );
+          console.log('couldnt find tr, making a new one', tr );
           appendTR = true;
 
           // add the data to the row
           tr.data('rowData',jApp.aG().dataGrid.data[i] );
 
-          if (jUtility.isEditable()) {
-
-
-            var td_chk = $('<div/>', { 'class' : 'table-cell', "nowrap" : "nowrap",  "style" : "position:relative;"} );
-            //var td_chk = $('<div/>', { 'class' : 'table-cell', "nowrap" : "nowrap" } );
-            if (!!jApp.opts().cellAtts['*']) {
-              $.each( jApp.opts().cellAtts['*'], function(at, fn) {
-                td_chk.attr( at,fn() );
-              });
-            }
-
-            var collapseMenu = '';
-
-            var	tdCheck = (!!oRow[jApp.opts().pkey]) ? '<input type="checkbox" class="chk_cid" name="cid[]" />' : '';
-
-            var lblCheck = '<label class="btn btn-default pull-right lbl-td-check" style="margin-left:20px;"> ' + tdCheck + '</label>';
-
-            td_chk.html( 	collapseMenu +
-                      lblCheck +
-                    '<div class="rowMenu-container"></div> \
-                    </div>&nbsp;'
-            );
-            tr.append(td_chk);
+          td_chk = $('<div/>', { 'class' : 'table-cell', "nowrap" : "nowrap",  "style" : "position:relative;"} );
+          
+          // apply the global cell attributes
+          if ( !! jApp.opts().cellAtts['*']) {
+            $.each( jApp.opts().cellAtts['*'], function(at, fn) {
+              td_chk.attr( at,fn() );
+            });
           }
+
+          chk_cid = ( !! oRow[jApp.opts().pkey]) ? '<input type="checkbox" class="chk_cid" name="cid[]" />' : '';
+
+          td_chk.html( 	'<label class="btn btn-default pull-right lbl-td-check" style="margin-left:20px;"> ' + chk_cid + '</label> \
+                  <div class="rowMenu-container"></div> \
+                  </div>&nbsp;'
+          );
+
+          tr.append(td_chk);
+          
 
         } else { // update the row data- attributes
           tr.attr('data-identifier',oRow[jApp.opts().pkey]).attr('data-jsonkey',i);
 
-          var td_chk = tr.find('.table-cell').eq(0);
+          td_chk = tr.find('.table-cell').eq(0);
           // update the attributes on the first cell
-          if (!!jApp.opts().cellAtts['*']) {
+          
+          if ( !! jApp.opts().cellAtts['*']) {
             $.each( jApp.opts().cellAtts['*'], function(at, fn) {
               td_chk.attr( at,fn() );
             });
           }
         }
 
-
-
         // iterate through the columns
         //$.each( jApp.aG().currentRow, function(key, value) {
         $.each( jApp.opts().columns, function(i, key) {
 
-          // get the value of the current key
-          var value = jApp.aG().currentRow[key];
 
           // determine if the column is hidden
           if ( _.indexOf(jApp.opts().hidCols, key) !== -1) {
@@ -860,7 +862,7 @@
           }
 
           // find the cell if it exists
-          var td = tr.find('.table-cell[data-identifier="' + key + '"]');
+          td = tr.find('.table-cell[data-identifier="' + key + '"]');
 
           // create the cell if needed
           if (!td.length) {
@@ -882,15 +884,15 @@
           }
 
           // prepare the value
-          value = jUtility.prepareValue(value,key);
+          value = jUtility.prepareValue( jApp.aG().currentRow[key], key);
 
-          if ( td.html().trim() !== value.toString().trim() ) {
+          if ( td.html().trim() !== value.toString().trim() ) 
+          {
             // set the cell value
             td
              .html(value)
              .addClass('changed');
           }
-
 
           // add the cell to the row if needed
           if (appendTD) {
@@ -901,18 +903,13 @@
 
         // add the row if needed
         if (appendTR) {
-          jApp.tbl().find('.table-body').append(tr);
+          console.log('adding the row to the dom', $('#tbl_grid_body').append(tr));
+          //$('#tbl_grid_body').append(tr);
         }
       }); // end each
 
       // reset column widths
       jUtility.DOM.updateColWidths();
-
-      // animate changed cells
-
-        // .stop()
-        // .css("background-color", "#FFFF9C")
-        // .animate({ backgroundColor: 'transparent'}, 1500, function() { $(this).removeAttr('style');  } );
 
 
       setTimeout( function() { jApp.tbl().find('.table-cell.changed').removeClass('changed'); }, 2000 );
@@ -951,7 +948,7 @@
       // process pagination
       jUtility.updatePagination();
 
-
+      jApp.log('--done updating grid')
     },
 
     /**

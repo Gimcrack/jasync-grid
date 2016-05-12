@@ -4,21 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "234be996950e09fb285c2eb544cce22b",
-    "content-hash": "b866dfed29f2c84436a64f6716f894e5",
+    "hash": "4e44b21c11ff855b91fc1dc2fa984aad",
+    "content-hash": "039aba6c68d0f83aee2ac1d810b4e2e7",
     "packages": [
         {
             "name": "components/jquery",
-            "version": "2.1.4",
+            "version": "2.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/components/jquery.git",
-                "reference": "7b1d1104656a092423fbfba13c5920e9bbba290c"
+                "reference": "7894addbce3c4de6f82449610e6f8e168b49e9b0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/components/jquery/zipball/7b1d1104656a092423fbfba13c5920e9bbba290c",
-                "reference": "7b1d1104656a092423fbfba13c5920e9bbba290c",
+                "url": "https://api.github.com/repos/components/jquery/zipball/7894addbce3c4de6f82449610e6f8e168b49e9b0",
+                "reference": "7894addbce3c4de6f82449610e6f8e168b49e9b0",
                 "shasum": ""
             },
             "type": "component",
@@ -47,7 +47,7 @@
             ],
             "description": "jQuery JavaScript Library",
             "homepage": "http://jquery.com",
-            "time": "2015-05-08 05:04:47"
+            "time": "2016-02-24 08:16:25"
         },
         {
             "name": "ingenious/bootstrap-multiselect",
@@ -117,12 +117,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gimcrack/jquery-validator.git",
-                "reference": "17e83bb728b74de80edb002b16c91e7bb5974397"
+                "reference": "da0bba398e8e4d3bf950c65f9df393203733b78f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gimcrack/jquery-validator/zipball/17e83bb728b74de80edb002b16c91e7bb5974397",
-                "reference": "17e83bb728b74de80edb002b16c91e7bb5974397",
+                "url": "https://api.github.com/repos/Gimcrack/jquery-validator/zipball/da0bba398e8e4d3bf950c65f9df393203733b78f",
+                "reference": "da0bba398e8e4d3bf950c65f9df393203733b78f",
                 "shasum": ""
             },
             "type": "library",
@@ -137,7 +137,7 @@
                 }
             ],
             "description": "Custom js form validation class",
-            "time": "2015-12-23 01:56:28"
+            "time": "2016-01-05 17:36:08"
         },
         {
             "name": "ingenious/underscore",

@@ -158,7 +158,6 @@
    */
   exitCurrentForm : function() {
     if ( jUtility.needsCheckin() )  {
-      console.log('checking in record');
       return jUtility.checkin( jUtility.getCurrentRowId() );
     }
 
@@ -242,7 +241,6 @@
       formData.append(inpt.name, file, file.name);
     });
 
-    console.log('formData',formData);
 
     $btn = jUtility.$currentFormWrapper().find('.btn-go');
 

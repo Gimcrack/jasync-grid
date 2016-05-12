@@ -13,7 +13,7 @@
         }
     ],
     "require": {
-        "components/jquery": "^2.1",
+        "components/jquery": "^2.1.1",
         "ingenious/underscore" : "dev-master",
         "ingenious/bootstrap-multiselect" : "dev-master",
         "ingenious/jquery-bootpag" : "dev-master",

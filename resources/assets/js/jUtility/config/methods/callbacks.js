@@ -16,7 +16,6 @@
     inspectSelected : function(response) {
       $('#div_inspect').find('.panel-body .target').html(response);
       jUtility.maximizeCurrentForm();
-      console.log('loaded');
     }, // end fn
 
     /**
@@ -64,8 +63,6 @@
         return jUtility.DOM.dataErrorHandler();
       }
 
-
-
       // init vars
       self = jApp.aG();
 
@@ -75,7 +72,7 @@
       // TODO - handle pagination of api data and lazy loading
 
       // detect changes in data;
-      self.dataGrid.delta = ( !$.isEmptyObject(self.dataGrid.data) ) ?
+      self.dataGrid.delta = ( ! $.isEmptyObject(self.dataGrid.data) ) ?
         jUtility.deltaData(self.dataGrid.data,responseData) :
         responseData;
 
@@ -103,14 +100,13 @@
         jUtility.DOM.removeRows(true);
       }
 
+      jUtility.DOM.updateGrid();
+
       // show the preloader, then update the contents
       jUtility.DOM.togglePreloader();
 
-      // update the DOM
-      jUtility.DOM.updateGrid();
-
       // remove the rows that may have been removed from the data
-      jUtility.DOM.removeRows();
+      jUtility.DOM.removeRows();      
       jUtility.buildMenus();
       jUtility.DOM.togglePreloader(true);
       self.options.removeAllRows = false;
@@ -122,12 +118,12 @@
         }
         self.loaded = true;
       }
+      
+      // adjust permissions
+      jUtility.callback.getPermissions( jApp.aG().permissions );
 
       // adjust column widths
       jUtility.DOM.updateColWidths();
-
-      // adjust permissions
-      jUtility.callback.getPermissions( jApp.aG().permissions );
 
       // perform sort if needed
       jUtility.DOM.sortByCol();
@@ -185,7 +181,6 @@
 
       var response = res.responseJSON || res;
 
-      console.log('response',response );
       jApp.log('Checking is response has errors.');
       if ( jUtility.isResponseErrors(response) ) {
         jApp.log('Response has errors. Displaying error.')

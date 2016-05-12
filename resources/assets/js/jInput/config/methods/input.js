@@ -178,7 +178,6 @@
           return self.fn;
 
         case 'tokens' :
-          console.log( ' --tokens', _.pluck(value, 'name') );
           self.DOM.$inpt.tokenfield('setTokens', _.pluck(value, 'name'));
 
           return self.fn;

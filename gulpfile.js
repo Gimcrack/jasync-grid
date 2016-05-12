@@ -19,4 +19,5 @@ elixir(function(mix) {
     mix
       .browserify('index.js', './resources/assets/js/prebuild/terntables-core.js')
       .scriptsIn('./resources/assets/js/prebuild/', './build/terntables.js')
+      //.copy('./build/terntables.js','../../dashboard-dev/public/js/terntables.js')
 });
