@@ -117,12 +117,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/Gimcrack/jquery-validator.git",
-                "reference": "91ec650495dd1238419f010c63dc7e0e314b820a"
+                "reference": "044be2ef3a1dfdcd5d56262fe628018a4cbe86d7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Gimcrack/jquery-validator/zipball/91ec650495dd1238419f010c63dc7e0e314b820a",
-                "reference": "91ec650495dd1238419f010c63dc7e0e314b820a",
+                "url": "https://api.github.com/repos/Gimcrack/jquery-validator/zipball/044be2ef3a1dfdcd5d56262fe628018a4cbe86d7",
+                "reference": "044be2ef3a1dfdcd5d56262fe628018a4cbe86d7",
                 "shasum": ""
             },
             "type": "library",
@@ -137,7 +137,7 @@
                 }
             ],
             "description": "Custom js form validation class",
-            "time": "2016-07-11 23:53:09"
+            "time": "2016-07-12 00:20:35"
         },
         {
             "name": "ingenious/underscore",
