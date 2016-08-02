@@ -230,6 +230,45 @@
     }
   },
 
+  ".btn-firstPage" : {
+    click : function() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data;
+
+      data.page = 1;
+      jUtility.executeGridDataRequest();
+    },
+  },
+
+  ".btn-prevPage" : {
+    click : function() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data;
+
+      data.page = ( isNaN(data.page) || data.page < 2 ) ? 1 : data.page-1;
+      jUtility.executeGridDataRequest();
+    },
+  },
+
+  ".btn-nextPage" : {
+    click : function() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data,
+        last_page = jApp.activeGrid.dataGrid.last_page;
+
+      data.page = ( isNaN(data.page) || data.page < 2 ) ? 2 : +data.page+1;
+      data.page = ( data.page > last_page ) ? last_page : data.page;
+      jUtility.executeGridDataRequest();
+    },
+  },
+
+  ".btn-lastPage" : {
+    click : function() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data,
+        last_page = jApp.activeGrid.dataGrid.last_page;
+
+      data.page = last_page;
+      jUtility.executeGridDataRequest();
+    },
+  },
+
   ".btn-editOther" : {
     click : jUtility.DOM.editOtherButtonHandler
   },

@@ -323,37 +323,33 @@
 
       firstPage : {
           type : 'button',
-          class : 'btn btn-success',
+          class : 'btn btn-success btn-firstPage',
           icon : 'fa-angle-double-left',
           label : '',
-          fn : 'firstPage',
           'data-order' : 3
       },
       
       prevPage : {
         type : 'button',
-        class : 'btn btn-success',
+        class : 'btn btn-success btn-prevPage',
         icon : 'fa-angle-left',
         label : '',
-        fn : 'prevPage',
         'data-order' : 4
       },
       
       nextPage : {
         type : 'button',
-        class : 'btn btn-success',
+        class : 'btn btn-success btn-nextPage',
         icon : 'fa-angle-right',
         label : '',
-        fn : 'nextPage',
         'data-order' : 5
       },
       
       lastPage : {
         type : 'button',
-        class : 'btn btn-success',
+        class : 'btn btn-success btn-lastPage',
         icon : 'fa-angle-double-right',
         label : '',
-        fn : 'lastPage',
         'data-order' : 6
       },
 

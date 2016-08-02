@@ -21476,37 +21476,33 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
       firstPage: {
         type: 'button',
-        class: 'btn btn-success',
+        class: 'btn btn-success btn-firstPage',
         icon: 'fa-angle-double-left',
         label: '',
-        fn: 'firstPage',
         'data-order': 3
       },
 
       prevPage: {
         type: 'button',
-        class: 'btn btn-success',
+        class: 'btn btn-success btn-prevPage',
         icon: 'fa-angle-left',
         label: '',
-        fn: 'prevPage',
         'data-order': 4
       },
 
       nextPage: {
         type: 'button',
-        class: 'btn btn-success',
+        class: 'btn btn-success btn-nextPage',
         icon: 'fa-angle-right',
         label: '',
-        fn: 'nextPage',
         'data-order': 5
       },
 
       lastPage: {
         type: 'button',
-        class: 'btn btn-success',
+        class: 'btn btn-success btn-lastPage',
         icon: 'fa-angle-double-right',
         label: '',
-        fn: 'lastPage',
         'data-order': 6
       },
 
@@ -22074,6 +22070,45 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         return jUtility.actionHelper('edit' + jUtility.getOtherButtonModel());
       }
       return jUtility.actionHelper('edit');
+    }
+  },
+
+  ".btn-firstPage": {
+    click: function click() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data;
+
+      data.page = 1;
+      jUtility.executeGridDataRequest();
+    }
+  },
+
+  ".btn-prevPage": {
+    click: function click() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data;
+
+      data.page = isNaN(data.page) || data.page < 2 ? 1 : data.page - 1;
+      jUtility.executeGridDataRequest();
+    }
+  },
+
+  ".btn-nextPage": {
+    click: function click() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data,
+          last_page = jApp.activeGrid.dataGrid.last_page;
+
+      data.page = isNaN(data.page) || data.page < 2 ? 2 : +data.page + 1;
+      data.page = data.page > last_page ? last_page : data.page;
+      jUtility.executeGridDataRequest();
+    }
+  },
+
+  ".btn-lastPage": {
+    click: function click() {
+      var data = jApp.activeGrid.dataGrid.requestOptions.data,
+          last_page = jApp.activeGrid.dataGrid.last_page;
+
+      data.page = last_page;
+      jUtility.executeGridDataRequest();
     }
   },
 
@@ -25862,51 +25897,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   hideBootpag: function hideBootpag() {
     jApp.tbl().find('.paging').hide();
     jApp.tbl().find('[name=RowsPerPage]').parent().hide();
-  }, // end fn
-
-  /**
-   * Get the first page of results from the server
-   */
-  firstPage: function firstPage() {
-    var data = jApp.activeGrid.dataGrid.requestOptions.data;
-
-    data.page = 1;
-    jUtility.executeGridDataRequest();
-  },
-
-  /**
-   * Get the previous page of results from the server
-   */
-  prevPage: function prevPage() {
-    var data = jApp.activeGrid.dataGrid.requestOptions.data;
-
-    data.page = isNaN(data.page) || data.page < 2 ? 1 : data.page - 1;
-    jUtility.executeGridDataRequest();
-  },
-
-  /**
-   * Get the next page of results from the server
-   */
-  nextPage: function nextPage() {
-    var data = jApp.activeGrid.dataGrid.requestOptions.data,
-        last_page = jApp.activeGrid.dataGrid.last_page;
-
-    data.page = isNaN(data.page) || data.page < 2 ? 2 : +data.page + 1;
-    data.page = data.page > last_page ? last_page : data.page;
-    jUtility.executeGridDataRequest();
-  },
-
-  /**
-   * Get the last page of results from the server
-   */
-  lastPage: function lastPage() {
-    var data = jApp.activeGrid.dataGrid.requestOptions.data,
-        last_page = jApp.activeGrid.dataGrid.last_page;
-
-    data.page = last_page;
-    jUtility.executeGridDataRequest();
-  }
-};
+  } };
 
 },{}],79:[function(require,module,exports){
 'use strict';
