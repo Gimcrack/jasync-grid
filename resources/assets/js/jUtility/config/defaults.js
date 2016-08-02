@@ -147,7 +147,7 @@
      * URL of JSON resource (grid data)
      * @type {String}
      */
-    url	: jApp.routing.get( jApp.opts().runtimeParams.model ), // jApp.prefixURL( jApp.opts().runtimeParams.table + '/json' ), 	// url of JSON resource
+    url	: jApp.routing.get( jApp.opts().runtimeParams.model ),
 
     /**
      * Database table name of grid data
@@ -166,6 +166,12 @@
      * @type {String}
      */
     filter : '',										// where clause for query
+    
+    /**
+     * The order query scope to apply
+     * @type string
+     */
+    order : 'oldest', 
 
     /**
      * Scope of the query

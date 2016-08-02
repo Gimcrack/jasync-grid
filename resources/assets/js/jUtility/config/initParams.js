@@ -25,6 +25,7 @@
       data : {
         filter : jApp.aG().options.filter,
         scope : jApp.aG().options.scope || 'all',
+        order : jApp.aG().options.order || 'oldest',
         filterMine : 0
       }
     },
