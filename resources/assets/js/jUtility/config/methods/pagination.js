@@ -67,4 +67,46 @@
     jApp.tbl().find('[name=RowsPerPage]').parent().hide();
   }, // end fn
 
+  /**
+   * Get the first page of results from the server
+   */
+  firstPage : function() {
+    var data = jApp.activeGrid.dataGrid.requestOptions.data;
+
+    data.page = 1;
+    jUtility.executeGridDataRequest();
+  },
+
+  /**
+   * Get the previous page of results from the server
+   */
+  prevPage : function() {
+    var data = jApp.activeGrid.dataGrid.requestOptions.data;
+
+    data.page = ( isNaN(data.page) || data.page < 2 ) ? 1 : data.page-1;
+    jUtility.executeGridDataRequest();
+  },
+
+  /**
+   * Get the next page of results from the server
+   */
+  nextPage : function() {
+    var data = jApp.activeGrid.dataGrid.requestOptions.data,
+      last_page = jApp.activeGrid.dataGrid.last_page;
+
+    data.page = ( isNaN(data.page) || data.page < 2 ) ? 2 : +data.page+1;
+    data.page = ( data.page > last_page ) ? last_page : data.page;
+    jUtility.executeGridDataRequest();
+  },
+
+  /**
+   * Get the last page of results from the server
+   */
+  lastPage : function() {
+    var data = jApp.activeGrid.dataGrid.requestOptions.data,
+      last_page = jApp.activeGrid.dataGrid.last_page;
+
+    data.page = last_page;
+    jUtility.executeGridDataRequest();
+  },
 }

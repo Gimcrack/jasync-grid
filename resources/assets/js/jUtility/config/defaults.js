@@ -312,13 +312,49 @@
        * @type {Object}
        */
       new : {
+          type : 'button',
+          class : 'btn btn-success btn-new',
+          id : 'btn_edit',
+          icon : 'fa-plus-circle',
+          label : 'New',
+          'data-permission' : 'create_enabled',
+          'data-order' : 2
+      },
+
+      firstPage : {
+          type : 'button',
+          class : 'btn btn-success',
+          icon : 'fa-angle-double-left',
+          label : '',
+          fn : 'firstPage',
+          'data-order' : 3
+      },
+      
+      prevPage : {
         type : 'button',
-        class : 'btn btn-success btn-new',
-        id : 'btn_edit',
-        icon : 'fa-plus-circle',
-        label : 'New',
-        'data-permission' : 'create_enabled',
-        'data-order' : 2
+        class : 'btn btn-success',
+        icon : 'fa-angle-left',
+        label : '',
+        fn : 'prevPage',
+        'data-order' : 4
+      },
+      
+      nextPage : {
+        type : 'button',
+        class : 'btn btn-success',
+        icon : 'fa-angle-right',
+        label : '',
+        fn : 'nextPage',
+        'data-order' : 5
+      },
+      
+      lastPage : {
+        type : 'button',
+        class : 'btn btn-success',
+        icon : 'fa-angle-double-right',
+        label : '',
+        fn : 'lastPage',
+        'data-order' : 6
       },
 
       /**
@@ -331,7 +367,7 @@
         id : 'btn_toggle_header_filters',
         icon : 'fa-filter',
         label : 'Filter Rows',
-        'data-order' : 3
+        'data-order' : 7
       },
 
       /**
