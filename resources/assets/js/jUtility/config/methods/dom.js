@@ -500,7 +500,7 @@
       // perfect scrollbar
       $('.table-grid').perfectScrollbar('update');
 
-      jApp.opts().maxColWidth =  +350/1920 * +$(window).innerWidth();
+      jApp.opts().maxColWidth =  +500/1920 * +$(window).innerWidth();
 
       //visible columns
       var visCols = +$('.table-head .table-row.colHeaders').find('.table-header:visible').length-1;
@@ -769,6 +769,10 @@
         // .prop('disabled',false)
         // .find('i').removeClass('fa-spin').end();
       jUtility.updateAll();
+    }, // end fn
+     
+    updateServerPagination : function(total_pages) {
+      $('.btn-firstPage,.btn-prevPage,.btn-nextPage,.btn-lastPage').toggle( total_pages > 1 );
     }, // end fn
 
     /**

@@ -695,6 +695,8 @@
     //jUtility.DOM.buildLnkMenu( jApp.opts().withSelectedBtns, jApp.aG().DOM.$withSelectedMenu );
 
     jUtility.DOM.attachRowMenu();
+
+    jUtility.DOM.updateServerPagination( jApp.activeGrid.dataGrid.last_page );
   }, // end fn
 
   /**
