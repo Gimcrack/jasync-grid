@@ -353,6 +353,13 @@
         'data-order' : 6
       },
 
+      collapseText : {
+        type : 'button',
+        class : 'btn btn-success btn-collapseText active',
+        icon : 'fa-ellipsis-h',
+        label : 'collapse text',
+      },
+
       /**
        * Header Filters Button
        * @type {Object}

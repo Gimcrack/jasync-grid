@@ -21410,6 +21410,13 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         'data-order': 6
       },
 
+      collapseText: {
+        type: 'button',
+        class: 'btn btn-success btn-collapseText active',
+        icon: 'fa-ellipsis-h',
+        label: 'collapse text'
+      },
+
       /**
        * Header Filters Button
        * @type {Object}
@@ -22013,6 +22020,14 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
       data.page = last_page;
       jUtility.executeGridDataRequest();
+    }
+  },
+
+  ".btn-collapseText": {
+    click: function click() {
+      jApp.opts().toggles.ellipses = !jApp.opts().toggles.ellipses;
+      $(this).toggleClass('active');
+      jUtility.DOM.refreshGrid();
     }
   },
 

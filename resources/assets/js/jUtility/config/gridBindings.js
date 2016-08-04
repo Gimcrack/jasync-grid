@@ -269,6 +269,14 @@
     },
   },
 
+  ".btn-collapseText" : {
+    click : function() {
+      jApp.opts().toggles.ellipses = ! jApp.opts().toggles.ellipses;
+      $(this).toggleClass('active');
+      jUtility.DOM.refreshGrid();
+    }
+  },
+
   ".btn-editOther" : {
     click : jUtility.DOM.editOtherButtonHandler
   },
