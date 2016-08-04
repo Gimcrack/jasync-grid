@@ -697,6 +697,7 @@
     jUtility.DOM.attachRowMenu();
 
     jUtility.DOM.updateServerPagination( jApp.activeGrid.dataGrid.last_page );
+    $(".btn-collapseText").toggleClass('active', jApp.opts().toggles.ellipses);
   }, // end fn
 
   /**

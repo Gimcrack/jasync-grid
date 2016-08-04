@@ -355,9 +355,10 @@
 
       collapseText : {
         type : 'button',
-        class : 'btn btn-success btn-collapseText active',
+        class : 'btn btn-success btn-collapseText btn-toggle active',
         icon : 'fa-ellipsis-h',
-        label : 'collapse text',
+        label : 'Collapse Text',
+        'data-order' : 7
       },
 
       /**
@@ -370,7 +371,7 @@
         id : 'btn_toggle_header_filters',
         icon : 'fa-filter',
         label : 'Filter Rows',
-        'data-order' : 7
+        'data-order' : 8
       },
 
       /**

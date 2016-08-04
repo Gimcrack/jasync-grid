@@ -21412,9 +21412,10 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
 
       collapseText: {
         type: 'button',
-        class: 'btn btn-success btn-collapseText active',
+        class: 'btn btn-success btn-collapseText btn-toggle active',
         icon: 'fa-ellipsis-h',
-        label: 'collapse text'
+        label: 'Collapse Text',
+        'data-order': 7
       },
 
       /**
@@ -21427,7 +21428,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
         id: 'btn_toggle_header_filters',
         icon: 'fa-filter',
         label: 'Filter Rows',
-        'data-order': 7
+        'data-order': 8
       },
 
       /**
@@ -22026,7 +22027,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
   ".btn-collapseText": {
     click: function click() {
       jApp.opts().toggles.ellipses = !jApp.opts().toggles.ellipses;
-      $(this).toggleClass('active');
+      $(this).toggleClass('active', jApp.opts().toggles.ellipses);
       jUtility.DOM.refreshGrid();
     }
   },
@@ -25547,6 +25548,7 @@ function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.const
     jUtility.DOM.attachRowMenu();
 
     jUtility.DOM.updateServerPagination(jApp.activeGrid.dataGrid.last_page);
+    $(".btn-collapseText").toggleClass('active', jApp.opts().toggles.ellipses);
   }, // end fn
 
   /**

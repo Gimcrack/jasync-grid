@@ -272,7 +272,7 @@
   ".btn-collapseText" : {
     click : function() {
       jApp.opts().toggles.ellipses = ! jApp.opts().toggles.ellipses;
-      $(this).toggleClass('active');
+      $(this).toggleClass('active', jApp.opts().toggles.ellipses);
       jUtility.DOM.refreshGrid();
     }
   },
