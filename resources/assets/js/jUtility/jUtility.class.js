@@ -11,19 +11,9 @@
  */
 ;'use strict';
 
- var $ = require('jQuery'),
- 		 _ = require('underscore'),
-     jForm = require('../jForm/jForm.class'),
-     jInput = require('../jInput/jInput.class'),
-     bootstrap = require('bootstrap');
 
-$.validator = require('@ingenious/jquery-validator');
-$.fn.bootpag = require('./vendor/jquery.bootpag');
 
-require('./vendor/jquery.md5')($);
-require('noty');
-
-module.exports = $.extend(
+export default window.$.extend(
   require('./config/methods/bindings'),
   require('./config/methods/booleans'),
   require('./config/methods/callbacks'),

@@ -1,24 +1,39 @@
-//get jApp
-var jApp = require('./jApp/jApp.class');
-global.jApp = new jApp();
+// prereqs
+import jquery from 'jquery';
+import JApp from './jApp/jApp.class';
+import jUtility from './jUtility/jUtility.class';
+import jInput from './jInput/jInput.class';
+import jForm from './jForm/jForm.class';
 
-// get jUtility
-global.jUtility = require('./jUtility/jUtility.class');
+import jGrid from './jGrid/jGrid.class';
 
-// get jInput
-global.jInput = require('./jInput/jInput.class');
+if ( ! window.$ || ! window.jQuery ) {
+    window.$ = window.jQuery = jquery;
+}
+$.validator = require('@ingenious/jquery-validator');
+$.fn.bootpag = require('./vendor/jquery.bootpag');
 
-// get jForm
-global.jForm = require('./jForm/jForm.class');
+// vendor libraries
+require('./vendor/jquery.md5');
+require('noty');
+require('perfect-scrollbar/jquery');
+require('bootstrap-multiselect-jeremyedit');
 
-// get jGrid
-global.jGrid = require('./jGrid/jGrid.class');
+// functions
+require('./prebuild/functions');
+
+
+window.jApp = new JApp();
+window.jUtility = jUtility;
+window.jInput = jInput;
+window.jForm = jForm;
+window.jGrid = jGrid;
 
 // test form
-global.editFrm = {
-      model : 'Group',
-      table : 'groups',
-      pkey : 'id',
-      tableFriendly : 'Group',
-      atts : { method : 'PATCH' },
-    };
+window.editFrm = {
+    model: 'Group',
+    table: 'groups',
+    pkey: 'id',
+    tableFriendly: 'Group',
+    atts: {method: 'PATCH'},
+};

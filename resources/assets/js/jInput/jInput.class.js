@@ -7,97 +7,92 @@
  *
  *  Jeremy Bloomstrom | jeremy@in.genio.us
  *
- *  Created: 		4/20/15
- *  Last Updated: 	4/20/15
+ *  Created:        4/20/15
+ *  Last Updated:    4/20/15
  *
- *  Prereqs: 	jQuery, underscore.js, jStorage.js
+ *  Prereqs:    jQuery, lodash, jStorage.js
  *
  *  Changelog:
- *   4-20-15	Created the jInput class
+ *   4-20-15    Created the jInput class
  *
- *   4-30-15	Added the feedback icon container and help block container
+ *   4-30-15    Added the feedback icon container and help block container
  */
 ;'use strict';
 
-var $ = require('jQuery'),
-    _ = require('underscore'),
-    foo = 'bar';
+export default function (options) {
 
-require('perfect-scrollbar/jquery')($);
-require('./vendor/bootstrap-multiselect')($);
+    let
 
-module.exports = function( options ) {
+        /**
+         * Alias of this
+         * @type Object
+         */
+        self = this,
 
-		var
+        runopts = options || {},
 
-			/**
-			 * Alias of this
-			 * @type Object
-			 */
-			self = this,
-
-			runopts = options || {};
-
-  /**
-   * Initialize this object
-   */
-  $.extend(true, self, {
-    options : {
-        atts : {},
-    },
+        $ = window.$;
 
     /**
-     * Run time options
-     * @type Object
+     * Initialize this object
      */
-    runopts : runopts,
+    $.extend(true, self, {
+        options: {
+            atts: {},
+        },
+
+        /**
+         * Run time options
+         * @type Object
+         */
+        runopts: runopts,
+
+        /**
+         * Separator placeholder
+         * @type {[type]}
+         */
+        $separator: {}
+    });
 
     /**
-     * Separator placeholder
-     * @type {[type]}
+     * Method definitions
+     * @type {Object}
      */
-    $separator : {}
-  });
+    self.fn = $.extend(true,
 
-	/**
-	 * Method definitions
-	 * @type {Object}
-	 */
-	self.fn = $.extend( true,
+        /**
+         * Select/token options functions
+         */
+        require('./config/methods/options')(self),
+
+        /**
+         * Array input functions
+         */
+        require('./config/methods/arrayInputs')(self),
+
+        /**
+         * Multiselect functions
+         */
+        require('./config/methods/multiselect')(self),
+
+        /**
+         * Toggling functions
+         */
+        require('./config/methods/toggles')(self),
+
+        /**
+         * Other input-related functions
+         */
+        require('./config/methods/input')(self)
+    ); // end fns
 
     /**
-     * Select/token options functions
+     * Builders for html elements
+     * @type {Object}
      */
-    require('./config/methods/options')(self),
+    self.factory = require('./config/methods/factory')(self);
 
-    /**
-     * Array input functions
-     */
-    require('./config/methods/arrayInputs')(self),
-
-    /**
-     * Multiselect functions
-     */
-    require('./config/methods/multiselect')(self),
-
-    /**
-     * Toggling functions
-     */
-    require('./config/methods/toggles')(self),
-
-    /**
-     * Other input-related functions
-     */
-    require('./config/methods/input')(self)
-  ); // end fns
-
-  /**
-   * Builders for html elements
-   * @type {Object}
-   */
-  self.factory = require('./config/methods/factory')(self);
-
-	// initialize
-	self.fn._preInit(options || {});
+    // initialize
+    self.fn._preInit(options || {});
 
 }; // end fn

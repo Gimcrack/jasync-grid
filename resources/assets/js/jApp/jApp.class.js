@@ -10,42 +10,37 @@
  */
 'use strict';
 
-var $ = require('jQuery'),
-		_ = require('underscore');
-
-$.jStorage = require('./jStorage/jstorage');
-
-
 /**
  * Configure the export
  * @method function
  * @return {[type]} [description]
  */
-module.exports = function(options) {
-	var self = this;
+export default function (options) {
 
-	options = options || {};
+    const self = this,
+        $ = window.$;
 
-	/**
-	 * Configuration
-	 * @type {Object}
-	 */
-	$.extend(true,
-		this,
-		require('./config/defaults'),
-		require('./config/methods')(self),
-		require('./config/cellTemplates')(self),
-		require('./config/routing'),
-		options
-	);
+    options = options || {};
+
+    /**
+     * Configuration
+     * @type {Object}
+     */
+    $.extend(true,
+        this,
+        require('./config/defaults'),
+        require('./config/methods')(self),
+        require('./config/cellTemplates')(self),
+        require('./config/routing'),
+        options
+    );
 
 
-	/**
-	 * Warn about debug mode if it's on
-	 */
-	if (this.debug) {
-		console.warn( 'DEBUG MODE ON ');
-		//$.jStorage.flush();
-	}
-
-}
+    /**
+     * Warn about debug mode if it's on
+     */
+    if (this.debug) {
+        console.warn('DEBUG MODE ON ');
+        //$.jStorage.flush();
+    }
+};
