@@ -61,7 +61,7 @@
 
       // setup the names of the additional parameters
       _.each( params.fields, function(o,i) {
-        if (i===0) return false;
+        if (i===0) return;
 
         var baseName = params.fields[0].name.replace('[]','');
         o['data-pivotName'] = o.name;

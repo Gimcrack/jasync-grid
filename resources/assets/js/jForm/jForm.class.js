@@ -68,7 +68,7 @@ export default function (options) {
             var ret = {};
             _.each(self.oInpts, function (o, i) {
                 // ignore disabled elements
-                if (!!( o.$().prop('disabled') || o.$().hasClass('disabled') )) return false;
+                if (!!( o.$().prop('disabled') || o.$().hasClass('disabled') )) return;
 
                 ret[i] = o.fn.serialize();
             });
@@ -90,8 +90,8 @@ export default function (options) {
 
 
             if (typeof self.oInpts[key] === 'undefined' || typeof self.oInpts[key].$ !== 'function') {
-                jApp.log('No input associated with this key.');
-                return false;
+                jApp.log('No input associated with this key: ' + key);
+                return;
             }
 
             // get the jInput object
@@ -121,7 +121,7 @@ export default function (options) {
          * @return {[type]}       [description]
          */
         isTokensFormField: function (oInpt, value) {
-            return ( typeof value === 'object' && !!_.pluck(value, 'name').length && typeof oInpt.$().attr('data-tokens') !== 'undefined'  );
+            return ( typeof value === 'object' && !!_.map(value, 'name').length && typeof oInpt.$().attr('data-tokens') !== 'undefined'  );
         }, // end fn
 
         /**
@@ -233,7 +233,7 @@ export default function (options) {
                 if (!o) {
                     jApp.warn(o);
                     jApp.warn('Fails because is null');
-                    return false;
+                    return;
                 }
 
                 // add the default colparams before attempting to filter
@@ -242,12 +242,12 @@ export default function (options) {
                 if (!o._enabled) {
                     jApp.warn(o);
                     jApp.warn('Fails because is not enabled');
-                    return false;
+                    return;
                 }
                 if (_.indexOf(self.options.disabledElements, o.name) !== -1) {
                     jApp.warn(o);
                     jApp.warn('Fails because is on the disabled elements list');
-                    return false;
+                    return;
                 }
 
                 return _.omit(o, function (value) {
@@ -267,16 +267,24 @@ export default function (options) {
 
             $('.panel-overlay').show();
 
-            $.getJSON(jApp.prefixURL(url), {}, self.callback.getRowData)
-                .fail(function () {
-                    console.error('There was a problem getting the row data');
-                })
-                .always(function (response) {
-                    if (typeof callback !== 'undefined' && typeof callback === 'function') {
-                        callback(response);
-                    } else if (typeof callback !== 'undefined' && typeof callback === 'string' && typeof self.fn[callback] !== 'undefined' && typeof self.fn[callback] === 'function') {
-                        self.fn[callback](response);
-                    }
+            window.axios
+                .get( jApp.prefixURL(url) )
+                .then( (response) => {
+                    self.callback.getRowData(response.data);
+
+                    if ( ! callback ) return;
+
+                    if ( typeof callback === 'function' ) return callback(response.data);
+                    if ( typeof self.fn[callback] === 'function' ) return self.fn[callback](response.data);
+
+                }, (error) => {
+                     console.error('There was a problem getting the row data');
+                     console.error(error.response.data);
+
+                    if ( ! callback ) return;
+
+                    if ( typeof callback === 'function' ) return callback(error.response.data);
+                    if ( typeof self.fn[callback] === 'function' ) return self.fn[callback](error.response.data);
                 });
         }, //end fn
 
@@ -670,7 +678,7 @@ export default function (options) {
          * @return {[type]} [description]
          */
         handleFieldset: function () {
-            if (!!self.options.loadExternal) return false;
+            if (!!self.options.loadExternal) return;
 
             self.DOM.$frm.append(self.factory.fieldset());
         }, // end fn
@@ -878,7 +886,7 @@ export default function (options) {
             return $('<legend/>').html(options);
         }, // end fn
 
-    } // end factory
+    }; // end factory
 
     // alias the submit function
     this.submit = this.fn.submit;
@@ -902,7 +910,9 @@ export default function (options) {
             self.DOM.$frm.clearForm();
 
             // iterate through each row and the the corresponding input value
-            _.each(response, self.fn.setInputValue);
+            _.forOwn(response, (value,key) => {
+                self.fn.setInputValue(value,key);
+            });
 
             // if there is a custom callback, then call it.
             if (typeof jApp.aG().fn.getRowDataCallback === 'function') {

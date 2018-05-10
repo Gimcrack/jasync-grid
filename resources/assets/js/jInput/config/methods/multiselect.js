@@ -18,7 +18,7 @@
      * @return {[type]} [description]
      */
     multiselect : function( options ) {
-      if (!!self.$().data('no-bsms')) return false;
+      if (!!self.$().data('no-bsms')) return;
 
       self.$().multiselect( options || self.options.bsmsDefaults ).multiselect('refresh');
       self.fn.multiselectExtraButtons();
@@ -42,7 +42,7 @@
     multiselectRefresh : function() {
       var inpt_name = self.options.atts.name.replace('[]',''), oInpts, data;
 
-      if ( !self.options.extData ) { return false; }
+      if ( !self.options.extData ) { return; }
 
       $(this).prop('disabled',true).find('i').addClass('fa-spin');
 

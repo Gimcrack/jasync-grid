@@ -100,7 +100,11 @@
 			validateForm : function() {
 				// reset errorState
 				self.errorState = false;
-				$.noty.closeAll()
+				try {
+					Noty.closeAll();
+				} catch(error) {
+				    console.error(error);
+                }
 				
 				$.each(self.$elms, function($i,elm) {
 					console.log('validating ' + $(elm).attr('name'));

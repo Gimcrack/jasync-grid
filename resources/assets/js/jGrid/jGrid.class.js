@@ -127,7 +127,7 @@ export default function (options) {
             // }
 
             jUtility.getCheckedOutRecords();
-            jUtility.initScrollbar();
+            jUtility.DOM.initScrollbar();
         }, // end fn
     }; // end fn defs
 

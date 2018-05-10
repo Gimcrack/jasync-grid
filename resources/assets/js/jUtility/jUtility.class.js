@@ -11,13 +11,13 @@
  */
 ;'use strict';
 
-
+import dom from './config/methods/dom';
 
 export default window.$.extend(
   require('./config/methods/bindings'),
   require('./config/methods/booleans'),
   require('./config/methods/callbacks'),
-  require('./config/methods/dom'),
+  dom,
   require('./config/methods/formatters'),
   require('./config/methods/forms'),
   require('./config/methods/grid'),

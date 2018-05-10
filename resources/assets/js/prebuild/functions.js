@@ -25,11 +25,11 @@
      var o = {};
      var a = this.serializeArray();
      $.each(a, function() {
-         if ($(this).prop('disabled')) return false;
+         if ($(this).prop('disabled')) return;
 
          if ( !!$(this).attr('data-tokens') ) {
            jApp.log($(this).tokenInput('get'));
-           o[this.name] = _.pluck( $(this).tokenInput('get'), 'name');
+           o[this.name] = _.map( $(this).tokenInput('get'), 'name');
            return o;
          }
 
@@ -47,7 +47,7 @@
 
   $.fn.clearForm = function() {
    return this.each(function() {
-     if ( !!$(this).prop('disabled') || !!$(this).prop('readonly') ) return false;
+     if ( !!$(this).prop('disabled') || !!$(this).prop('readonly') ) return;
 
    var type = this.type, tag = this.tagName.toLowerCase();
      if (tag == 'form')

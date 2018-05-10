@@ -121,13 +121,13 @@
         } else {
           console.warn(key + ' is not a valid key of ');
           console.warn(target);
-          return false;
+          return;
         }
       }
 
       switch ( typeof target[tmpKeyArr[0]] ) {
         case 'undefined' :
-          return false;
+          return;
         break;
 
         case 'string' :
@@ -149,7 +149,7 @@
       })
     }
 
-    console.log(returnArr);
+    jApp.log(returnArr);
 
     return returnArr.join(' ');
 

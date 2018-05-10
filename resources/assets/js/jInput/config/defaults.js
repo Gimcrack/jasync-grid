@@ -49,4 +49,4 @@
 		dropUp: true
 	},
 
-}
+};
